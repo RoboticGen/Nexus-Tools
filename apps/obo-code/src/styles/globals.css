@@ -233,8 +233,8 @@ body {
 
 .turtle-canvas canvas {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 60;
+  left: 290px;
 }
 
 /* Terminal Output */

@@ -3,7 +3,6 @@
 import { useCallback } from "react";
 import dynamic from "next/dynamic";
 import { python } from "@codemirror/lang-python";
-import { oneDark } from "@codemirror/theme-one-dark";
 
 const CodeMirror = dynamic(() => import("@uiw/react-codemirror"), {
   ssr: false,
@@ -56,7 +55,6 @@ export function CodeEditor({
           value={code}
           height="100%"
           extensions={[python()]}
-          theme={oneDark}
           onChange={handleChange}
           basicSetup={{
             lineNumbers: true,
