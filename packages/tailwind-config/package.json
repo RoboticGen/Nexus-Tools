@@ -1,0 +1,13 @@
+{
+  "name": "@nexus-tools/tailwind-config",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "main": "tailwind.config.ts",
+  "files": [
+    "tailwind.config.ts"
+  ],
+  "devDependencies": {
+    "tailwindcss": "^3.4.1"
+  }
+}

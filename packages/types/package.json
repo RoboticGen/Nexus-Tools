@@ -1,0 +1,21 @@
+{
+  "name": "@nexus-tools/types",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf dist .turbo"
+  },
+  "devDependencies": {
+    "@nexus-tools/typescript-config": "workspace:*",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.0"
+  }
+}
