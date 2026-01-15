@@ -23,6 +23,7 @@ for x in range(360):
 export default function Home() {
   const [code, setCode] = useState(DEFAULT_CODE);
   const [notification, setNotification] = useState<string | null>(null);
+  const [background, setBackground] = useState<string>("No-Background");
 
   const showNotification = useCallback((message: string) => {
     setNotification(message);
@@ -126,7 +127,10 @@ export default function Home() {
         </div>
 
         <div className="right-panel">
-          <TurtleWorkspace />
+          <TurtleWorkspace
+            background={background}
+            onBackgroundChange={setBackground}
+          />
         </div>
       </div>
     </div>
