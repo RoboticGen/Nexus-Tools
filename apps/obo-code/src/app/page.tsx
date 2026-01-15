@@ -117,6 +117,7 @@ export default function Home() {
             onRun={handleRun}
             onCopy={handleCopy}
             onExport={handleExport}
+            theme="light"
           />
           <OutputTerminal
             output={output}
