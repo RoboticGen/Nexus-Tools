@@ -5,6 +5,14 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["@nexus-tools/ui"],
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "skulpt.org",
+      },
+    ],
+  },
 };
 
 module.exports = nextConfig;

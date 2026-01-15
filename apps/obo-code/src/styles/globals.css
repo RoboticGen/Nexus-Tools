@@ -2,54 +2,329 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+
+:root {
+  --primary-bg: rgba(77, 151, 255, 0.25);
+  --navbar-bg: #1a3a59ec;
+  --panel-bg: #ffffff;
+  --panel-border: rgba(77, 151, 255, 0.25);
+  --btn-default: #9d9d9d;
+  --btn-run: #45bd98;
+  --btn-copy: #32aac6;
+  --btn-stop: #ef476f;
+  --btn-export: #7c4a18;
+  --btn-clear: #db9e14;
+  --text-muted: #9d9d9d;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Roboto", sans-serif;
+  font-weight: 300;
+  background-color: var(--primary-bg);
+  margin: 0;
+  overflow: hidden;
+}
+
+/* App Container */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--navbar-bg);
+  padding: 0.5rem 1rem;
+  flex-shrink: 0;
+}
+
+.obo-logo {
+  height: 2.8rem;
+  width: auto;
+}
+
+.academy-logo {
+  height: 2.3rem;
+  width: auto;
+}
+
+/* Main Content */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Panel Base Styles */
+.code-panel,
+.output-panel,
+.turtle-panel {
+  background-color: var(--panel-bg);
+  border-radius: 0.6rem;
+  border: 0.1rem solid var(--panel-border);
+  box-shadow: 2px 3px 18px 0px rgba(0, 0, 0, 0.34);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.code-panel {
+  flex: 2;
+  min-height: 200px;
+}
+
+.output-panel {
+  flex: 1;
+  min-height: 150px;
+}
+
+.turtle-panel {
+  flex: 1;
+}
+
+/* Panel Header */
+.panel-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  flex-shrink: 0;
+}
+
+.panel-title {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+/* Button Group */
+.button-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.8rem;
+  min-width: 4rem;
+  border-radius: 0.3rem;
+  border: none;
+  color: #ffffff;
+  font-weight: 400;
+  font-size: 0.875rem;
+  background-color: var(--btn-default);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.action-btn i {
+  font-size: 0.8rem;
+}
+
+.run-btn:hover {
+  background-color: var(--btn-run);
+}
+
+.copy-btn:hover {
+  background-color: var(--btn-copy);
+}
+
+.export-btn:hover {
+  background-color: var(--btn-export);
+}
+
+.clear-btn:hover {
+  background-color: var(--btn-clear);
+}
+
+.stop-btn:hover,
+.stop-btn.active {
+  background-color: var(--btn-stop);
+}
+
+/* Background Select */
+.background-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0.4rem 1.5rem 0.4rem 0.8rem;
+  border: none;
+  border-radius: 0.3rem;
+  color: #ffffff;
+  font-weight: 400;
+  font-size: 0.875rem;
+  background-color: var(--btn-default);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.3rem center;
+  background-size: 1.2rem;
+}
+
+.background-select:focus {
+  outline: none;
+}
+
+/* Code Editor */
+.code-editor-wrapper {
+  flex: 1;
+  overflow: hidden;
+}
+
+.code-editor-wrapper .cm-editor {
+  height: 100%;
+}
+
+.code-editor-wrapper .cm-scroller {
+  overflow: auto;
+}
+
+.code-editor-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+}
+
+/* Turtle Canvas */
+.turtle-canvas {
+  flex: 1;
+  min-height: 400px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  position: relative;
+}
+
+.turtle-canvas canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Terminal Output */
+.terminal-wrapper {
+  flex: 1;
+  padding: 0 1rem 1rem 1rem;
+  overflow: hidden;
+}
+
+.terminal-output {
+  width: 100%;
+  height: 100%;
+  min-height: 80px;
+  color: var(--text-muted);
+  background-color: #f3f3f3;
+  border: none;
+  border-radius: 0.3rem;
+  padding: 0.5rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+  resize: none;
+  overflow-y: auto;
+}
+
+.terminal-output:focus {
+  outline: none;
+}
+
+/* Notification */
+.notification {
+  font-family: "Roboto", sans-serif;
+  font-weight: 300;
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
+  padding: 10px 20px;
+  border-radius: 5px;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  z-index: 9999;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.notification.show {
+  opacity: 1;
+}
+
+/* Responsive */
+@media screen and (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr auto;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+  .right-panel {
+    order: -1;
+  }
+
+  .turtle-canvas {
+    min-height: 300px;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+@media screen and (max-width: 768px) {
+  .navbar {
+    padding: 0.3rem 0.5rem;
   }
-  body {
-    @apply bg-background text-foreground;
+
+  .obo-logo {
+    height: 2rem;
+  }
+
+  .academy-logo {
+    height: 1.8rem;
+  }
+
+  .action-btn {
+    padding: 0.3rem 0.5rem;
+    min-width: 3rem;
+    font-size: 0.75rem;
+  }
+
+  .action-btn span {
+    display: none;
+  }
+
+  .panel-title {
+    font-size: 0.875rem;
   }
 }
