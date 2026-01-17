@@ -9,20 +9,29 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Obo Code",
+  title: "Obo Blocks",
   description:
-    "Obo Code: Run Python Turtle library with Skulpt interpretation support",
+    "Obo Blocks: Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions for seamless web-based Python execution.",
   keywords: [
-    "Obo Code",
+    "Obo Blocks",
     "python",
-    "skulpt",
+    "google",
+    "scratch",
+    "Blockly",
+    "visual programming",
+    "pyodide",
     "web application",
     "roboticgen academy",
     "roboticgen",
-    "turtle graphics",
   ],
   icons: {
     icon: "/favicon.ico",
+  },
+  openGraph: {
+    title: "Obo Blocks",
+    description:
+      "Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions",
+    images: ["/obo_blocks.webp"],
   },
 };
 
@@ -33,6 +42,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <meta name="msvalidate.01" content="F880277201EB0168D24B534ADC14C549" />
+        <link rel="preload" as="image" href="/academyLogo.webp" />
+        <link rel="preload" as="image" href="/obo_blocks.webp" />
+        <link rel="prefetch" as="image" href="/editing.gif" />
+      </head>
       <body className={roboto.className}>{children}</body>
     </html>
   );
