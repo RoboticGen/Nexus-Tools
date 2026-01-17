@@ -118,6 +118,8 @@ export default function Home() {
             onCopy={handleCopy}
             onExport={handleExport}
             theme="light"
+            language="python"
+            showMinimap={true}
           />
           <OutputTerminal
             output={output}

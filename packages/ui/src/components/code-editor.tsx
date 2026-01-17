@@ -1,18 +1,19 @@
 "use client";
 
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 
 interface CodeEditorProps {
   code: string;
   onChange: (code: string) => void;
-  onRun: () => void;
-  onCopy: () => void;
-  onExport: () => void;
+  onRun?: () => void;
+  onCopy?: () => void;
+  onExport?: () => void;
   language?: "python" | "javascript" | "typescript";
   readOnly?: boolean;
   theme?: "light" | "dark";
   height?: string;
+  showMinimap?: boolean;
 }
 
 // Dynamically import Monaco editor to avoid SSR issues
@@ -33,8 +34,9 @@ export function CodeEditor({
   onExport,
   language = "python",
   readOnly = false,
-  theme = "dark",
+  theme = "light",
   height = "100%",
+  showMinimap = true,
 }: CodeEditorProps) {
   const editorRef = useRef<any>(null);
 
@@ -70,7 +72,13 @@ export function CodeEditor({
   }, [code, onCopy]);
 
   const monacoOptions = {
-    minimap: { enabled: true },
+    minimap: { 
+      enabled: showMinimap,
+      side: "right" as const,
+      showSlider: "mouseover" as const,
+      renderCharacters: true,
+      maxColumn: 80,
+    },
     fontSize: 14,
     lineHeight: 20,
     padding: { top: 16, bottom: 16 },
@@ -81,6 +89,9 @@ export function CodeEditor({
     wordWrap: "on" as const,
     scrollBeyondLastLine: false,
     automaticLayout: true,
+    smoothScrolling: true,
+    cursorBlinking: "smooth" as const,
+    cursorSmoothCaretAnimation: "on" as const,
     readOnly,
   };
 

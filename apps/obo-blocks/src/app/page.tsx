@@ -232,8 +232,12 @@ export default function Home() {
           <div className="code-snippet" id="code-editor">
             <CodeEditor
               code={code}
-              onChange={setCode}
+              onChange={handleCodeChange}
               readOnly={!isEditing}
+              theme="light"
+              language="python"
+              showMinimap={true}
+              height="100%"
             />
           </div>
         </div>
