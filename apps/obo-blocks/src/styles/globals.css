@@ -350,7 +350,7 @@ body {
 }
 
 .blocklyToolboxDiv {
-  background-color: #f3f3f3;
+  background-color: #ffffff; /* Changed from ash #f3f3f3 to white */
 }
 
 /* Makes our label white. */
