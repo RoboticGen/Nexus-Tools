@@ -5,6 +5,7 @@
  */
 
 import * as Blockly from "blockly/core";
+
 import {
   defaultVariableValidator,
   pinModeBlockValidator,
