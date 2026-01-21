@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 
 import { Navbar } from "@/components/navbar";
-import { CodeEditor } from "@/components/code-editor";
+import { CodeEditor } from "@nexus-tools/ui";
 import { TurtleWorkspace } from "@/components/turtle-workspace";
 import { OutputTerminal } from "@/components/output-terminal";
 import { Notification } from "@/components/notification";

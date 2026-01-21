@@ -8,7 +8,7 @@ interface CodePanelProps {
   onExport: () => void;
 }
 
-import { CodeEditor } from "./code-editor";
+import { CodeEditor } from "@nexus-tools/ui";
 
 export function CodePanel({
   code,

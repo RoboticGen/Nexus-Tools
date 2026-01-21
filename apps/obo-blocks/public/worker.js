@@ -1,7 +1,8 @@
+/* eslint-env worker */
 // Inside webworker.js
 let isready = false;
 let pyodide = null;
-let buffer = new Array();
+let buffer = [];
 let shareArray;
 let msgRecieved = false;
 let waiting = false;
@@ -11,7 +12,7 @@ let msg = null;
 importScripts('https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js');
 
 async function initPyodide() {
-    pyodide = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/' });
+    pyodide = await self.loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/' });
     pyodide.setStdout({ batched: (x) => stdoutHandler(x) });
     pyodide.setStderr({ batched: (x) => stderrHandler(x) });
     pyodide.setStdin({ error: true });
