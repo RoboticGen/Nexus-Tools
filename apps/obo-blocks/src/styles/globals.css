@@ -312,6 +312,21 @@ div:nth-of-type(2)::-webkit-resizer {
   height: 100%;
 }
 
+.main-layout.editing-mode {
+  grid-template-columns: 0fr 1fr;
+}
+
+.main-layout.editing-mode .blockly-section {
+  visibility: hidden;
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  box-shadow: none;
+  overflow: hidden;
+}
+
 .blockly-section {
   background-color: white;
   border-radius: 0.6rem;
@@ -477,6 +492,21 @@ body {
     padding: 0.3rem;
   }
 
+  .main-layout.editing-mode {
+    grid-template-rows: 0fr 1fr;
+  }
+
+  .main-layout.editing-mode .blockly-section {
+    height: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+    visibility: hidden;
+  }
+
   .panels-section {
     grid-template-rows: 1fr 1fr;
     grid-template-columns: 1fr;
@@ -514,6 +544,21 @@ body {
     grid-template-rows: 1.2fr auto;
     gap: 0.3rem;
     padding: 0.25rem;
+  }
+
+  .main-layout.editing-mode {
+    grid-template-rows: 0fr auto;
+  }
+
+  .main-layout.editing-mode .blockly-section {
+    height: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+    visibility: hidden;
   }
 
   .panels-section {
@@ -573,6 +618,21 @@ body {
     padding: 0.2rem;
   }
 
+  .main-layout.editing-mode {
+    grid-template-rows: 0fr auto;
+  }
+
+  .main-layout.editing-mode .blockly-section {
+    height: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+    visibility: hidden;
+  }
+
   .panels-section {
     grid-template-rows: minmax(200px, auto) minmax(150px, auto);
     gap: 0.25rem;
@@ -628,6 +688,21 @@ body {
     grid-template-rows: 1fr 1fr;
     gap: 0.2rem;
     padding: 0.15rem;
+  }
+
+  .main-layout.editing-mode {
+    grid-template-rows: 0fr 1fr;
+  }
+
+  .main-layout.editing-mode .blockly-section {
+    height: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+    visibility: hidden;
   }
 
   .panels-section {
@@ -697,6 +772,21 @@ body {
     grid-template-rows: 1fr 1.2fr;
     gap: 0.15rem;
     padding: 0.1rem;
+  }
+
+  .main-layout.editing-mode {
+    grid-template-rows: 0fr 1fr;
+  }
+
+  .main-layout.editing-mode .blockly-section {
+    height: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+    visibility: hidden;
   }
 
   .panels-section {
