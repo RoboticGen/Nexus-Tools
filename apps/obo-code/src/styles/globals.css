@@ -273,12 +273,16 @@ body {
   background-repeat: no-repeat;
   background-size: contain;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .turtle-canvas canvas {
-  position: absolute;
-  top: 60;
-  left: 290px;
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
 }
 
 /* Terminal Output */
@@ -389,6 +393,17 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  .turtle-canvas {
+    min-height: 280px;
+  }
+
+  .turtle-canvas canvas {
+    width: auto !important;
+    height: auto !important;
+    max-width: calc(100vw - 2rem);
+    max-height: 260px;
+  }
 }
 
 @media screen and (max-width: 600px) {
@@ -412,6 +427,15 @@ body {
 
   .action-btn span {
     font-size: 0.7rem;
+  }
+
+  .turtle-canvas {
+    min-height: 250px;
+  }
+
+  .turtle-canvas canvas {
+    max-width: calc(100vw - 1.5rem);
+    max-height: 230px;
   }
 }
 
@@ -446,6 +470,15 @@ body {
     flex: 1;
     min-width: 0;
   }
+
+  .turtle-canvas {
+    min-height: 220px;
+  }
+
+  .turtle-canvas canvas {
+    max-width: calc(100vw - 1rem);
+    max-height: 200px;
+  }
 }
 
 @media screen and (max-width: 360px) {
@@ -479,5 +512,14 @@ body {
     font-size: 0.75rem;
     width: 100%;
     margin-bottom: 0.2rem;
+  }
+
+  .turtle-canvas {
+    min-height: 180px;
+  }
+
+  .turtle-canvas canvas {
+    max-width: calc(100vw - 0.8rem);
+    max-height: 160px;
   }
 }
