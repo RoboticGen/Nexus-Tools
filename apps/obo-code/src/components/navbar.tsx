@@ -5,7 +5,7 @@ export function Navbar() {
   return (
     <nav className="navbar">
       <Image
-        src="/images/OboCode.png"
+        src="/images/OboCode.webp"
         alt="Obo Code Logo"
         width={263}
         height={45}

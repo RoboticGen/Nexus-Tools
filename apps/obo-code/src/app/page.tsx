@@ -2,17 +2,16 @@
 
 import { useState, useCallback } from "react";
 
-import { Navbar } from "@/components/navbar";
 import { CodeEditor } from "@/components/code-editor";
-import { TurtleWorkspace } from "@/components/turtle-workspace";
-import { OutputTerminal } from "@/components/output-terminal";
+import { Navbar } from "@/components/navbar";
 import { Notification } from "@/components/notification";
+import { OutputTerminal } from "@/components/output-terminal";
+import { TurtleWorkspace } from "@/components/turtle-workspace";
 import { usePythonRunner } from "@/hooks/use-python-runner";
 
 const DEFAULT_CODE = `import turtle
 colors = ['red', 'purple', 'blue', 'green', 'orange', 'yellow']
 t = turtle.Turtle()
-turtle.bgcolor('black')
 for x in range(360):
     t.pencolor(colors[x%6])
     t.width(x//100 + 1)

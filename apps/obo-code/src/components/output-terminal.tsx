@@ -18,13 +18,14 @@ export function OutputTerminal({
       <div className="panel-header">
         <span className="panel-title">Output</span>
         <div className="button-group">
-          <button className="action-btn clear-btn" onClick={onClear}>
+          <button className="action-btn clear-btn" onClick={onClear} title="Clear Output">
             <i className="fa fa-trash" />
             <span>Clear</span>
           </button>
           <button
             className={`action-btn stop-btn ${isRunning ? "active" : ""}`}
             onClick={onStop}
+            title="Stop Execution"
           >
             <i className="fa fa-stop" />
             <span>Stop</span>
