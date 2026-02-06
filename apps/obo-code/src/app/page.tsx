@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 import { CodeEditor } from "@/components/code-editor";
 import { Navbar } from "@/components/navbar";
@@ -23,6 +23,11 @@ export default function Home() {
   const [code, setCode] = useState(DEFAULT_CODE);
   const [notification, setNotification] = useState<string | null>(null);
   const [background, setBackground] = useState<string>("No-Background");
+
+  // Set the document title explicitly to ensure it shows correct app name
+  useEffect(() => {
+    document.title = "Obo Code";
+  }, []);
 
   const showNotification = useCallback((message: string) => {
     setNotification(message);
