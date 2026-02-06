@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
-import dynamic from "next/dynamic";
 import { python } from "@codemirror/lang-python";
+import dynamic from "next/dynamic";
+import { useCallback } from "react";
 
 const CodeMirror = dynamic(() => import("@uiw/react-codemirror"), {
   ssr: false,
@@ -36,15 +36,15 @@ export function CodeEditor({
       <div className="panel-header">
         <span className="panel-title">Python Code</span>
         <div className="button-group">
-          <button className="action-btn run-btn" onClick={onRun}>
+          <button className="action-btn run-btn" onClick={onRun} title="Run Python Code">
             <i className="fa fa-flag" />
             <span>Run</span>
           </button>
-          <button className="action-btn copy-btn" onClick={onCopy}>
+          <button className="action-btn copy-btn" onClick={onCopy} title="Copy Code">
             <i className="fa fa-copy" />
             <span>Copy</span>
           </button>
-          <button className="action-btn export-btn" onClick={onExport}>
+          <button className="action-btn export-btn" onClick={onExport} title="Export Code">
             <i className="fa fa-file-export" />
             <span>Export</span>
           </button>
