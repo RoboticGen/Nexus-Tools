@@ -1,3 +1,5 @@
+import { CodeEditor } from "@nexus-tools/ui";
+
 interface CodePanelProps {
   code: string;
   isEditing: boolean;
@@ -7,8 +9,6 @@ interface CodePanelProps {
   onCopy: () => void;
   onExport: () => void;
 }
-
-import { CodeEditor } from "@nexus-tools/ui";
 
 export function CodePanel({
   code,

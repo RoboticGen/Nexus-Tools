@@ -18,6 +18,7 @@
     "clean": "rimraf dist .turbo"
   },
   "dependencies": {
+    "@nexus-tools/components": "workspace:*",
     "@monaco-editor/react": "^4.6.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",

@@ -201,6 +201,21 @@ importers:
         specifier: ^5.3.0
         version: 5.9.3
 
+  packages/components:
+    dependencies:
+      '@monaco-editor/react':
+        specifier: ^4.6.0
+        version: 4.7.0(monaco-editor@0.55.1)(react-dom@18.3.1)(react@18.3.1)
+      next:
+        specifier: ^14.0.0
+        version: 14.1.0(react-dom@18.3.1)(react@18.3.1)
+      react:
+        specifier: ^18.0.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.0.0
+        version: 18.3.1(react@18.3.1)
+
   packages/eslint-config:
     dependencies:
       '@typescript-eslint/eslint-plugin':
@@ -257,6 +272,9 @@ importers:
       '@monaco-editor/react':
         specifier: ^4.6.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@18.3.1)(react@18.3.1)
+      '@nexus-tools/components':
+        specifier: workspace:*
+        version: link:../components
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.1
