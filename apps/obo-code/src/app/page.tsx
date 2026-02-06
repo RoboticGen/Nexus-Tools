@@ -119,7 +119,7 @@ export default function Home() {
             onExport={handleExport}
             theme="light"
             language="python"
-            showMinimap={true}
+            showMinimap={false}
           />
           <OutputTerminal
             output={output}
