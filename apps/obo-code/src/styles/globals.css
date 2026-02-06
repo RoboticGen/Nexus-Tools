@@ -273,16 +273,14 @@ body {
   background-repeat: no-repeat;
   background-size: contain;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
 }
 
 .turtle-canvas canvas {
-  position: relative;
-  max-width: 100%;
-  max-height: 100%;
-  margin: auto;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Terminal Output */
@@ -397,13 +395,6 @@ body {
   .turtle-canvas {
     min-height: 280px;
   }
-
-  .turtle-canvas canvas {
-    width: auto !important;
-    height: auto !important;
-    max-width: calc(100vw - 2rem);
-    max-height: 260px;
-  }
 }
 
 @media screen and (max-width: 600px) {
@@ -431,11 +422,6 @@ body {
 
   .turtle-canvas {
     min-height: 250px;
-  }
-
-  .turtle-canvas canvas {
-    max-width: calc(100vw - 1.5rem);
-    max-height: 230px;
   }
 }
 
@@ -474,11 +460,6 @@ body {
   .turtle-canvas {
     min-height: 220px;
   }
-
-  .turtle-canvas canvas {
-    max-width: calc(100vw - 1rem);
-    max-height: 200px;
-  }
 }
 
 @media screen and (max-width: 360px) {
@@ -516,11 +497,6 @@ body {
 
   .turtle-canvas {
     min-height: 180px;
-  }
-
-  .turtle-canvas canvas {
-    max-width: calc(100vw - 0.8rem);
-    max-height: 160px;
   }
 }
 
