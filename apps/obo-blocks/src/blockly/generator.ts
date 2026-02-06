@@ -524,3 +524,74 @@ forBlock["i2c_scan"] = function (block: any, generator: any) {
   const code = `${variable_i2c}.scan()\n`;
   return code;
 };
+
+// Procedure blocks
+forBlock["procedures_defreturn"] = function (block: any, generator: any) {
+  const funcName = generator.getVariableName(block.getFieldValue('NAME'));
+  let branch = generator.statementToCode(block, 'STACK');
+  let returnValue = generator.valueToCode(block, 'RETURN', Order.NONE) || '';
+  
+  if (returnValue) {
+    returnValue = generator.INDENT + 'return ' + returnValue + '\n';
+  }
+  
+  const args = [];
+  const variables = block.getVars();
+  for (let i = 0; i < variables.length; i++) {
+    args[i] = generator.getVariableName(variables[i]);
+  }
+  
+  let code = 'def ' + funcName + '(' + args.join(', ') + '):\n' +
+      (branch || generator.INDENT + 'pass\n') + returnValue;
+  
+  code = generator.scrub_(block, code);
+  generator.definitions_[funcName] = code;
+  return null;
+};
+
+forBlock["procedures_defnoreturn"] = function (block: any, generator: any) {
+  const funcName = generator.getVariableName(block.getFieldValue('NAME'));
+  let branch = generator.statementToCode(block, 'STACK');
+  
+  const args = [];
+  const variables = block.getVars();
+  for (let i = 0; i < variables.length; i++) {
+    args[i] = generator.getVariableName(variables[i]);
+  }
+  
+  let code = 'def ' + funcName + '(' + args.join(', ') + '):\n' +
+      (branch || generator.INDENT + 'pass\n');
+  
+  code = generator.scrub_(block, code);
+  generator.definitions_[funcName] = code;
+  return null;
+};
+
+forBlock["procedures_callreturn"] = function (block: any, generator: any) {
+  const funcName = generator.getVariableName(block.getFieldValue('NAME'));
+  const args = [];
+  const variables = block.getVars();
+  for (let i = 0; i < variables.length; i++) {
+    args[i] = generator.valueToCode(block, 'ARG' + i, Order.NONE) || 'None';
+  }
+  const code = funcName + '(' + args.join(', ') + ')';
+  return [code, Order.FUNCTION_CALL];
+};
+
+forBlock["procedures_callnoreturn"] = function (block: any, generator: any) {
+  const funcName = generator.getVariableName(block.getFieldValue('NAME'));
+  const args = [];
+  const variables = block.getVars();
+  for (let i = 0; i < variables.length; i++) {
+    args[i] = generator.valueToCode(block, 'ARG' + i, Order.NONE) || 'None';
+  }
+  const code = funcName + '(' + args.join(', ') + ')\n';
+  return code;
+};
+
+forBlock["procedures_ifreturn"] = function (block: any, generator: any) {
+  const condition = generator.valueToCode(block, 'CONDITION', Order.NONE) || 'False';
+  const value = generator.valueToCode(block, 'VALUE', Order.NONE) || 'None';
+  const code = 'if ' + condition + ':\n' + generator.INDENT + 'return ' + value + '\n';
+  return code;
+};

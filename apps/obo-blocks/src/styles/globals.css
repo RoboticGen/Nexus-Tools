@@ -139,22 +139,7 @@ body {
   opacity: 1;
 }
 
-.code {
-  grid-area: code;
-  display: flex;
-  flex-direction: column;
-  border-radius: 0.7rem;
-  background-color: white;
-  border: 0.1rem solid rgba(77, 151, 255, 0.25);
-  padding: 0.2rem;
-  margin-right: 0.5rem;
-  box-shadow: 2px 3px 18px 0px rgba(0, 0, 0, 0.34);
-  overflow-y: auto;
-  max-height: 70vh;
-  min-height: 10vh;
-  overflow-x: hidden;
-  resize: vertical;
-}
+/* Old .code rule removed - replaced with new layout-specific rule */
 
 div:nth-of-type(2)::-webkit-resizer {
   background: transparent;
@@ -176,8 +161,11 @@ div:nth-of-type(2)::-webkit-resizer {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-right: 0.5rem;
+  gap: 0.2rem;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 .button-group a {
@@ -203,7 +191,7 @@ div:nth-of-type(2)::-webkit-resizer {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-around;
+  justify-content: center;
   margin: 0.2rem;
   padding: 0.3rem;
   min-width: 4rem;
@@ -215,7 +203,11 @@ div:nth-of-type(2)::-webkit-resizer {
   font-size: medium;
   background-color: #9d9d9d;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  flex-shrink: 1;
+  white-space: nowrap;
+  position: relative;
+  gap: 0.3rem;
 }
 
 .button-group button:hover {
@@ -273,15 +265,7 @@ div:nth-of-type(2)::-webkit-resizer {
   opacity: 0.6;
 }
 
-.output {
-  grid-area: output;
-  background-color: white;
-  border-radius: 0.7rem;
-  border: 0.1rem solid rgba(77, 151, 255, 0.25);
-  box-shadow: 2px 3px 18px 0px rgba(0, 0, 0, 0.34);
-  padding: 0.2rem;
-  margin-right: 0.5rem;
-}
+/* Old .output rule removed - replaced with new layout-specific rule */
 
 .output-title {
   margin: 1rem;
@@ -316,32 +300,61 @@ div:nth-of-type(2)::-webkit-resizer {
   background-color: #db9e14;
 }
 
-.container {
+/* Main Layout */
+.main-layout {
   display: grid;
-  font-family: "Roboto", sans-serif;
-  font-weight: 300;
-  font-style: normal;
-  grid-template-rows: 1fr 8fr 3fr;
-  grid-template-areas:
-    "navBar navBar navBar navBar"
-    "editor editor editor code"
-    "editor editor editor output";
-  grid-gap: 0.5rem;
-  height: calc(100vh - 0.5rem);
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
 }
 
-.container-editing {
+.blockly-section {
+  background-color: white;
+  border-radius: 0.6rem;
+  border: 0.1rem solid rgba(77, 151, 255, 0.25);
+  box-shadow: 2px 3px 18px 0px rgba(0, 0, 0, 0.34);
+  padding: 0.2rem;
+  overflow: hidden;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.panels-section {
   display: grid;
-  font-family: "Roboto", sans-serif;
-  font-weight: 300;
-  font-style: normal;
-  grid-template-rows: 1fr 8fr 3fr;
-  grid-template-areas:
-    "navBar navBar navBar navBar"
-    "code code code code"
-    "output output output output";
-  grid-gap: 0.5rem;
-  height: calc(100vh - 0.5rem);
+  grid-template-rows: 2fr 1fr;
+  gap: 0.5rem;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.code {
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.7rem;
+  background-color: white;
+  border: 0.1rem solid rgba(77, 151, 255, 0.25);
+  padding: 0.2rem;
+  box-shadow: 2px 3px 18px 0px rgba(0, 0, 0, 0.34);
+  overflow-y: auto;
+  min-height: 200px;
+  height: 100%;
+}
+
+.output {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border-radius: 0.7rem;
+  border: 0.1rem solid rgba(77, 151, 255, 0.25);
+  box-shadow: 2px 3px 18px 0px rgba(0, 0, 0, 0.34);
+  padding: 0.2rem;
+  min-height: 150px;
+  height: 100%;
 }
 
 body {
@@ -400,7 +413,7 @@ body {
   opacity: 0.8;
 }
 
-/* Hide scrollbars in Blockly workspace */
+/* Hide scrollbars in Blockly workspace on desktop */
 .blocklyScrollbarVertical,
 .blocklyScrollbarHorizontal {
   display: none !important;
@@ -415,11 +428,339 @@ body {
 }
 
 @media screen and (max-width: 768px) {
-  .container {
-    grid-template-areas:
-      "navBar navBar navBar navBar"
-      "editor editor editor editor"
-      "code code code code"
-      "output output output output";
+  .blocklyScrollbarHorizontal {
+    display: block !important;
+    opacity: 0.7;
+  }
+  
+  .blocklySvg {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  
+  .injectionDiv {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Make Blockly workspace touch-scrollable */
+  .blocklyMainBackground {
+    touch-action: pan-x pan-y;
+  }
+  
+  /* Enable zoom and pan on mobile */
+  .blocklyWorkspace {
+    touch-action: manipulation;
+  }
+  
+  /* Mobile blockly section adjustments */
+  .blockly-section {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+  }
+  
+  /* Ensure Blockly div takes full width */
+  .blockly-section > div {
+    min-width: 100%;
+    height: 100%;
+  }
+}
+
+@media screen and (max-width: 1024px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0.4rem;
+    padding: 0.3rem;
+  }
+
+  .panels-section {
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .blockly-section {
+    min-height: 300px;
+  }
+
+  .code {
+    min-height: 180px;
+  }
+
+  .output {
+    min-height: 120px;
+  }
+
+  .obo-blocks-logo {
+    width: 12rem;
+    height: 2.2rem;
+    margin: 0.4rem;
+  }
+
+  .logo {
+    width: 6rem;
+    height: 1.8rem;
+    margin: 0.4rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1.2fr auto;
+    gap: 0.3rem;
+    padding: 0.25rem;
+  }
+
+  .panels-section {
+    grid-template-rows: auto auto;
+    gap: 0.3rem;
+  }
+
+  .blockly-section {
+    min-height: 300px;
+  }
+
+  .nav-bar {
+    padding: 0.3rem 0.5rem;
+  }
+
+  .obo-blocks-logo {
+    width: 10rem;
+    height: 1.8rem;
+    margin: 0.3rem;
+  }
+
+  .logo {
+    width: 5rem;
+    height: 1.5rem;
+    margin: 0.3rem;
+  }
+
+  .button-row {
+    padding: 0.4rem 0.6rem;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .button-group {
+    gap: 0.2rem;
+    margin-right: 0.3rem;
+  }
+
+  .button-group button {
+    margin: 0.1rem;
+    padding: 0.35rem 0.6rem;
+    min-width: 3.5rem;
+    font-size: 0.8rem;
+  }
+
+  .code-title,
+  .output-title {
+    font-size: 0.9rem;
+    margin: 0.6rem;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .main-layout {
+    grid-template-rows: 1fr auto;
+    gap: 0.25rem;
+    padding: 0.2rem;
+  }
+
+  .panels-section {
+    grid-template-rows: minmax(200px, auto) minmax(150px, auto);
+    gap: 0.25rem;
+  }
+
+  .blockly-section {
+    min-height: 250px;
+  }
+
+  .button-row {
+    padding: 0.3rem 0.4rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3rem;
+  }
+
+  .button-group {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.15rem;
+    margin: 0;
+  }
+
+  .button-group button {
+    padding: 0.3rem 0.5rem;
+    min-width: 3rem;
+    font-size: 0.75rem;
+    margin: 0.05rem;
+  }
+
+  .code-title,
+  .output-title {
+    font-size: 0.85rem;
+    margin: 0.4rem;
+    text-align: center;
+  }
+
+  .code {
+    padding: 0.15rem;
+  }
+
+  .output {
+    padding: 0.15rem;
+  }
+
+  .blockly-section {
+    padding: 0.15rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .main-layout {
+    grid-template-rows: 1fr 1fr;
+    gap: 0.2rem;
+    padding: 0.15rem;
+  }
+
+  .panels-section {
+    grid-template-rows: 1fr 1fr;
+    gap: 0.2rem;
+  }
+
+  .blockly-section {
+    min-height: 200px;
+  }
+
+  .nav-bar {
+    padding: 0.2rem 0.3rem;
+  }
+
+  .obo-blocks-logo {
+    width: 8rem;
+    height: 1.5rem;
+    margin: 0.2rem;
+  }
+
+  .logo {
+    width: 4rem;
+    height: 1.2rem;
+    margin: 0.2rem;
+  }
+
+  .button-row {
+    padding: 0.2rem 0.3rem;
+    gap: 0.2rem;
+  }
+
+  .button-group button {
+    padding: 0.25rem 0.4rem;
+    min-width: 2.5rem;
+    font-size: 0.7rem;
+    height: auto;
+  }
+
+  .button-group button span {
+    font-size: 0.65rem;
+  }
+
+  .button-group button i {
+    font-size: 0.75rem;
+    padding-right: 0.2rem;
+  }
+
+  .code-title,
+  .output-title {
+    font-size: 0.8rem;
+    margin: 0.3rem;
+  }
+
+  .terminal-output {
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+  }
+
+  .code-snippet {
+    max-height: 25rem;
+  }
+}
+
+@media screen and (max-width: 360px) {
+  .main-layout {
+    grid-template-rows: 1fr 1.2fr;
+    gap: 0.15rem;
+    padding: 0.1rem;
+  }
+
+  .panels-section {
+    grid-template-rows: auto auto;
+    gap: 0.15rem;
+  }
+
+  .blockly-section {
+    min-height: 180px;
+  }
+
+  .button-group button span {
+    display: none;
+  }
+
+  .button-group button {
+    min-width: 2.2rem;
+    padding: 0.2rem 0.3rem;
+  }
+
+  .button-group button i {
+    font-size: 0.8rem;
+    padding-right: 0;
+  }
+
+  .code-title,
+  .output-title {
+    font-size: 0.75rem;
+    margin: 0.25rem;
+  }
+
+  .code-snippet {
+    max-height: 20rem;
+  }
+
+  /* Add tooltips for very small screens */
+  .button-group button[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.2rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 1;
+    pointer-events: none;
+    margin-bottom: 0.2rem;
+  }
+
+  .button-group button[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% - 0.2rem);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 3px solid transparent;
+    border-top-color: #333;
+    z-index: 1000;
+    opacity: 1;
+    pointer-events: none;
   }
 }
