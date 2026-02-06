@@ -71,13 +71,8 @@ export default function Home() {
       <Navbar />
 
       {isClient && (
-        <div className="main-layout">
-          <div
-            className="blockly-section"
-            style={{
-              display: isEditing ? "none" : "block",
-            }}
-          >
+        <div className={`main-layout ${isEditing ? 'editing-mode' : ''}`}>
+          <div className="blockly-section">
             <BlocklyEditor
               onCodeChange={handleCodeChange}
               onEditToggle={handleEditToggleWrapper}
