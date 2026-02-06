@@ -71,27 +71,10 @@ export default function Home() {
       <Navbar />
 
       {isClient && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "2fr 1fr",
-            gridTemplateRows: "auto 1fr auto",
-            gap: "0.5rem",
-            padding: "0.5rem",
-            flex: 1,
-            overflow: "hidden",
-            gridTemplateAreas: `
-              "blocky code"
-              "blocky code"
-              "blocky output"
-            `,
-          }}
-        >
+        <div className="main-layout">
           <div
+            className="blockly-section"
             style={{
-              gridArea: "blocky",
-              height: "100%",
-              minHeight: "400px",
               display: isEditing ? "none" : "block",
             }}
           >
@@ -102,17 +85,19 @@ export default function Home() {
             />
           </div>
 
-          <CodePanel
-            code={code}
-            isEditing={isEditing}
-            onCodeChange={handleCodeChange}
-            onEditToggle={handleEditToggleWrapper}
-            onRun={handleRunCode}
-            onCopy={handleCopy}
-            onExport={handleExport}
-          />
+          <div className="panels-section">
+            <CodePanel
+              code={code}
+              isEditing={isEditing}
+              onCodeChange={handleCodeChange}
+              onEditToggle={handleEditToggleWrapper}
+              onRun={handleRunCode}
+              onCopy={handleCopy}
+              onExport={handleExport}
+            />
 
-          <OutputPanel onClear={handleClearTerminal} onStop={handleStopCode} />
+            <OutputPanel onClear={handleClearTerminal} onStop={handleStopCode} />
+          </div>
         </div>
       )}
     </div>

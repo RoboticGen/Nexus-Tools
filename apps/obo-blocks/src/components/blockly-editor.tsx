@@ -45,6 +45,8 @@ export function BlocklyEditor({
   const initBlockly = useCallback(() => {
     if (!blocklyDivRef.current) return;
 
+    const isMobile = window.innerWidth <= 768;
+    
     const options = {
       toolbox: toolbox,
       theme: theme,
@@ -57,10 +59,18 @@ export function BlocklyEditor({
       },
       zoom: {
         controls: true,
-        startScale: 1,
-        maxScale: 1.5,
-        minScale: 0.7,
+        startScale: isMobile ? 0.8 : 1,
+        maxScale: isMobile ? 2 : 1.5,
+        minScale: isMobile ? 0.5 : 0.7,
         scaleSpeed: 1.2,
+      },
+      move: {
+        scrollbars: {
+          horizontal: isMobile,
+          vertical: false,
+        },
+        drag: true,
+        wheel: true,
       },
       renderer: "zelos",
     };
@@ -146,6 +156,12 @@ export function BlocklyEditor({
         const workspace = workspaceRef.current as any;
         if (workspace.resize) {
           workspace.resize();
+        }
+        
+        // Update scrolling behavior on resize
+        const isMobile = window.innerWidth <= 768;
+        if (workspace.scrollbar && workspace.scrollbar.horizontal) {
+          workspace.scrollbar.horizontal.setVisible(isMobile);
         }
       }
     };
