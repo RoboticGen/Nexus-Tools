@@ -246,15 +246,20 @@ body {
 /* Code Editor */
 .code-editor-wrapper {
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .code-editor-wrapper .cm-editor {
   height: 100%;
+  width: 100%;
 }
 
 .code-editor-wrapper .cm-scroller {
   overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
 .code-editor-loading {
@@ -329,6 +334,19 @@ body {
 
 .notification.show {
   opacity: 1;
+}
+
+/* Mobile specific styles for code editor */
+@media screen and (max-width: 768px) {
+  .code-editor-wrapper {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .code-editor-wrapper .cm-scroller {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
+    overflow-y: auto;
+  }
 }
 
 /* Responsive */
