@@ -428,27 +428,32 @@ body {
 @media screen and (max-width: 480px) {
   .panel-header {
     padding: 0.3rem 0.5rem;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 0.25rem;
   }
 
   .button-group {
     gap: 0.15rem;
     flex-shrink: 0;
+    flex-wrap: wrap;
   }
 
   .action-btn {
-    padding: 0.25rem 0.4rem;
-    min-width: 2.8rem;
+    padding: 0.35rem 0.5rem;
+    min-width: 4rem;
     font-size: 0.7rem;
+    white-space: normal;
+    line-height: 1.2;
   }
 
   .action-btn i {
     font-size: 0.75rem;
+    margin-right: 0.2rem;
   }
 
   .action-btn span {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
+    display: inline;
   }
 
   .panel-title {
@@ -472,21 +477,26 @@ body {
   .button-group {
     gap: 0.1rem;
     width: 100%;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .action-btn {
-    padding: 0.2rem 0.3rem;
-    min-width: 2.2rem;
-    font-size: 0.65rem;
+    padding: 0.3rem 0.4rem;
+    min-width: 3.5rem;
+    font-size: 0.6rem;
+    white-space: normal;
+    line-height: 1.1;
   }
 
   .action-btn span {
-    display: none;
+    display: inline;
+    font-size: 0.6rem;
   }
 
   .action-btn i {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
+    margin-right: 0.15rem;
   }
 
   .panel-title {
