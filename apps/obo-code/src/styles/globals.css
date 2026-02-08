@@ -69,10 +69,12 @@ body {
   padding: 0.5rem;
   flex: 1;
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: rgba(77, 151, 255, 0.5) rgba(77, 151, 255, 0.1);
+  touch-action: manipulation;
+  scrollbar-gutter: stable;
 }
 
 /* Custom scrollbar for webkit browsers */
@@ -125,18 +127,24 @@ body {
 .code-panel {
   flex: 2;
   min-height: 200px;
-  overflow: auto;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
 }
 
 .output-panel {
   flex: 1;
   min-height: 150px;
-  overflow: auto;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
 }
 
 .turtle-panel {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
 }
 
 /* Panel Header */
@@ -274,12 +282,13 @@ body {
   outline: none;
 }
 
-/* Code Editor */
 .code-editor-wrapper {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
 }
 
 .code-editor-wrapper .cm-editor {
@@ -290,7 +299,9 @@ body {
 .code-editor-wrapper .cm-scroller {
   overflow: auto;
   overflow-x: auto;
-  overflow-y: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
 }
 
 .code-editor-loading {
@@ -339,6 +350,9 @@ body {
   font-size: 0.875rem;
   resize: none;
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
 }
 
 .terminal-output:focus {
