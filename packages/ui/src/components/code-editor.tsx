@@ -36,7 +36,7 @@ export function CodeEditor({
   readOnly = false,
   theme = "light",
   height = "100%",
-  showMinimap = true,
+  showMinimap = false,
 }: CodeEditorProps) {
   const editorRef = useRef<any>(null);
 

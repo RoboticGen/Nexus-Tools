@@ -1,5 +1,6 @@
 "use client";
 
+import { CodeEditor } from "@nexus-tools/ui";
 import { useState, useCallback, useEffect } from "react";
 
 import { Navbar } from "@/components/navbar";
@@ -122,7 +123,6 @@ export default function Home() {
             onExport={handleExport}
             theme="light"
             language="python"
-            showMinimap={false}
           />
           <OutputTerminal
             output={output}
