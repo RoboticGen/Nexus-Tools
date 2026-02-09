@@ -37,7 +37,10 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow: hidden;
+  overflow: visible;
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
 }
 
 /* Navbar */
@@ -49,6 +52,8 @@ body {
   background-color: var(--navbar-bg);
   padding: 0.5rem 1rem;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1000;
 }
 
 .obo-logo {
@@ -68,20 +73,62 @@ body {
   gap: 0.5rem;
   padding: 0.5rem;
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(77, 151, 255, 0.5) rgba(77, 151, 255, 0.1);
+  touch-action: pan-x pan-y;
+  scrollbar-gutter: stable;
+  overscroll-behavior: auto;
+  scroll-behavior: smooth;
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+/* Custom scrollbar for webkit browsers */
+.main-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.main-content::-webkit-scrollbar-track {
+  background: rgba(77, 151, 255, 0.1);
+  border-radius: 4px;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+  background: rgba(77, 151, 255, 0.5);
+  border-radius: 4px;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(77, 151, 255, 0.7);
+}
+
+.main-content::-webkit-scrollbar-corner {
+  background: rgba(77, 151, 255, 0.1);
 }
 
 .left-panel {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  overflow: hidden;
+  overflow: visible;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .right-panel {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Panel Base Styles */
@@ -94,21 +141,33 @@ body {
   box-shadow: 2px 3px 18px 0px rgba(0, 0, 0, 0.34);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .code-panel {
   flex: 2;
   min-height: 200px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 .output-panel {
   flex: 1;
   min-height: 150px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 .turtle-panel {
   flex: 1;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 /* Panel Header */
@@ -116,9 +175,11 @@ body {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 1rem;
+  align-items: flex-start;
+  padding: 0.5rem 0.5rem;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.3rem;
 }
 
 .panel-title {
@@ -132,8 +193,8 @@ body {
   flex-direction: row;
   align-items: center;
   gap: 0.3rem;
-  flex-wrap: nowrap;
-  overflow: hidden;
+  flex-wrap: wrap;
+  overflow: visible;
 }
 
 .action-btn {
@@ -143,7 +204,7 @@ body {
   justify-content: center;
   gap: 0.3rem;
   padding: 0.4rem 0.8rem;
-  min-width: 4rem;
+  min-width: auto;
   border-radius: 0.3rem;
   border: none;
   color: #ffffff;
@@ -152,9 +213,10 @@ body {
   background-color: var(--btn-default);
   cursor: pointer;
   transition: all 0.2s ease;
-  flex-shrink: 1;
-  white-space: nowrap;
+  flex-shrink: 0;
+  white-space: normal;
   position: relative;
+  word-break: break-word;
 }
 
 .action-btn i {
@@ -243,18 +305,32 @@ body {
   outline: none;
 }
 
-/* Code Editor */
 .code-editor-wrapper {
   flex: 1;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .code-editor-wrapper .cm-editor {
   height: 100%;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .code-editor-wrapper .cm-scroller {
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .code-editor-loading {
@@ -274,6 +350,9 @@ body {
   background-size: contain;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .turtle-canvas canvas {
@@ -288,10 +367,14 @@ body {
   flex: 1;
   padding: 0 1rem 1rem 1rem;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .terminal-output {
   width: 100%;
+  max-width: 100%;
   height: 100%;
   min-height: 80px;
   color: var(--text-muted);
@@ -302,7 +385,10 @@ body {
   font-family: monospace;
   font-size: 0.875rem;
   resize: none;
-  overflow-y: auto;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+  box-sizing: border-box;
 }
 
 .terminal-output:focus {
@@ -331,11 +417,189 @@ body {
   opacity: 1;
 }
 
+/* Mobile specific styles for code editor */
+@media screen and (max-width: 768px) {
+  /* Reset scroll behavior for mobile */
+  html, body {
+    height: auto;
+    min-height: 100%;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    touch-action: manipulation;
+  }
+  
+  .app-container {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1001;
+    width: 100%;
+  }
+  
+  .main-content {
+    touch-action: pan-x pan-y;
+    scroll-behavior: smooth;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
+    position: relative;
+    padding: 0.25rem;
+    gap: 0.25rem;
+    width: 100%;
+    max-width: 100vw;
+  }
+  
+  .code-editor-wrapper {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .code-editor-wrapper .cm-scroller {
+    -webkit-overflow-scrolling: touch;
+    overflow: auto;
+    touch-action: pan-x pan-y;
+  }
+  
+  /* Enhanced scrollbars for mobile - Universal styles */
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: rgba(77, 151, 255, 0.8) rgba(77, 151, 255, 0.2);
+  }
+  
+  /* Enhanced vertical scrollbars for mobile */
+  .main-content,
+  .code-panel,
+  .output-panel,
+  .turtle-panel,
+  .terminal-output,
+  .code-editor-wrapper,
+  .code-editor-wrapper .cm-scroller {
+    scrollbar-color: rgba(77, 151, 255, 0.8) rgba(77, 151, 255, 0.2);
+  }
+  
+  .main-content::-webkit-scrollbar,
+  .code-panel::-webkit-scrollbar,
+  .output-panel::-webkit-scrollbar,
+  .turtle-panel::-webkit-scrollbar,
+  .terminal-output::-webkit-scrollbar,
+  .code-editor-wrapper::-webkit-scrollbar,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .main-content::-webkit-scrollbar-track,
+  .code-panel::-webkit-scrollbar-track,
+  .output-panel::-webkit-scrollbar-track,
+  .turtle-panel::-webkit-scrollbar-track,
+  .terminal-output::-webkit-scrollbar-track,
+  .code-editor-wrapper::-webkit-scrollbar-track,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-track {
+    background: rgba(77, 151, 255, 0.15);
+    border-radius: 6px;
+  }
+  
+  .main-content::-webkit-scrollbar-thumb,
+  .code-panel::-webkit-scrollbar-thumb,
+  .output-panel::-webkit-scrollbar-thumb,
+  .turtle-panel::-webkit-scrollbar-thumb,
+  .terminal-output::-webkit-scrollbar-thumb,
+  .code-editor-wrapper::-webkit-scrollbar-thumb,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-thumb {
+    background: rgba(77, 151, 255, 0.8);
+    border-radius: 6px;
+    border: 2px solid rgba(77, 151, 255, 0.15);
+  }
+  
+  .main-content::-webkit-scrollbar-thumb:hover,
+  .code-panel::-webkit-scrollbar-thumb:hover,
+  .output-panel::-webkit-scrollbar-thumb:hover,
+  .turtle-panel::-webkit-scrollbar-thumb:hover,
+  .terminal-output::-webkit-scrollbar-thumb:hover,
+  .code-editor-wrapper::-webkit-scrollbar-thumb:hover,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-thumb:hover {
+    background: rgba(77, 151, 255, 1);
+  }
+  
+  /* Enhanced horizontal scrollbars for mobile */
+  .main-content::-webkit-scrollbar-corner,
+  .code-panel::-webkit-scrollbar-corner,
+  .output-panel::-webkit-scrollbar-corner,
+  .turtle-panel::-webkit-scrollbar-corner,
+  .terminal-output::-webkit-scrollbar-corner,
+  .code-editor-wrapper::-webkit-scrollbar-corner,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-corner {
+    background: rgba(77, 151, 255, 0.15);
+  }
+  
+  /* Ensure all scrollable elements show scrollbars on mobile */
+  .main-content,
+  .code-panel,
+  .output-panel,
+  .turtle-panel,
+  .terminal-output,
+  .code-editor-wrapper,
+  .code-editor-wrapper .cm-scroller {
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
+    scroll-behavior: smooth;
+    touch-action: pan-x pan-y;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Prevent horizontal overflow on mobile */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Fix body and app container for mobile */
+  body {
+    overflow-y: auto;
+    touch-action: manipulation;
+    position: relative;
+    width: 100%;
+    max-width: 100vw;
+  }
+  
+  .app-container {
+    overflow: visible;
+    min-height: 100vh;
+    height: auto;
+    position: relative;
+  }
+  
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1001;
+  }
+  
+  .main-content {
+    touch-action: pan-y;
+    overscroll-behavior-y: auto;
+    position: relative;
+    min-height: calc(100vh - 80px);
+  }
+}
+
 /* Responsive */
 @media screen and (max-width: 1024px) {
   .main-content {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr 1fr auto;
+    padding: 0.4rem;
+    gap: 0.4rem;
+    width: 100%;
+    max-width: 100vw;
   }
 
   .right-panel {
@@ -354,8 +618,18 @@ body {
 }
 
 @media screen and (max-width: 768px) {
+  .main-content {
+    padding: 0.3rem;
+    gap: 0.3rem;
+    width: 100%;
+    max-width: 100vw;
+  }
+  
   .navbar {
     padding: 0.3rem 0.5rem;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
   }
 
   .obo-logo {
@@ -367,7 +641,13 @@ body {
   }
 
   .panel-header {
-    padding: 0.4rem 0.8rem;
+    padding: 0.3rem 0.6rem;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+    min-height: auto;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .button-group {
@@ -398,18 +678,29 @@ body {
 }
 
 @media screen and (max-width: 600px) {
+  .main-content {
+    padding: 0.2rem;
+    gap: 0.2rem;
+  }
+  
   .panel-header {
-    padding: 0.35rem 0.6rem;
+    padding: 0.3rem 0.25rem;
+    flex-wrap: wrap;
+    gap: 0.1rem;
+    min-height: auto;
+    width: 100%;
+    max-width: 100%;
   }
 
   .button-group {
-    gap: 0.2rem;
+    gap: 0.1rem;
+    flex-wrap: wrap;
   }
 
   .action-btn {
-    padding: 0.3rem 0.5rem;
-    min-width: 3rem;
-    font-size: 0.75rem;
+    padding: 0.25rem 0.35rem;
+    min-width: 2rem;
+    font-size: 0.65rem;
   }
 
   .action-btn i {
@@ -426,29 +717,42 @@ body {
 }
 
 @media screen and (max-width: 480px) {
+  .main-content {
+    padding: 0.15rem;
+    gap: 0.15rem;
+  }
+  
   .panel-header {
-    padding: 0.3rem 0.5rem;
-    flex-wrap: nowrap;
-    gap: 0.25rem;
+    padding: 0.2rem 0.3rem;
+    flex-wrap: wrap;
+    gap: 0.1rem;
+    min-height: auto;
+    width: 100%;
+    max-width: 100%;
   }
 
   .button-group {
-    gap: 0.15rem;
+    gap: 0.1rem;
     flex-shrink: 0;
+    flex-wrap: wrap;
   }
 
   .action-btn {
-    padding: 0.25rem 0.4rem;
-    min-width: 2.8rem;
-    font-size: 0.7rem;
+    padding: 0.25rem 0.35rem;
+    min-width: 1.9rem;
+    font-size: 0.6rem;
+    white-space: normal;
+    line-height: 1.1;
   }
 
   .action-btn i {
     font-size: 0.75rem;
+    margin-right: 0.2rem;
   }
 
   .action-btn span {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
+    display: inline;
   }
 
   .panel-title {
@@ -463,30 +767,43 @@ body {
 }
 
 @media screen and (max-width: 360px) {
+  .main-content {
+    padding: 0.1rem;
+    gap: 0.1rem;
+  }
+  
   .panel-header {
-    padding: 0.25rem 0.4rem;
+    padding: 0.25rem 0.3rem;
     flex-wrap: wrap;
-    gap: 0.2rem;
+    gap: 0.15rem;
+    min-height: auto;
+    width: 100%;
+    max-width: 100%;
   }
 
   .button-group {
-    gap: 0.1rem;
+    gap: 0.05rem;
     width: 100%;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .action-btn {
     padding: 0.2rem 0.3rem;
-    min-width: 2.2rem;
-    font-size: 0.65rem;
+    min-width: 1.8rem;
+    font-size: 0.55rem;
+    white-space: normal;
+    line-height: 1;
   }
 
   .action-btn span {
-    display: none;
+    display: inline;
+    font-size: 0.6rem;
   }
 
   .action-btn i {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
+    margin-right: 0.15rem;
   }
 
   .panel-title {
@@ -497,6 +814,94 @@ body {
 
   .turtle-canvas {
     min-height: 180px;
+  }
+}
+
+/* Extra small screen adjustments for vertical orientation */
+@media screen and (max-height: 500px) {
+  .panel-header {
+    padding: 0.15rem 0.25rem;
+    flex-wrap: wrap;
+    gap: 0.1rem;
+    justify-content: flex-start;
+  }
+  
+  .button-group {
+    gap: 0.05rem;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .action-btn {
+    padding: 0.15rem 0.25rem;
+    min-width: 2.5rem;
+    font-size: 0.5rem;
+    line-height: 1;
+    height: auto;
+    flex: 0 1 auto;
+  }
+  
+  .action-btn i {
+    font-size: 0.5rem;
+    margin-right: 0;
+  }
+  
+  .action-btn span {
+    font-size: 0.5rem;
+    display: none;
+  }
+  
+  .panel-title {
+    font-size: 0.6rem;
+    flex-basis: 100%;
+    margin-bottom: 0.05rem;
+  }
+  
+  .code-panel {
+    min-height: 120px;
+  }
+  
+  .output-panel {
+    min-height: 80px;
+  }
+  
+  .turtle-panel {
+    min-height: 80px;
+  }
+  
+  /* Enhanced scroll bars for very small screens */
+  .main-content::-webkit-scrollbar,
+  .code-panel::-webkit-scrollbar,
+  .output-panel::-webkit-scrollbar,
+  .turtle-panel::-webkit-scrollbar,
+  .terminal-output::-webkit-scrollbar,
+  .code-editor-wrapper::-webkit-scrollbar,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .main-content::-webkit-scrollbar-thumb,
+  .code-panel::-webkit-scrollbar-thumb,
+  .output-panel::-webkit-scrollbar-thumb,
+  .turtle-panel::-webkit-scrollbar-thumb,
+  .terminal-output::-webkit-scrollbar-thumb,
+  .code-editor-wrapper::-webkit-scrollbar-thumb,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-thumb {
+    background: rgba(77, 151, 255, 0.9);
+    border-radius: 7px;
+    border: 3px solid rgba(77, 151, 255, 0.2);
+  }
+  
+  .main-content::-webkit-scrollbar-corner,
+  .code-panel::-webkit-scrollbar-corner,
+  .output-panel::-webkit-scrollbar-corner,
+  .turtle-panel::-webkit-scrollbar-corner,
+  .terminal-output::-webkit-scrollbar-corner,
+  .code-editor-wrapper::-webkit-scrollbar-corner,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-corner {
+    background: rgba(77, 151, 255, 0.2);
+    border-radius: 7px;
   }
 }
 
