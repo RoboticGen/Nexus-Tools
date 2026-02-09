@@ -2,54 +2,1069 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+
+:root {
+  --primary-bg: rgba(77, 151, 255, 0.25);
+  --navbar-bg: #1a3a59ec;
+  --panel-bg: #ffffff;
+  --panel-border: rgba(77, 151, 255, 0.25);
+  --btn-default: #9d9d9d;
+  --btn-run: #45bd98;
+  --btn-copy: #32aac6;
+  --btn-stop: #ef476f;
+  --btn-export: #7c4a18;
+  --btn-clear: #db9e14;
+  --text-muted: #9d9d9d;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Roboto", sans-serif;
+  font-weight: 300;
+  background-color: var(--primary-bg);
+  margin: 0;
+  overflow: hidden;
+}
+
+/* App Container */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: visible;
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--navbar-bg);
+  padding: 0.5rem 1rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1000;
+}
+
+.obo-logo {
+  height: 2.8rem;
+  width: auto;
+}
+
+.academy-logo {
+  height: 2.3rem;
+  width: auto;
+}
+
+/* Main Content */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  flex: 1;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(77, 151, 255, 0.5) rgba(77, 151, 255, 0.1);
+  touch-action: pan-x pan-y;
+  scrollbar-gutter: stable;
+  overscroll-behavior: auto;
+  scroll-behavior: smooth;
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+/* Custom scrollbar for webkit browsers */
+.main-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.main-content::-webkit-scrollbar-track {
+  background: rgba(77, 151, 255, 0.1);
+  border-radius: 4px;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+  background: rgba(77, 151, 255, 0.5);
+  border-radius: 4px;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(77, 151, 255, 0.7);
+}
+
+.main-content::-webkit-scrollbar-corner {
+  background: rgba(77, 151, 255, 0.1);
+}
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: visible;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Panel Base Styles */
+.code-panel,
+.output-panel,
+.turtle-panel {
+  background-color: var(--panel-bg);
+  border-radius: 0.6rem;
+  border: 0.1rem solid var(--panel-border);
+  box-shadow: 2px 3px 18px 0px rgba(0, 0, 0, 0.34);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.code-panel {
+  flex: 2;
+  min-height: 200px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
+.output-panel {
+  flex: 1;
+  min-height: 150px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
+.turtle-panel {
+  flex: 1;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
+/* Panel Header */
+.panel-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.5rem 0.5rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.panel-title {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+/* Button Group */
+.button-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.8rem;
+  min-width: auto;
+  border-radius: 0.3rem;
+  border: none;
+  color: #ffffff;
+  font-weight: 400;
+  font-size: 0.875rem;
+  background-color: var(--btn-default);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: normal;
+  position: relative;
+  word-break: break-word;
+}
+
+.action-btn i {
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.action-btn span {
+  pointer-events: none;
+}
+
+/* Tooltip for buttons when text is hidden on very small screens */
+@media screen and (max-width: 360px) {
+  .action-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.2rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 1;
+    pointer-events: none;
+    margin-bottom: 0.2rem;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+  .action-btn[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% - 0.2rem);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #333;
+    z-index: 1000;
+    opacity: 1;
+    pointer-events: none;
   }
 }
 
-@layer base {
+.run-btn:hover {
+  background-color: var(--btn-run);
+}
+
+.copy-btn:hover {
+  background-color: var(--btn-copy);
+}
+
+.export-btn:hover {
+  background-color: var(--btn-export);
+}
+
+.clear-btn:hover {
+  background-color: var(--btn-clear);
+}
+
+.stop-btn:hover,
+.stop-btn.active {
+  background-color: var(--btn-stop);
+}
+
+/* Background Select */
+.background-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0.4rem 1.5rem 0.4rem 0.8rem;
+  border: none;
+  border-radius: 0.3rem;
+  color: #ffffff;
+  font-weight: 400;
+  font-size: 0.875rem;
+  background-color: var(--btn-default);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.3rem center;
+  background-size: 1.2rem;
+}
+
+.background-select:focus {
+  outline: none;
+}
+
+.code-editor-wrapper {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.code-editor-wrapper .cm-editor {
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.code-editor-wrapper .cm-scroller {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.code-editor-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+}
+
+/* Turtle Canvas */
+.turtle-canvas {
+  flex: 1;
+  min-height: 400px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.turtle-canvas canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Terminal Output */
+.terminal-wrapper {
+  flex: 1;
+  padding: 0 1rem 1rem 1rem;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.terminal-output {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  min-height: 80px;
+  color: var(--text-muted);
+  background-color: #f3f3f3;
+  border: none;
+  border-radius: 0.3rem;
+  padding: 0.5rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+  resize: none;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+  box-sizing: border-box;
+}
+
+.terminal-output:focus {
+  outline: none;
+}
+
+/* Notification */
+.notification {
+  font-family: "Roboto", sans-serif;
+  font-weight: 300;
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
+  padding: 10px 20px;
+  border-radius: 5px;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  z-index: 9999;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.notification.show {
+  opacity: 1;
+}
+
+/* Mobile specific styles for code editor */
+@media screen and (max-width: 768px) {
+  /* Reset scroll behavior for mobile */
+  html, body {
+    height: auto;
+    min-height: 100%;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    touch-action: manipulation;
+  }
+  
+  .app-container {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1001;
+    width: 100%;
+  }
+  
+  .main-content {
+    touch-action: pan-x pan-y;
+    scroll-behavior: smooth;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
+    position: relative;
+    padding: 0.25rem;
+    gap: 0.25rem;
+    width: 100%;
+    max-width: 100vw;
+  }
+  
+  .code-editor-wrapper {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .code-editor-wrapper .cm-scroller {
+    -webkit-overflow-scrolling: touch;
+    overflow: auto;
+    touch-action: pan-x pan-y;
+  }
+  
+  /* Enhanced scrollbars for mobile - Universal styles */
   * {
-    @apply border-border;
+    scrollbar-width: auto;
+    scrollbar-color: rgba(77, 151, 255, 0.8) rgba(77, 151, 255, 0.2);
   }
+  
+  /* Enhanced vertical scrollbars for mobile */
+  .main-content,
+  .code-panel,
+  .output-panel,
+  .turtle-panel,
+  .terminal-output,
+  .code-editor-wrapper,
+  .code-editor-wrapper .cm-scroller {
+    scrollbar-color: rgba(77, 151, 255, 0.8) rgba(77, 151, 255, 0.2);
+  }
+  
+  .main-content::-webkit-scrollbar,
+  .code-panel::-webkit-scrollbar,
+  .output-panel::-webkit-scrollbar,
+  .turtle-panel::-webkit-scrollbar,
+  .terminal-output::-webkit-scrollbar,
+  .code-editor-wrapper::-webkit-scrollbar,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .main-content::-webkit-scrollbar-track,
+  .code-panel::-webkit-scrollbar-track,
+  .output-panel::-webkit-scrollbar-track,
+  .turtle-panel::-webkit-scrollbar-track,
+  .terminal-output::-webkit-scrollbar-track,
+  .code-editor-wrapper::-webkit-scrollbar-track,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-track {
+    background: rgba(77, 151, 255, 0.15);
+    border-radius: 6px;
+  }
+  
+  .main-content::-webkit-scrollbar-thumb,
+  .code-panel::-webkit-scrollbar-thumb,
+  .output-panel::-webkit-scrollbar-thumb,
+  .turtle-panel::-webkit-scrollbar-thumb,
+  .terminal-output::-webkit-scrollbar-thumb,
+  .code-editor-wrapper::-webkit-scrollbar-thumb,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-thumb {
+    background: rgba(77, 151, 255, 0.8);
+    border-radius: 6px;
+    border: 2px solid rgba(77, 151, 255, 0.15);
+  }
+  
+  .main-content::-webkit-scrollbar-thumb:hover,
+  .code-panel::-webkit-scrollbar-thumb:hover,
+  .output-panel::-webkit-scrollbar-thumb:hover,
+  .turtle-panel::-webkit-scrollbar-thumb:hover,
+  .terminal-output::-webkit-scrollbar-thumb:hover,
+  .code-editor-wrapper::-webkit-scrollbar-thumb:hover,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-thumb:hover {
+    background: rgba(77, 151, 255, 1);
+  }
+  
+  /* Enhanced horizontal scrollbars for mobile */
+  .main-content::-webkit-scrollbar-corner,
+  .code-panel::-webkit-scrollbar-corner,
+  .output-panel::-webkit-scrollbar-corner,
+  .turtle-panel::-webkit-scrollbar-corner,
+  .terminal-output::-webkit-scrollbar-corner,
+  .code-editor-wrapper::-webkit-scrollbar-corner,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-corner {
+    background: rgba(77, 151, 255, 0.15);
+  }
+  
+  /* Ensure all scrollable elements show scrollbars on mobile */
+  .main-content,
+  .code-panel,
+  .output-panel,
+  .turtle-panel,
+  .terminal-output,
+  .code-editor-wrapper,
+  .code-editor-wrapper .cm-scroller {
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
+    scroll-behavior: smooth;
+    touch-action: pan-x pan-y;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Prevent horizontal overflow on mobile */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Fix body and app container for mobile */
   body {
-    @apply bg-background text-foreground;
+    overflow-y: auto;
+    touch-action: manipulation;
+    position: relative;
+    width: 100%;
+    max-width: 100vw;
   }
+  
+  .app-container {
+    overflow: visible;
+    min-height: 100vh;
+    height: auto;
+    position: relative;
+  }
+  
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1001;
+  }
+  
+  .main-content {
+    touch-action: pan-y;
+    overscroll-behavior-y: auto;
+    position: relative;
+    min-height: calc(100vh - 80px);
+  }
+}
+
+/* Responsive */
+@media screen and (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr auto;
+    padding: 0.4rem;
+    gap: 0.4rem;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  .right-panel {
+    order: -1;
+  }
+
+  .turtle-canvas {
+    min-height: 300px;
+  }
+
+  .action-btn {
+    padding: 0.35rem 0.7rem;
+    min-width: 3.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .main-content {
+    padding: 0.3rem;
+    gap: 0.3rem;
+    width: 100%;
+    max-width: 100vw;
+  }
+  
+  .navbar {
+    padding: 0.3rem 0.5rem;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+
+  .obo-logo {
+    height: 2rem;
+  }
+
+  .academy-logo {
+    height: 1.8rem;
+  }
+
+  .panel-header {
+    padding: 0.3rem 0.6rem;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+    min-height: auto;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .button-group {
+    gap: 0.25rem;
+  }
+
+  .action-btn {
+    padding: 0.35rem 0.6rem;
+    min-width: 3.2rem;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .action-btn i {
+    font-size: 0.85rem;
+  }
+
+  .panel-title {
+    font-size: 0.875rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .turtle-canvas {
+    min-height: 280px;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .main-content {
+    padding: 0.2rem;
+    gap: 0.2rem;
+  }
+  
+  .panel-header {
+    padding: 0.3rem 0.25rem;
+    flex-wrap: wrap;
+    gap: 0.1rem;
+    min-height: auto;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .button-group {
+    gap: 0.1rem;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    padding: 0.25rem 0.35rem;
+    min-width: 2rem;
+    font-size: 0.65rem;
+  }
+
+  .action-btn i {
+    font-size: 0.8rem;
+  }
+
+  .action-btn span {
+    font-size: 0.7rem;
+  }
+
+  .turtle-canvas {
+    min-height: 250px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .main-content {
+    padding: 0.15rem;
+    gap: 0.15rem;
+  }
+  
+  .panel-header {
+    padding: 0.2rem 0.3rem;
+    flex-wrap: wrap;
+    gap: 0.1rem;
+    min-height: auto;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .button-group {
+    gap: 0.1rem;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    padding: 0.25rem 0.35rem;
+    min-width: 1.9rem;
+    font-size: 0.6rem;
+    white-space: normal;
+    line-height: 1.1;
+  }
+
+  .action-btn i {
+    font-size: 0.75rem;
+    margin-right: 0.2rem;
+  }
+
+  .action-btn span {
+    font-size: 0.7rem;
+    display: inline;
+  }
+
+  .panel-title {
+    font-size: 0.8rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .turtle-canvas {
+    min-height: 220px;
+  }
+}
+
+@media screen and (max-width: 360px) {
+  .main-content {
+    padding: 0.1rem;
+    gap: 0.1rem;
+  }
+  
+  .panel-header {
+    padding: 0.25rem 0.3rem;
+    flex-wrap: wrap;
+    gap: 0.15rem;
+    min-height: auto;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .button-group {
+    gap: 0.05rem;
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    padding: 0.2rem 0.3rem;
+    min-width: 1.8rem;
+    font-size: 0.55rem;
+    white-space: normal;
+    line-height: 1;
+  }
+
+  .action-btn span {
+    display: inline;
+    font-size: 0.6rem;
+  }
+
+  .action-btn i {
+    font-size: 0.7rem;
+    margin-right: 0.15rem;
+  }
+
+  .panel-title {
+    font-size: 0.75rem;
+    width: 100%;
+    margin-bottom: 0.2rem;
+  }
+
+  .turtle-canvas {
+    min-height: 180px;
+  }
+}
+
+/* Extra small screen adjustments for vertical orientation */
+@media screen and (max-height: 500px) {
+  .panel-header {
+    padding: 0.15rem 0.25rem;
+    flex-wrap: wrap;
+    gap: 0.1rem;
+    justify-content: flex-start;
+  }
+  
+  .button-group {
+    gap: 0.05rem;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .action-btn {
+    padding: 0.15rem 0.25rem;
+    min-width: 2.5rem;
+    font-size: 0.5rem;
+    line-height: 1;
+    height: auto;
+    flex: 0 1 auto;
+  }
+  
+  .action-btn i {
+    font-size: 0.5rem;
+    margin-right: 0;
+  }
+  
+  .action-btn span {
+    font-size: 0.5rem;
+    display: none;
+  }
+  
+  .panel-title {
+    font-size: 0.6rem;
+    flex-basis: 100%;
+    margin-bottom: 0.05rem;
+  }
+  
+  .code-panel {
+    min-height: 120px;
+  }
+  
+  .output-panel {
+    min-height: 80px;
+  }
+  
+  .turtle-panel {
+    min-height: 80px;
+  }
+  
+  /* Enhanced scroll bars for very small screens */
+  .main-content::-webkit-scrollbar,
+  .code-panel::-webkit-scrollbar,
+  .output-panel::-webkit-scrollbar,
+  .turtle-panel::-webkit-scrollbar,
+  .terminal-output::-webkit-scrollbar,
+  .code-editor-wrapper::-webkit-scrollbar,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .main-content::-webkit-scrollbar-thumb,
+  .code-panel::-webkit-scrollbar-thumb,
+  .output-panel::-webkit-scrollbar-thumb,
+  .turtle-panel::-webkit-scrollbar-thumb,
+  .terminal-output::-webkit-scrollbar-thumb,
+  .code-editor-wrapper::-webkit-scrollbar-thumb,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-thumb {
+    background: rgba(77, 151, 255, 0.9);
+    border-radius: 7px;
+    border: 3px solid rgba(77, 151, 255, 0.2);
+  }
+  
+  .main-content::-webkit-scrollbar-corner,
+  .code-panel::-webkit-scrollbar-corner,
+  .output-panel::-webkit-scrollbar-corner,
+  .turtle-panel::-webkit-scrollbar-corner,
+  .terminal-output::-webkit-scrollbar-corner,
+  .code-editor-wrapper::-webkit-scrollbar-corner,
+  .code-editor-wrapper .cm-scroller::-webkit-scrollbar-corner {
+    background: rgba(77, 151, 255, 0.2);
+    border-radius: 7px;
+  }
+}
+
+/* OBO Blocks Specific Styles */
+
+.blocky-editor {
+  grid-area: editor;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 0.6rem;
+  background-color: white;
+  border: 0.1rem solid rgba(77, 151, 255, 0.25);
+  padding: 0rem 0.2rem 0.2rem 0.2rem;
+  box-shadow: 2px 3px 18px 0px rgba(0, 0, 0, 0.34);
+  margin-left: 0.5rem;
+}
+
+.editor {
+  height: 99%;
+  width: 99%;
+}
+
+.editing-image {
+  height: 50%;
+  opacity: 0;
+  transition: height 0.5s, opacity 1.5s;
+}
+
+.editing-image:active {
+  height: 70%;
+  opacity: 1;
+}
+
+.editing-image:hover {
+  height: 70%;
+  opacity: 1;
+}
+
+.code-title {
+  margin: 1rem;
+  font-weight: 500;
+}
+
+.button-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-right: 0.5rem;
+}
+
+.button-group a,
+.button-group button {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  margin: 0.2rem;
+  padding: 0.3rem;
+  min-width: 4rem;
+  height: 1.4rem;
+  border-radius: 0.3rem;
+  border: none;
+  color: #ffffff;
+  font-weight: 400;
+  font-size: medium;
+  background-color: #9d9d9d;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button-group button:hover {
+  cursor: pointer;
+}
+
+#run-button:hover {
+  background-color: #45bd98;
+}
+
+#copy-button:hover {
+  background-color: #32aac6;
+}
+
+#stop-button:hover {
+  background-color: #ef476f;
+}
+
+#export-button:hover {
+  background-color: #7c4a18;
+}
+
+#edit-button:hover {
+  background-color: #1a3a59ec;
+}
+
+#import-json-button:hover,
+#export-json-button:hover {
+  background-color: #7c4a18;
+}
+
+.code-snippet {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  background-color: #f3f3f3;
+  width: 100%;
+  height: 100%;
+  max-height: 35rem;
+  overflow-y: auto;
+}
+
+.python {
+  display: block;
+}
+
+.disabled {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.blocklyMainBackground {
+  stroke: none;
+}
+
+.blocklyToolboxDiv {
+  background-color: #f3f3f3;
+}
+
+.blocklyTreeLabel {
+  color: white;
+}
+
+.blocklyToolboxContents {
+  padding: 0.5em;
+}
+
+.blocklyTreeRow {
+  padding: 3px;
+  margin-bottom: 0.5em;
+  border-radius: 4px;
+}
+
+.customIcon {
+  color: white;
+  padding: 0.5em;
+}
+
+.blocklyTreeRowContentContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: left;
+}
+
+.blocklyTreeRow {
+  height: initial;
 }
