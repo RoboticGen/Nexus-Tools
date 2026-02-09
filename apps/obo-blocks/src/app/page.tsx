@@ -1,22 +1,100 @@
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@nexus-tools/ui";
-import { capitalize } from "@nexus-tools/utils";
+"use client";
+
+import dynamic from "next/dynamic";
+import { useState, useCallback, useEffect } from "react";
+
+import { CodePanel } from "@/components/code-panel";
+import { Navbar } from "@/components/navbar";
+import { Notification } from "@/components/notification";
+import { OutputPanel } from "@/components/output-panel";
+import { useBlocklyHandlers } from "@/hooks/use-blockly-handlers";
+import { useEditorHandlers } from "@/hooks/use-editor-handlers";
+
+const BlocklyEditor = dynamic(
+  () => import("@/components/blockly-editor").then((mod) => ({ default: mod.BlocklyEditor })),
+  {
+    ssr: false,
+    loading: () => <div>Loading Blockly...</div>,
+  }
+);
 
 export default function Home() {
-  const appName = capitalize("obo-blocks");
+  const [code, setCode] = useState("");
+  const [notification, setNotification] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  const { copyTextToClipboard, downloadPythonFile } = useEditorHandlers();
+
+  const showNotification = useCallback((message: string) => {
+    setNotification(message);
+    setTimeout(() => setNotification(null), 1500);
+  }, []);
+
+  const {
+    handleEditToggle,
+    handleCopy,
+    handleExport,
+    handleRunCode,
+    handleClearTerminal,
+    handleStopCode,
+  } = useBlocklyHandlers(code, isEditing, showNotification, copyTextToClipboard, downloadPythonFile);
+
+  // Initialize worker
+  useEffect(() => {
+    setIsClient(true);
+    if (typeof window !== "undefined") {
+      try {
+        const workerModule = require("@/pyodide/loader");
+        workerModule.getWorker();
+      } catch (err) {
+        console.error("Error initializing worker:", err);
+      }
+    }
+  }, []);
+
+  const handleCodeChange = useCallback((newCode: string) => {
+    setCode(newCode);
+  }, []);
+
+  const handleEditToggleWrapper = useCallback(
+    (editing: boolean) => {
+      setIsEditing(editing);
+      handleEditToggle(editing);
+    },
+    [handleEditToggle]
+  );
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center">{appName}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center gap-4">
-          <p className="text-muted-foreground text-center">
-            Welcome to {appName} - Part of Nexus Tools Monorepo
-          </p>
-          <Button>Get Started</Button>
-        </CardContent>
-      </Card>
-    </main>
+    <div className="app-container">
+      <Notification message={notification} />
+      <Navbar />
+
+      {isClient && (
+        <div className={`main-layout ${isEditing ? 'editing-mode' : ''}`}>
+          <div className="blockly-section">
+            <BlocklyEditor
+              onCodeChange={handleCodeChange}
+              onEditToggle={handleEditToggleWrapper}
+              showNotification={showNotification}
+            />
+          </div>
+
+          <div className="panels-section">
+            <CodePanel
+              code={code}
+              isEditing={isEditing}
+              onCodeChange={handleCodeChange}
+              onEditToggle={handleEditToggleWrapper}
+              onRun={handleRunCode}
+              onCopy={handleCopy}
+              onExport={handleExport}
+            />
+
+            <OutputPanel onClear={handleClearTerminal} onStop={handleStopCode} />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
