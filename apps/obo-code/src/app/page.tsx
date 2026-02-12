@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 
 import { CodeEditor } from "@/components/code-editor";
+import { ESP32Uploader } from "@/components/esp32-uploader";
 import { Navbar } from "@/components/navbar";
 import { Notification } from "@/components/notification";
 import { OutputTerminal } from "@/components/output-terminal";
@@ -137,6 +138,13 @@ export default function Home() {
           />
         </div>
       </div>
+      
+      {/* ESP32 Uploader Component */}
+      <ESP32Uploader
+        code={code}
+        onStatusUpdate={showNotification}
+        onError={showNotification}
+      />
     </div>
   );
 }
