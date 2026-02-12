@@ -32,6 +32,7 @@ export function ESP32Uploader({ code, onStatusUpdate, onError }: ESP32UploaderPr
     // Actions
     setSelectedDevice,
     uploadCode,
+    connectToDevice,
     resetConnection,
     openUploader,
     closeUploader,
@@ -60,6 +61,7 @@ export function ESP32Uploader({ code, onStatusUpdate, onError }: ESP32UploaderPr
         espSupported={espSupported}
         codePreview={getMainPyPreview(500)}
         onUpload={uploadCode}
+        onConnect={connectToDevice}
         onResetConnection={resetConnection}
         hasCode={!!code.trim()}
       />

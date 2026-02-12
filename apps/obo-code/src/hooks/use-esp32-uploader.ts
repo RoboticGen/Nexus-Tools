@@ -129,6 +129,35 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
   }, [espSupported, code, connectToESP32, stopRunningCode, writeFileToESP32, softResetESP32, closePort, onStatusUpdate, onError]);
 
   /**
+   * Connect to ESP32 (without uploading)
+   */
+  const connectToDevice = useCallback(async () => {
+    if (!espSupported) {
+      setConnectionError("ESP Web Tools not supported");
+      return;
+    }
+
+    try {
+      setConnectionError(null);
+      onStatusUpdate?.("Connecting to ESP32...");
+      
+      // Just test the connection, don't store the port
+      const port = await connectToESP32();
+      setIsConnected(true);
+      onStatusUpdate?.("Connected to ESP32 successfully!");
+      
+      // Close the port immediately to avoid auto-upload
+      await port.close();
+      
+    } catch (error: any) {
+      setIsConnected(false);
+      const errorMsg = `Connection failed: ${error.message}`;
+      setConnectionError(errorMsg);
+      onError?.(errorMsg);
+    }
+  }, [espSupported, connectToESP32, onStatusUpdate, onError]);
+
+  /**
    * Reset connection state
    */
   const resetConnection = useCallback(() => {
@@ -195,6 +224,7 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
     // Actions
     setSelectedDevice,
     uploadCode,
+    connectToDevice,
     resetConnection,
     openUploader,
     closeUploader,

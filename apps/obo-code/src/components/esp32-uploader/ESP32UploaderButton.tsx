@@ -21,11 +21,7 @@ export function ESP32UploaderButton({
   if (!isMounted) {
     return (
       <div className="esp32-upload-trigger">
-        <button 
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed" 
-          disabled
-        >
-          <span className="mr-2">🔌</span>
+        <button disabled>
           Loading...
         </button>
       </div>
@@ -36,9 +32,6 @@ export function ESP32UploaderButton({
     <div className="esp32-upload-trigger">
       <button
         onClick={onClick}
-        className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-all duration-200 ${
-          disabled || isSupported === false ? 'opacity-50 cursor-not-allowed' : ''
-        }`}
         disabled={disabled || isSupported === false}
         title={
           isSupported === false 
@@ -46,7 +39,6 @@ export function ESP32UploaderButton({
             : "Open ESP32 uploader"
         }
       >
-        <span className="mr-2">🔌</span>
         Upload to ESP32
       </button>
     </div>

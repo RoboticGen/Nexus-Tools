@@ -22,6 +22,7 @@ interface ESP32UploaderModalProps {
   espSupported: boolean | null;
   codePreview: string;
   onUpload: () => void;
+  onConnect: () => void;
   onResetConnection: () => void;
   hasCode: boolean;
 }
@@ -39,6 +40,7 @@ export function ESP32UploaderModal({
   espSupported,
   codePreview,
   onUpload,
+  onConnect,
   onResetConnection,
   hasCode,
 }: ESP32UploaderModalProps) {
@@ -67,11 +69,11 @@ export function ESP32UploaderModal({
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" 
+      className="esp32-modal-overlay" 
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto" 
+        className="esp32-modal" 
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -81,8 +83,8 @@ export function ESP32UploaderModal({
           onClose={onClose} 
         />
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
+        {/* Scrollable Content */}
+        <div className="esp32-modal-content">
           {/* Browser Warning */}
           {espSupported === false && <BrowserWarning />}
 
@@ -100,25 +102,36 @@ export function ESP32UploaderModal({
               isConnected={isConnected}
               chipFamily={selectedDevice.chipFamily}
               connectionError={connectionError}
+              onConnect={onConnect}
+              onDisconnect={onResetConnection}
+              isFlashing={isFlashing}
             />
 
-            {/* Upload Section */}
+            {/* Code Preview Section */}
             {espSupported && (
-              <UploadSection
+              <CodePreviewSection
                 codePreview={codePreview}
                 isFlashing={isFlashing}
                 flashProgress={flashProgress}
-                isConnected={isConnected}
-                hasCode={hasCode}
-                onUpload={onUpload}
-                onResetConnection={onResetConnection}
               />
             )}
           </div>
 
           {/* Instructions */}
-          <Instructions />
+          <div className="mt-6">
+            <Instructions />
+          </div>
         </div>
+
+        {/* Sticky Upload Section */}
+        {espSupported && (
+          <UploadButtonSection
+            isFlashing={isFlashing}
+            flashProgress={flashProgress}
+            hasCode={hasCode}
+            onUpload={onUpload}
+          />
+        )}
       </div>
     </div>
   );
@@ -138,7 +151,6 @@ function ModalHeader({
   return (
     <div className="flex justify-between items-center p-6 border-b border-gray-200">
       <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-        <span className="mr-2">🔌</span>
         ESP32 Code Uploader
       </h3>
       <div className="flex items-center space-x-4">
@@ -165,12 +177,11 @@ function ModalHeader({
 
 function BrowserWarning() {
   return (
-    <div className="bg-red-50 border border-red-200 rounded-md p-4">
+    <div className="esp32-warning">
       <div className="flex items-start">
-        <span className="text-red-600 mr-2">⚠️</span>
         <div>
-          <p className="font-medium text-red-800">ESP Web Tools Not Available</p>
-          <p className="text-red-600 text-sm">Use Chrome 89+ or Edge 89+ with HTTPS or localhost</p>
+          <p className="font-medium text-amber-800">ESP Web Tools Not Available</p>
+          <p className="text-amber-600 text-sm">Use Chrome 89+ or Edge 89+ with HTTPS or localhost</p>
         </div>
       </div>
     </div>
@@ -217,119 +228,125 @@ function ConnectionStatus({
   isConnected,
   chipFamily,
   connectionError,
+  onConnect,
+  onDisconnect,
+  isFlashing,
 }: {
   isConnected: boolean;
   chipFamily: string;
   connectionError: string | null;
+  onConnect: () => void;
+  onDisconnect: () => void;
+  isFlashing: boolean;
 }) {
   return (
-    <div className="bg-gray-50 rounded-md p-4">
-      <div className={`flex items-center mb-2 ${isConnected ? 'text-green-600' : 'text-gray-500'}`}>
-        <span className="mr-2">{isConnected ? '🟢' : '⚫'}</span>
-        <span className="font-medium">
+    <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
+      <div className="flex items-center justify-between mb-3">
+        <div className={isConnected ? 'esp32-status-connected' : 'esp32-status-disconnected'}>
+          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-white animate-pulse' : 'bg-gray-400'}`}></div>
           {isConnected ? `Connected to ${chipFamily}` : 'Not connected'}
-        </span>
+        </div>
+        
+        {/* Connect/Disconnect Button */}
+        <button
+          onClick={isConnected ? onDisconnect : onConnect}
+          className="esp32-connect-btn"
+          disabled={isFlashing}
+        >
+          {isConnected ? 'Disconnect' : 'Connect'}
+        </button>
       </div>
       
       {connectionError && (
-        <div className="text-red-600 text-sm mt-2 flex items-start">
-          <span className="mr-1">❌</span>
-          {connectionError}
+        <div className="text-red-600 text-sm mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
+          <div className="flex items-start gap-2">
+            <div className="w-4 h-4 bg-red-500 rounded-full flex-shrink-0 mt-0.5"></div>
+            {connectionError}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function UploadSection({
+function CodePreviewSection({
   codePreview,
   isFlashing,
   flashProgress,
-  isConnected,
-  hasCode,
-  onUpload,
-  onResetConnection,
 }: {
   codePreview: string;
   isFlashing: boolean;
   flashProgress: number;
-  isConnected: boolean;
-  hasCode: boolean;
-  onUpload: () => void;
-  onResetConnection: () => void;
 }) {
   return (
-    <>
-      <div className="space-y-4">
-        {/* Code Preview */}
-        <div>
-          <h4 className="font-medium text-gray-900 mb-2">main.py Preview:</h4>
-          <div className="bg-gray-900 text-green-400 p-4 rounded-md text-xs font-mono max-h-40 overflow-auto">
-            <pre>{codePreview}</pre>
-          </div>
+    <div className="space-y-4">
+      {/* Code Preview */}
+      <div>
+        <h4 className="font-medium text-gray-900 mb-2">Code Preview:</h4>
+        <div className="esp32-code-preview">
+          <pre>{codePreview}</pre>
         </div>
-
-        {/* Progress Bar */}
-        {isFlashing && (
-          <div className="space-y-2">
-            <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
-              <div 
-                className="bg-blue-600 h-2 transition-all duration-300 ease-out rounded-full" 
-                style={{ width: `${flashProgress}%` }}
-              ></div>
-            </div>
-            <div className="text-center text-sm text-gray-600">{flashProgress}%</div>
-          </div>
-        )}
-
-        {/* Upload Button */}
-        <button
-          onClick={onUpload}
-          className={`w-full py-3 px-4 rounded-md font-medium transition-all duration-200 ${
-            isFlashing || !hasCode
-              ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-          disabled={isFlashing || !hasCode}
-        >
-          {isFlashing ? (
-            <span className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Uploading... {flashProgress}%
-            </span>
-          ) : (
-            <span className="flex items-center justify-center">
-              <span className="mr-2">📁</span>
-              Upload as main.py
-            </span>
-          )}
-        </button>
-
-        {/* Reset Connection Button */}
-        {isConnected && (
-          <button
-            onClick={onResetConnection}
-            className="w-full py-2 px-4 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-            disabled={isFlashing}
-          >
-            Reset Connection
-          </button>
-        )}
       </div>
-    </>
+
+      {/* Progress Bar */}
+      {isFlashing && (
+        <div className="space-y-2">
+          <div className="esp32-progress-bar">
+            <div 
+              className="esp32-progress-fill" 
+              style={{ width: `${flashProgress}%` }}
+            ></div>
+          </div>
+          <div className="text-center text-sm text-gray-600">{flashProgress}%</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UploadButtonSection({
+  isFlashing,
+  flashProgress,
+  hasCode,
+  onUpload,
+}: {
+  isFlashing: boolean;
+  flashProgress: number;
+  hasCode: boolean;
+  onUpload: () => void;
+}) {
+  return (
+    <div className="esp32-upload-footer">
+      <button
+        onClick={onUpload}
+        className="esp32-upload-btn"
+        disabled={isFlashing || !hasCode}
+      >
+        {isFlashing ? (
+          <span className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            Uploading... {flashProgress}%
+          </span>
+        ) : (
+          <span className="flex items-center justify-center">
+            Upload
+          </span>
+        )}
+      </button>
+    </div>
   );
 }
 
 function Instructions() {
   return (
-    <div className="bg-blue-50 p-4 rounded-md">
+    <div className="esp32-instructions">
       <p className="font-medium text-blue-900 mb-2">Instructions:</p>
-      <ol className="text-sm text-blue-800 space-y-1">
-        <li>1. Connect your ESP32 to a USB port</li>
-        <li>2. Select the correct ESP32 device type above</li>
-        <li>3. Click "Upload as main.py" and select the ESP32 port</li>
-        <li>4. Wait for the upload process to complete</li>
-        <li>5. Your Python code will run automatically on the ESP32!</li>
+      <ol className="text-sm text-blue-800">
+        <li>Connect your ESP32 to a USB port</li>
+        <li>Select the correct ESP32 device type above</li>
+        <li>Click "Upload" and select the ESP32 port</li>
+        <li>Wait for the upload process to complete</li>
+        <li>Your Python code will run automatically on the ESP32!</li>
       </ol>
     </div>
   );
