@@ -2,7 +2,7 @@
  * ESP32 Constants
  */
 
-import type { ESP32Device, USBFilter, SerialPortOptions } from "@/types/esp32";
+import type { ESP32Device, USBFilter, SerialPortOptions } from "../types/esp32";
 
 /** Supported ESP32 device types */
 export const ESP32_DEVICES: ESP32Device[] = [

@@ -14,6 +14,7 @@
   "dependencies": {
     "@codemirror/lang-python": "^6.1.4",
     "@codemirror/theme-one-dark": "^6.1.2",
+    "@nexus-tools/esp32-uploader": "workspace:*",
     "@nexus-tools/types": "workspace:*",
     "@nexus-tools/ui": "workspace:*",
     "@nexus-tools/utils": "workspace:*",

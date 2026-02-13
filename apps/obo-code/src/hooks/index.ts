@@ -1,3 +1,3 @@
 export { usePythonRunner } from "./use-python-runner";
-export { useESP32Serial } from "./use-esp32-serial";
-export { useESP32Uploader } from "./use-esp32-uploader";
+// Re-export ESP32 hooks from the shared package
+export { useESP32Serial, useESP32Uploader } from "@nexus-tools/esp32-uploader";

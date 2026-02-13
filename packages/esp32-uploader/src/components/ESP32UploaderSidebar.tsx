@@ -5,9 +5,9 @@
 
 "use client";
 
-import { useESP32Uploader } from "@/hooks/use-esp32-uploader";
+import { useESP32Uploader } from "../hooks/use-esp32-uploader";
 
-import type { ESP32Device } from "@/types/esp32";
+import type { ESP32Device } from "../types/esp32";
 
 interface ESP32UploaderSidebarProps {
   code: string;

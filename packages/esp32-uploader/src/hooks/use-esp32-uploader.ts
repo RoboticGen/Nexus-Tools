@@ -5,12 +5,12 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 
-import { ESP32_DEVICES } from "@/constants/esp32";
-import { convertToMicroPython, createMainPyFile } from "@/utils/micropython-converter";
+import { ESP32_DEVICES } from "../constants/esp32";
+import { convertToMicroPython, createMainPyFile } from "../utils/micropython-converter";
 
 import { useESP32Serial } from "./use-esp32-serial";
 
-import type { ESP32Device } from "@/types/esp32";
+import type { ESP32Device } from "../types/esp32";
 
 interface UseESP32UploaderOptions {
   code: string;

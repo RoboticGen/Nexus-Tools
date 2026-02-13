@@ -5,7 +5,7 @@
 
 import { useCallback } from "react";
 
-import { ESP32_USB_FILTERS, DEFAULT_SERIAL_OPTIONS, REPL_CONTROL, SERIAL_DELAYS } from "@/constants/esp32";
+import { ESP32_USB_FILTERS, DEFAULT_SERIAL_OPTIONS, REPL_CONTROL, SERIAL_DELAYS } from "../constants/esp32";
 
 interface UseESP32SerialOptions {
   baudRate: number;

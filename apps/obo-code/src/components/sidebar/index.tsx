@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from "react";
 
-import { ESP32UploaderSidebar } from "@/components/esp32-uploader/ESP32UploaderSidebar";
+import { ESP32UploaderSidebar } from "@nexus-tools/esp32-uploader";
 
 interface SidebarProps {
   code: string;
