@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback } from "react";
 import dynamic from "next/dynamic";
-import { python } from "@codemirror/lang-python";
+import { useCallback } from "react";
 
-const CodeMirror = dynamic(() => import("@uiw/react-codemirror"), {
-  ssr: false,
-  loading: () => <div style={{ height: "100%", padding: "1rem" }}>Loading editor...</div>,
-});
+const MonacoCodeEditorComponent = dynamic(
+  () => import("@nexus-tools/monaco-editor").then((mod) => ({ default: mod.MonacoCodeEditor })),
+  {
+    ssr: false,
+    loading: () => <div style={{ height: "100%", padding: "1rem" }}>Loading editor...</div>,
+  }
+);
 
 interface CodeEditorProps {
   code: string;
@@ -29,38 +31,14 @@ export function CodeEditor({
 
   return (
     <div style={{ height: "100%", width: "100%", overflow: "hidden" }}>
-      <CodeMirror
-        value={code}
-        height="100%"
-        extensions={[python()]}
+      <MonacoCodeEditorComponent
+        code={code}
         onChange={handleChange}
         readOnly={readOnly}
-        basicSetup={{
-          lineNumbers: true,
-          highlightActiveLineGutter: true,
-          highlightSpecialChars: true,
-          foldGutter: true,
-          drawSelection: true,
-          dropCursor: true,
-          allowMultipleSelections: true,
-          indentOnInput: true,
-          syntaxHighlighting: true,
-          bracketMatching: true,
-          closeBrackets: true,
-          autocompletion: true,
-          rectangularSelection: true,
-          crosshairCursor: true,
-          highlightActiveLine: true,
-          highlightSelectionMatches: true,
-          closeBracketsKeymap: true,
-          defaultKeymap: true,
-          searchKeymap: true,
-          historyKeymap: true,
-          foldKeymap: true,
-          completionKeymap: true,
-          lintKeymap: true,
-        }}
-        theme="light"
+        language="python"
+        theme="vs-light"
+        height="100%"
+        showMinimap={true}
       />
     </div>
   );
