@@ -1,3 +1,9 @@
+export interface EditorConfig {
+  language: "python" | "javascript" | "typescript" | "json";
+  theme: "vs-light" | "vs-dark";
+  showMinimap: boolean;
+}
+
 export interface MonacoCodeEditorProps {
   code: string;
   onChange: (code: string) => void;

@@ -1,5 +1,6 @@
 "use client";
 
+import { OBO_BLOCKS_CONFIG } from "@nexus-tools/monaco-editor";
 import dynamic from "next/dynamic";
 import { useCallback } from "react";
 
@@ -35,10 +36,10 @@ export function CodeEditor({
         code={code}
         onChange={handleChange}
         readOnly={readOnly}
-        language="python"
-        theme="vs-light"
+        language={OBO_BLOCKS_CONFIG.language}
+        theme={OBO_BLOCKS_CONFIG.theme}
         height="100%"
-        showMinimap={true}
+        showMinimap={OBO_BLOCKS_CONFIG.showMinimap}
       />
     </div>
   );

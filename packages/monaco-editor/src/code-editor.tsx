@@ -1,7 +1,7 @@
 "use client";
 
 import { Editor } from "@monaco-editor/react";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { MonacoCodeEditorProps } from "./types";
 
 export function MonacoCodeEditor({
@@ -21,6 +21,23 @@ export function MonacoCodeEditor({
     },
     [onChange]
   );
+
+  // Suppress Monaco Editor cancellation errors
+  useEffect(() => {
+    const originalError = console.error;
+    console.error = (...args: unknown[]) => {
+      const errorString = String(args[0]);
+      // Suppress Monaco's internal cancellation errors
+      if (errorString.includes("Canceled") || errorString.includes("cancel")) {
+        return;
+      }
+      originalError.apply(console, args);
+    };
+
+    return () => {
+      console.error = originalError;
+    };
+  }, []);
 
   return (
     <Editor
