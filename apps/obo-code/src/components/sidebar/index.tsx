@@ -87,11 +87,6 @@ export function Sidebar({ code, onStatusUpdate, onError, onExpandedChange }: Sid
       {/* Active Panel Content - Always show when not collapsed */}
       {!isCollapsed && activePanel && (
         <div className="sidebar-content">
-          <div className="panel-header">
-            <h3 className="panel-title">
-              {toolPanels.find(p => p.id === activePanel)?.title}
-            </h3>
-          </div>
           <div className="panel-body">
             {toolPanels.find(p => p.id === activePanel)?.component}
           </div>
