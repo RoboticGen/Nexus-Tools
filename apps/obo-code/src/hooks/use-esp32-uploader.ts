@@ -27,6 +27,7 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
   const [flashProgress, setFlashProgress] = useState(0);
   const [espSupported, setEspSupported] = useState<boolean | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const connectedPortRef = useRef<any>(null);
   const espToolRef = useRef<any>(null);
 
   const {
@@ -88,10 +89,18 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
       const mainPyContent = createMainPyFile(micropythonCode);
       setFlashProgress(30);
 
-      // Step 3: Connect to ESP32
-      onStatusUpdate?.("Connecting to ESP32...");
-      port = await connectToESP32();
-      setFlashProgress(50);
+      // Step 3: Use existing connection or create new one
+      if (connectedPortRef.current && connectedPortRef.current.readable) {
+        onStatusUpdate?.("Using existing connection...");
+        port = connectedPortRef.current;
+        setFlashProgress(50);
+      } else {
+        onStatusUpdate?.("Connecting to ESP32...");
+        port = await connectToESP32();
+        connectedPortRef.current = port;
+        setIsConnected(true);
+        setFlashProgress(50);
+      }
 
       // Step 4: Stop any running code
       onStatusUpdate?.("Stopping any running code...");
@@ -120,11 +129,30 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
       setIsFlashing(false);
       setFlashProgress(0);
       setIsConnected(false);
-      const errorMsg = `Upload failed: ${error.message}`;
+      
+      // Handle user cancellation gracefully
+      if (error.message && error.message.includes('Connection cancelled')) {
+        setConnectionError(null); // Don't show error for user cancellation
+        onStatusUpdate?.("Upload cancelled by user");
+        return;
+      }
+      
+      // Clear the stored connection on upload error
+      if (connectedPortRef.current) {
+        await closePort(connectedPortRef.current);
+        connectedPortRef.current = null;
+        setIsConnected(false);
+      }
+      
+      const errorMsg = error.message || 'Unknown upload error';
       setConnectionError(errorMsg);
       onError?.(errorMsg);
     } finally {
-      await closePort(port);
+      // Don't close the port after upload - keep it for future uploads
+      // Only close if there was an error and no existing connection
+      if (!connectedPortRef.current && port) {
+        await closePort(port);
+      }
     }
   }, [espSupported, code, connectToESP32, stopRunningCode, writeFileToESP32, softResetESP32, closePort, onStatusUpdate, onError]);
 
@@ -141,17 +169,24 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
       setConnectionError(null);
       onStatusUpdate?.("Connecting to ESP32...");
       
-      // Just test the connection, don't store the port
+      // Connect and keep the port open for future uploads
       const port = await connectToESP32();
+      connectedPortRef.current = port;
       setIsConnected(true);
-      onStatusUpdate?.("Connected to ESP32 successfully!");
-      
-      // Close the port immediately to avoid auto-upload
-      await port.close();
+      onStatusUpdate?.("Connected to ESP32 - ready for upload!");
       
     } catch (error: any) {
       setIsConnected(false);
-      const errorMsg = `Connection failed: ${error.message}`;
+      connectedPortRef.current = null;
+      
+      // Handle user cancellation gracefully
+      if (error.message && error.message.includes('Connection cancelled')) {
+        setConnectionError(null); // Don't show error for user cancellation
+        onStatusUpdate?.("Connection cancelled by user");
+        return;
+      }
+      
+      const errorMsg = error.message || 'Unknown connection error';
       setConnectionError(errorMsg);
       onError?.(errorMsg);
     }
@@ -160,13 +195,19 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
   /**
    * Reset connection state
    */
-  const resetConnection = useCallback(() => {
+  const resetConnection = useCallback(async () => {
+    // Close existing connection if any
+    if (connectedPortRef.current) {
+      await closePort(connectedPortRef.current);
+      connectedPortRef.current = null;
+    }
+    
     setIsConnected(false);
     setConnectionError(null);
     setFlashProgress(0);
     espToolRef.current = null;
-    onStatusUpdate?.("Connection reset");
-  }, [onStatusUpdate]);
+    onStatusUpdate?.("Connection cleared");
+  }, [onStatusUpdate, closePort]);
 
   /**
    * Open uploader modal
@@ -208,6 +249,15 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
       initializeEspWebTools();
     }
   }, [checkSerialSupport, initializeEspWebTools]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (connectedPortRef.current) {
+        closePort(connectedPortRef.current).catch(console.warn);
+      }
+    };
+  }, [closePort]);
 
   return {
     // State

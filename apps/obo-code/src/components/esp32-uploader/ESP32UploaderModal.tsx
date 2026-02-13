@@ -20,7 +20,6 @@ interface ESP32UploaderModalProps {
   isConnected: boolean;
   connectionError: string | null;
   espSupported: boolean | null;
-  codePreview: string;
   onUpload: () => void;
   onConnect: () => void;
   onResetConnection: () => void;
@@ -38,7 +37,6 @@ export function ESP32UploaderModal({
   isConnected,
   connectionError,
   espSupported,
-  codePreview,
   onUpload,
   onConnect,
   onResetConnection,
@@ -107,14 +105,7 @@ export function ESP32UploaderModal({
               isFlashing={isFlashing}
             />
 
-            {/* Code Preview Section */}
-            {espSupported && (
-              <CodePreviewSection
-                codePreview={codePreview}
-                isFlashing={isFlashing}
-                flashProgress={flashProgress}
-              />
-            )}
+
           </div>
 
           {/* Instructions */}
@@ -269,40 +260,7 @@ function ConnectionStatus({
   );
 }
 
-function CodePreviewSection({
-  codePreview,
-  isFlashing,
-  flashProgress,
-}: {
-  codePreview: string;
-  isFlashing: boolean;
-  flashProgress: number;
-}) {
-  return (
-    <div className="space-y-4">
-      {/* Code Preview */}
-      <div>
-        <h4 className="font-medium text-gray-900 mb-2">Code Preview:</h4>
-        <div className="esp32-code-preview">
-          <pre>{codePreview}</pre>
-        </div>
-      </div>
 
-      {/* Progress Bar */}
-      {isFlashing && (
-        <div className="space-y-2">
-          <div className="esp32-progress-bar">
-            <div 
-              className="esp32-progress-fill" 
-              style={{ width: `${flashProgress}%` }}
-            ></div>
-          </div>
-          <div className="text-center text-sm text-gray-600">{flashProgress}%</div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function UploadButtonSection({
   isFlashing,

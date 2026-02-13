@@ -1,6 +1,6 @@
 /**
  * ESP32 Uploader Component
- * Main component that combines the button and modal
+ * Main component that can render as modal or sidebar
  */
 
 "use client";
@@ -9,14 +9,28 @@ import { useESP32Uploader } from "@/hooks/use-esp32-uploader";
 
 import { ESP32UploaderButton } from "./ESP32UploaderButton";
 import { ESP32UploaderModal } from "./ESP32UploaderModal";
+import { ESP32UploaderSidebar } from "./ESP32UploaderSidebar";
 
 interface ESP32UploaderProps {
   code: string;
   onStatusUpdate?: (status: string) => void;
   onError?: (error: string) => void;
+  mode?: 'modal' | 'sidebar';
 }
 
-export function ESP32Uploader({ code, onStatusUpdate, onError }: ESP32UploaderProps) {
+export function ESP32Uploader({ code, onStatusUpdate, onError, mode = 'modal' }: ESP32UploaderProps) {
+  // For sidebar mode, render the sidebar component directly
+  if (mode === 'sidebar') {
+    return (
+      <ESP32UploaderSidebar
+        code={code}
+        onStatusUpdate={onStatusUpdate}
+        onError={onError}
+      />
+    );
+  }
+
+  // For modal mode, use the original modal logic
   const {
     // State
     selectedDevice,
@@ -36,7 +50,6 @@ export function ESP32Uploader({ code, onStatusUpdate, onError }: ESP32UploaderPr
     resetConnection,
     openUploader,
     closeUploader,
-    getMainPyPreview,
   } = useESP32Uploader({ code, onStatusUpdate, onError });
 
   return (
@@ -59,7 +72,6 @@ export function ESP32Uploader({ code, onStatusUpdate, onError }: ESP32UploaderPr
         isConnected={isConnected}
         connectionError={connectionError}
         espSupported={espSupported}
-        codePreview={getMainPyPreview(500)}
         onUpload={uploadCode}
         onConnect={connectToDevice}
         onResetConnection={resetConnection}
@@ -69,5 +81,4 @@ export function ESP32Uploader({ code, onStatusUpdate, onError }: ESP32UploaderPr
   );
 }
 
-// Re-export types for convenience
-export type { ESP32UploaderProps };
+export { ESP32UploaderSidebar } from "./ESP32UploaderSidebar";

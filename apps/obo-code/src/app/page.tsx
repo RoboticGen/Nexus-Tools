@@ -3,12 +3,13 @@
 import { useState, useCallback, useEffect } from "react";
 
 import { CodeEditor } from "@/components/code-editor";
-import { ESP32Uploader } from "@/components/esp32-uploader";
 import { Navbar } from "@/components/navbar";
 import { Notification } from "@/components/notification";
 import { OutputTerminal } from "@/components/output-terminal";
+import { Sidebar } from "@/components/sidebar";
 import { TurtleWorkspace } from "@/components/turtle-workspace";
 import { usePythonRunner } from "@/hooks/use-python-runner";
+import "@/styles/sidebar.css";
 
 const DEFAULT_CODE = `import turtle
 colors = ['red', 'purple', 'blue', 'green', 'orange', 'yellow']
@@ -24,6 +25,7 @@ export default function Home() {
   const [code, setCode] = useState(DEFAULT_CODE);
   const [notification, setNotification] = useState<string | null>(null);
   const [background, setBackground] = useState<string>("No-Background");
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
   // Set the document title explicitly to ensure it shows correct app name
   useEffect(() => {
@@ -114,7 +116,9 @@ export default function Home() {
       <Notification message={notification} />
       <Navbar />
 
-      <div className="main-content">
+      <div className={`main-content main-content-with-sidebar ${
+        sidebarExpanded ? 'sidebar-expanded' : ''
+      }`}>
         <div className="left-panel">
           <CodeEditor
             code={code}
@@ -139,11 +143,12 @@ export default function Home() {
         </div>
       </div>
       
-      {/* ESP32 Uploader Component */}
-      <ESP32Uploader
+      {/* Sidebar with tools */}
+      <Sidebar
         code={code}
         onStatusUpdate={showNotification}
         onError={showNotification}
+        onExpandedChange={setSidebarExpanded}
       />
     </div>
   );

@@ -46,8 +46,26 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
       });
 
       return port;
-    } catch (error) {
-      throw new Error(`Failed to connect to ESP32: ${error}`);
+    } catch (error: any) {
+      // Handle specific error cases with user-friendly messages
+      if (error.name === 'NotFoundError') {
+        if (error.message && error.message.includes('No port selected')) {
+          throw new Error('Connection cancelled - no device was selected');
+        } else {
+          throw new Error('ESP32 device not found. Please check your USB connection and try again.');
+        }
+      } else if (error.name === 'NetworkError') {
+        throw new Error('Failed to open connection to ESP32. Device may be in use by another application.');
+      } else if (error.name === 'InvalidStateError') {
+        throw new Error('ESP32 device is already connected or in an invalid state.');
+      } else if (error.name === 'NotSupportedError') {
+        throw new Error('Your browser does not support connecting to this type of device.');
+      } else if (error.name === 'SecurityError') {
+        throw new Error('Connection blocked for security reasons. Make sure you\'re using HTTPS or localhost.');
+      } else {
+        // Generic fallback for unknown errors
+        throw new Error(`Connection failed: ${error.message || 'Unknown error occurred'}`);
+      }
     }
   }, [baudRate]);
 
