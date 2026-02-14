@@ -46,7 +46,7 @@ export function TurtleWorkspace({
         </div>
       </div>
       <div id="turtle-canvas" className="turtle-canvas" style={backgroundStyle}>
-        {/* Skulpt will render the turtle canvas here */}
+        {/* Brython turtle will render SVG here */}
       </div>
     </div>
   );

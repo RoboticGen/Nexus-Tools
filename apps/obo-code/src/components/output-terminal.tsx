@@ -40,7 +40,7 @@ export function OutputTerminal({
       <div className="terminal-wrapper">
         <textarea
           className="terminal-output"
-          value={output || "Python 3.10 \n>>> "}
+          value={output || "Python \n>>> "}
           readOnly
           rows={10}
         />
