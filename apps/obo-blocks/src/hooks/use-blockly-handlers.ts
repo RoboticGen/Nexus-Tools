@@ -2,7 +2,7 @@ import { useCallback } from "react";
 
 export function useBlocklyHandlers(
   code: string,
-  isEditing: boolean,
+  _isEditing: boolean,
   showNotification: (message: string) => void,
   copyTextToClipboard: (text: string) => Promise<void>,
   downloadPythonFile: (content: string, filename: string) => void
