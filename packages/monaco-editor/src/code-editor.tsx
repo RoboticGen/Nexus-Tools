@@ -22,17 +22,24 @@ export function MonacoCodeEditor({
     [onChange]
   );
 
-  // Suppress Monaco Editor cancellation errors
+  // Suppress only Monaco's internal cancellation errors (scoped, not global)
   useEffect(() => {
     const originalError = console.error;
-    console.error = (...args: unknown[]) => {
-      const errorString = String(args[0]);
-      // Suppress Monaco's internal cancellation errors
-      if (errorString.includes("Canceled") || errorString.includes("cancel")) {
-        return;
+    const filteredError = (...args: unknown[]) => {
+      const message = String(args[0] ?? "");
+      // Only suppress if it's clearly a Monaco cancellation error
+      // Case-insensitive, check stack to ensure it's from Monaco, not app code
+      if (/\bcancel(?:ed|ed)?\b/i.test(message)) {
+        const stack = (new Error().stack || "").toLowerCase();
+        // Only filter if stack trace mentions monaco (prevents filtering unrelated errors)
+        if (stack.includes("monaco") || stack.includes("editor")) {
+          return;
+        }
       }
-      originalError.apply(console, args);
+      originalError.apply(console, args as any);
     };
+
+    console.error = filteredError;
 
     return () => {
       console.error = originalError;
