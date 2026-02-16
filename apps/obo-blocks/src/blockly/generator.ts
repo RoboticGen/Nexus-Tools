@@ -45,7 +45,14 @@ forBlock["print_block"] = function (block: any, generator: any) {
 
 forBlock["string_block"] = function (block: any, _generator: any) {
   const text_input = block.getFieldValue("input");
-  const code = '"' + text_input + '"';
+  // Properly escape special characters to prevent code injection
+  const escaped = text_input
+    .replace(/\\/g, '\\\\')  // Escape backslashes first (must be first!)
+    .replace(/"/g, '\\"')    // Escape double quotes
+    .replace(/\n/g, '\\n')   // Escape newlines
+    .replace(/\r/g, '\\r')   // Escape carriage returns
+    .replace(/\t/g, '\\t');  // Escape tabs
+  const code = '"' + escaped + '"';
   return [code, Order.ATOMIC];
 };
 
@@ -108,7 +115,8 @@ forBlock["multiply_block"] = function (block: any, generator: any) {
 forBlock["division_block"] = function (block: any, generator: any) {
   const value_left = generator.valueToCode(block, "left", Order.ATOMIC);
   const value_right = generator.valueToCode(block, "right", Order.ATOMIC);
-  const code = value_left + " / " + value_right;
+  // Safe division: check for zero to prevent ZeroDivisionError
+  const code = `(${value_left} / ${value_right} if ${value_right} != 0 else 0)`;
   return [code, Order.ATOMIC];
 };
 
@@ -156,7 +164,13 @@ forBlock["less_than_equal_block"] = function (block: any, generator: any) {
 
 forBlock["input_block"] = function (block: any, _generator: any) {
   const text_input = block.getFieldValue("input");
-  const code = 'input("' + text_input + '")\n';
+  // Properly escape special characters in the prompt string
+  const escaped = text_input
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/"/g, '\\"')    // Escape double quotes
+    .replace(/\n/g, '\\n')   // Escape newlines
+    .replace(/\r/g, '\\r');  // Escape carriage returns
+  const code = 'input("' + escaped + '")\n';
   return [code, Order.ATOMIC];
 };
 
@@ -173,14 +187,15 @@ forBlock["false_block"] = function (_block: any, _generator: any) {
 forBlock["modulo_block"] = function (block: any, generator: any) {
   const value_left = generator.valueToCode(block, "left", Order.ATOMIC);
   const value_right = generator.valueToCode(block, "right", Order.ATOMIC);
-  const code = value_left + " % " + value_right;
+  // Safe modulo: check for zero to prevent ZeroDivisionError
+  const code = `(${value_left} % ${value_right} if ${value_right} != 0 else 0)`;
   return [code, Order.MULTIPLICATIVE];
 };
 
 forBlock["power_block"] = function (block: any, generator: any) {
   const value_left = generator.valueToCode(block, "left", Order.ATOMIC);
   const value_right = generator.valueToCode(block, "right", Order.ATOMIC);
-  const code = value_left + " ^ " + value_right;
+  const code = value_left + " ** " + value_right;
   return [code, Order.ATOMIC];
 };
 
@@ -229,7 +244,13 @@ forBlock["for_block"] = function (block: any, generator: any) {
 
 forBlock["list_block"] = function (block: any, _generator: any) {
   const text_input = block.getFieldValue("input");
-  const code = "[" + text_input + "]";
+  // Escape special characters to prevent code injection in list definition
+  const escaped = text_input
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/"/g, '\\"')    // Escape double quotes if present in string values
+    .replace(/\n/g, '\\n')   // Escape newlines
+    .replace(/\r/g, '\\r');  // Escape carriage returns
+  const code = "[" + escaped + "]";
   return [code, Order.ATOMIC];
 };
 
@@ -258,7 +279,13 @@ forBlock["list_index_set_block"] = function (block: any, generator: any) {
   const number_index = block.getFieldValue("index");
   const value_input = generator.valueToCode(block, "input", Order.ATOMIC);
   const text_value = block.getFieldValue("value");
-  const code = value_input + "[" + number_index + "] = " + text_value + "\n";
+  // Escape special characters in the value string
+  const escaped = text_value
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/"/g, '\\"')    // Escape double quotes
+    .replace(/\n/g, '\\n')   // Escape newlines
+    .replace(/\r/g, '\\r');  // Escape carriage returns
+  const code = value_input + "[" + number_index + '] = "' + escaped + '"\n';
   return code;
 };
 
@@ -528,41 +555,54 @@ forBlock["i2c_scan"] = function (block: any, generator: any) {
 // Procedure blocks
 forBlock["procedures_defreturn"] = function (block: any, generator: any) {
   const funcName = generator.getVariableName(block.getFieldValue('NAME'));
-  let branch = generator.statementToCode(block, 'STACK');
-  let returnValue = generator.valueToCode(block, 'RETURN', Order.NONE) || '';
+  const branch = generator.statementToCode(block, 'STACK') || generator.INDENT + 'pass\n';
+  const returnValue = generator.valueToCode(block, 'RETURN', Order.NONE) || '';
   
-  if (returnValue) {
-    returnValue = generator.INDENT + 'return ' + returnValue + '\n';
-  }
+  let code = '\ndef ' + funcName + '(';
   
+  // Add arguments
   const args = [];
   const variables = block.getVars();
   for (let i = 0; i < variables.length; i++) {
-    args[i] = generator.getVariableName(variables[i]);
+    args.push(generator.getVariableName(variables[i]));
+  }
+  code += args.join(', ') + '):\n';
+  
+  // Add function body
+  code += branch;
+  
+  // Add return statement if provided
+  if (returnValue) {
+    code += generator.INDENT + 'return ' + returnValue + '\n';
   }
   
-  let code = 'def ' + funcName + '(' + args.join(', ') + '):\n' +
-      (branch || generator.INDENT + 'pass\n') + returnValue;
+  // Add trailing newline for spacing between functions
+  code += '\n';
   
-  code = generator.scrub_(block, code);
   generator.definitions_[funcName] = code;
   return null;
 };
 
 forBlock["procedures_defnoreturn"] = function (block: any, generator: any) {
   const funcName = generator.getVariableName(block.getFieldValue('NAME'));
-  let branch = generator.statementToCode(block, 'STACK');
+  const branch = generator.statementToCode(block, 'STACK') || generator.INDENT + 'pass\n';
   
+  let code = '\ndef ' + funcName + '(';
+  
+  // Add arguments
   const args = [];
   const variables = block.getVars();
   for (let i = 0; i < variables.length; i++) {
-    args[i] = generator.getVariableName(variables[i]);
+    args.push(generator.getVariableName(variables[i]));
   }
+  code += args.join(', ') + '):\n';
   
-  let code = 'def ' + funcName + '(' + args.join(', ') + '):\n' +
-      (branch || generator.INDENT + 'pass\n');
+  // Add function body
+  code += branch;
   
-  code = generator.scrub_(block, code);
+  // Add trailing newline for spacing between functions
+  code += '\n';
+  
   generator.definitions_[funcName] = code;
   return null;
 };
@@ -572,7 +612,8 @@ forBlock["procedures_callreturn"] = function (block: any, generator: any) {
   const args = [];
   const variables = block.getVars();
   for (let i = 0; i < variables.length; i++) {
-    args[i] = generator.valueToCode(block, 'ARG' + i, Order.NONE) || 'None';
+    const argValue = generator.valueToCode(block, 'ARG' + i, Order.NONE);
+    args.push(argValue || 'None');
   }
   const code = funcName + '(' + args.join(', ') + ')';
   return [code, Order.FUNCTION_CALL];
@@ -583,7 +624,8 @@ forBlock["procedures_callnoreturn"] = function (block: any, generator: any) {
   const args = [];
   const variables = block.getVars();
   for (let i = 0; i < variables.length; i++) {
-    args[i] = generator.valueToCode(block, 'ARG' + i, Order.NONE) || 'None';
+    const argValue = generator.valueToCode(block, 'ARG' + i, Order.NONE);
+    args.push(argValue || 'None');
   }
   const code = funcName + '(' + args.join(', ') + ')\n';
   return code;
@@ -591,7 +633,14 @@ forBlock["procedures_callnoreturn"] = function (block: any, generator: any) {
 
 forBlock["procedures_ifreturn"] = function (block: any, generator: any) {
   const condition = generator.valueToCode(block, 'CONDITION', Order.NONE) || 'False';
-  const value = generator.valueToCode(block, 'VALUE', Order.NONE) || 'None';
-  const code = 'if ' + condition + ':\n' + generator.INDENT + 'return ' + value + '\n';
-  return code;
+  const hasReturnValue = block.getInputTargetBlock('VALUE');
+  
+  if (hasReturnValue) {
+    const value = generator.valueToCode(block, 'VALUE', Order.NONE) || 'None';
+    const code = 'if ' + condition + ':\n' + generator.INDENT + 'return ' + value + '\n';
+    return code;
+  } else {
+    const code = 'if ' + condition + ':\n' + generator.INDENT + 'return\n';
+    return code;
+  }
 };

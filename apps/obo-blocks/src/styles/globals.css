@@ -102,6 +102,12 @@ body {
   object-fit: contain;
 }
 
+/* Hide Monaco Editor iPad Keyboard Widget */
+.iPadShowKeyboard,
+textarea.iPadShowKeyboard {
+  display: none !important;
+}
+
 /* Blocky Editor */
 .blocky-editor {
   grid-area: editor;
