@@ -5,17 +5,16 @@ import "blockly/blocks";
 
 import { useEffect, useRef, useCallback } from "react";
 
-import { toolbox } from "@/blockly/toolbox";
-import { forBlock } from "@/blockly/generator";
-import { pythonGenerator } from "@/micropython/setup";
 import { blocks } from "@/blockly/blocks";
 import { OboCategory } from "@/blockly/categories";
-import { theme } from "@/blockly/themes";
+import { forBlock } from "@/blockly/generator";
 import {
   save,
   exportJson,
   importJson,
 } from "@/blockly/serialization";
+import { theme } from "@/blockly/themes";
+import { toolbox } from "@/blockly/toolbox";
 import {
   createPinButtonCallback,
   createADCButtonCallback,
@@ -28,6 +27,7 @@ import {
   pwmCategoryFlyout,
   i2cCategoryFlyout,
 } from "@/micropython/flyouts";
+import { pythonGenerator } from "@/micropython/setup";
 
 interface BlocklyEditorProps {
   onCodeChange: (code: string) => void;
@@ -113,6 +113,10 @@ export function BlocklyEditor({
         return;
       }
       save(workspace);
+      
+     
+      pythonGenerator.definitions_ = {};
+      
       const code = pythonGenerator.workspaceToCode(workspace);
       onCodeChange(code);
     });
@@ -131,6 +135,19 @@ export function BlocklyEditor({
       // Merge generator definitions
       const merged = { ...pythonGenerator.forBlock, ...forBlock };
       Object.assign(pythonGenerator.forBlock, merged);
+
+      // Override the finish method to properly handle function definitions
+      const originalFinish = pythonGenerator.finish.bind(pythonGenerator);
+      pythonGenerator.finish = function(code: string) {
+        // Get all definitions (functions)
+        const definitions = Object.values(this.definitions_ || {}).join('\n');
+        
+        // Prepend definitions to the main code
+        if (definitions) {
+          return definitions + '\n' + code;
+        }
+        return code;
+      };
 
       Blockly.registry.register(
         Blockly.registry.Type.TOOLBOX_ITEM,
@@ -180,6 +197,8 @@ export function BlocklyEditor({
             const imported = importJson(workspaceRef.current, json);
             if (imported) {
               showNotification("Workspace imported");
+              // Clear definitions before generating code
+              pythonGenerator.definitions_ = {};
               const code = pythonGenerator.workspaceToCode(
                 workspaceRef.current
               );
