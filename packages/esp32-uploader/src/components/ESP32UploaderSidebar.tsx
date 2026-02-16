@@ -5,10 +5,9 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 
 import { useESP32Uploader } from "../hooks/use-esp32-uploader";
-import { FileBrowser } from "./FileBrowser";
 import { ESP32REPL } from "./ESP32REPL";
 
 interface ESP32UploaderSidebarProps {
@@ -18,6 +17,31 @@ interface ESP32UploaderSidebarProps {
 }
 
 export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32UploaderSidebarProps) {
+  const [activeView, setActiveView] = useState<"uploader" | "repl">("uploader");
+  const [replReady, setReplReady] = useState(false);
+  const [autoDetecting, setAutoDetecting] = useState(false);
+  const autoDetectionTriggeredRef = useRef(false);
+  
+  // Handle when ESP32 connection is established
+  const handleConnectionEstablished = useCallback(async (_port: any) => {
+    if (autoDetectionTriggeredRef.current) return; // Prevent multiple triggers
+    autoDetectionTriggeredRef.current = true;
+    
+    try {
+      setAutoDetecting(true);
+      
+      onStatusUpdate?.("Initializing REPL...");
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setReplReady(true);
+      
+      onStatusUpdate?.("ESP32 ready! Files and REPL are now available.");
+    } catch (error) {
+      console.warn("Auto-detection failed:", error);
+      onError?.("Failed to auto-detect ESP32 features");
+    } finally {
+      setAutoDetecting(false);
+    }
+  }, [onStatusUpdate, onError]);
   const {
     // State
     selectedDevice,
@@ -35,13 +59,26 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
     uploadCode,
     connectToDevice,
     resetConnection,
-  } = useESP32Uploader({ code, onStatusUpdate, onError });
-
-  const [activeView, setActiveView] = useState<"uploader" | "files" | "repl">("uploader");
+  } = useESP32Uploader({ 
+    code, 
+    onStatusUpdate, 
+    onError,
+    onConnectionEstablished: handleConnectionEstablished 
+  });
 
   const canShowAdvancedFeatures = useMemo(() => {
     return Boolean(espSupported) && Boolean(serialPort);
   }, [espSupported, serialPort]);
+
+  // Reset auto-detection state when disconnected
+  useEffect(() => {
+    if (!isConnected || !serialPort) {
+      autoDetectionTriggeredRef.current = false;
+      setReplReady(false);
+      setAutoDetecting(false);
+      setActiveView("uploader");
+    }
+  }, [isConnected, serialPort]);
 
   if (!isMounted) {
     return (
@@ -82,18 +119,9 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
               </button>
               <button
                 type="button"
-                className={`esp32-tab-btn ${activeView === "files" ? "active" : ""}`}
-                onClick={() => setActiveView("files")}
-                role="tab"
-                aria-selected={activeView === "files"}
-                disabled={!canShowAdvancedFeatures}
-              >
-                <i className="fas fa-folder"></i>
-                Files
-              </button>
-              <button
-                type="button"
-                className={`esp32-tab-btn ${activeView === "repl" ? "active" : ""}`}
+                className={`esp32-tab-btn ${
+                  activeView === "repl" ? "active" : ""
+                } ${replReady ? "ready" : ""}`}
                 onClick={() => setActiveView("repl")}
                 role="tab"
                 aria-selected={activeView === "repl"}
@@ -101,6 +129,11 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
               >
                 <i className="fas fa-terminal"></i>
                 REPL
+                {replReady && (
+                  <span className="tab-indicator">
+                    <i className="fas fa-play"></i>
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -142,6 +175,20 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
                       <div className="connection-error">
                         <i className="fas fa-exclamation-circle"></i>
                         <span>{connectionError}</span>
+                      </div>
+                    )}
+
+                    {autoDetecting && (
+                      <div className="auto-detection-status">
+                        <i className="fas fa-search fa-spin"></i>
+                        <span>Auto-detecting ESP32 features...</span>
+                      </div>
+                    )}
+
+                    {isConnected && replReady && !autoDetecting && (
+                      <div className="auto-detection-complete">
+                        <i className="fas fa-check-circle"></i>
+                        <span>REPL ready!</span>
                       </div>
                     )}
 
@@ -212,50 +259,6 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
                   </ol>
                 </div>
               </div>
-            </div>
-          )}
-
-          {activeView === "files" && (
-            <div className="esp32-tab-content" role="tabpanel">
-              {!canShowAdvancedFeatures && (
-                <div className="esp32-feature-notice">
-                  <div className="connection-info">
-                    <i className="fas fa-info-circle"></i>
-                    <span>Connect your device first to access the file manager.</span>
-                  </div>
-
-                  {!isConnected ? (
-                    <button className="btn-connect" onClick={connectToDevice} disabled={isFlashing}>
-                      <i className="fas fa-plug"></i>
-                      Connect Device
-                    </button>
-                  ) : (
-                    <button className="btn-disconnect" onClick={resetConnection} disabled={isFlashing}>
-                      <i className="fas fa-unlink"></i>
-                      Disconnect
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {canShowAdvancedFeatures && (
-                <div className="esp32-file-manager-wrapper">
-                  {isFlashing && (
-                    <div className="esp32-feature-notice">
-                      <div className="connection-info">
-                        <i className="fas fa-info-circle"></i>
-                        <span>File manager is disabled during code upload. Please wait for upload to complete.</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <FileBrowser
-                    serialPort={serialPort}
-                    onError={onError}
-                    disabled={isFlashing}
-                  />
-                </div>
-              )}
             </div>
           )}
 

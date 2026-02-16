@@ -16,9 +16,10 @@ interface UseESP32UploaderOptions {
   code: string;
   onStatusUpdate?: (status: string) => void;
   onError?: (error: string) => void;
+  onConnectionEstablished?: (port: any) => void; // New callback for when connection is ready
 }
 
-export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32UploaderOptions) {
+export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEstablished }: UseESP32UploaderOptions) {
   const [selectedDevice, setSelectedDevice] = useState<ESP32Device>(ESP32_DEVICES[0]);
   const [showUploader, setShowUploader] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -179,6 +180,9 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
       setSerialPort(port);
       setIsConnected(true);
       onStatusUpdate?.("Connected to ESP32 - ready for upload!");
+      
+      // Trigger auto-detection of files and REPL initialization
+      onConnectionEstablished?.(port);
       
     } catch (error: any) {
       setIsConnected(false);

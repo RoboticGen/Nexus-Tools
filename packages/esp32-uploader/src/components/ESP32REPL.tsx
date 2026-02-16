@@ -20,10 +20,13 @@ interface REPLLine {
 }
 
 export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
-  const [lines, setLines] = useState<REPLLine[]>([]);
+  const [lines, setLines] = useState<REPLLine[]>([
+    { type: "output", content: "ESP32 REPL - Click 'Connect REPL' to start", timestamp: new Date() }
+  ]);
   const [currentInput, setCurrentInput] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
 
@@ -49,22 +52,44 @@ export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
     }
   }, [isConnected]);
 
+  // Cleanup: disconnect REPL when component unmounts or serialPort changes
+  useEffect(() => {
+    return () => {
+      if (isConnected) {
+        disconnect().catch(err => console.warn("Cleanup disconnect error:", err));
+      }
+    };
+  }, [isConnected, disconnect]);
+
   const addLine = useCallback((type: REPLLine["type"], content: string) => {
     setLines(prev => [...prev, { type, content, timestamp: new Date() }]);
   }, []);
 
   const handleConnect = useCallback(async () => {
     try {
+      setIsConnecting(true);
+      addLine("output", "Connecting to REPL...");
+      
+      if (!serialPort) {
+        throw new Error("Serial port not available - make sure device is connected");
+      }
+      
       await connectToREPL();
       setIsConnected(true);
       addLine("output", "=== MicroPython REPL Connected ===");
+      addLine("output", "Type commands below. Use Ctrl+C to interrupt, Ctrl+D to soft reset.");
       addLine("output", ">>> ");
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
+      console.error("REPL Connection error:", error);
       onError?.(msg);
-      addLine("error", `Connection error: ${msg}`);
+      addLine("error", `❌ Connection error: ${msg}`);
+      addLine("output", ">>> ");
+      setIsConnected(false);
+    } finally {
+      setIsConnecting(false);
     }
-  }, [connectToREPL, onError, addLine]);
+  }, [connectToREPL, serialPort, onError, addLine]);
 
   const handleDisconnect = useCallback(async () => {
     try {
@@ -134,33 +159,51 @@ export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
         <div className="esp32-repl-controls">
           {!isConnected ? (
             <button 
-              className="btn btn-primary btn-sm" 
+              className="repl-btn repl-btn-connect" 
               onClick={handleConnect}
-              disabled={!serialPort}
+              disabled={!serialPort || isConnecting}
             >
-              Connect REPL
+              {isConnecting ? (
+                <>
+                  <span className="spinner-small"></span>
+                  <span>Connecting...</span>
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-plug"></i>
+                  <span>Connect REPL</span>
+                </>
+              )}
             </button>
           ) : (
             <>
-              <button className="btn btn-sm" onClick={handleClearOutput}>
-                Clear
+              <button 
+                className="repl-btn repl-btn-clear" 
+                onClick={handleClearOutput}
+                title="Clear output"
+              >
+                <i className="fas fa-trash-alt"></i>
+                <span>Clear</span>
               </button>
               <button 
-                className="btn btn-sm" 
+                className="repl-btn repl-btn-interrupt" 
                 onClick={() => sendCtrlC()}
                 title="Send Ctrl+C (KeyboardInterrupt)"
               >
-                Ctrl+C
+                <i className="fas fa-stop"></i>
+                <span>Ctrl+C</span>
               </button>
               <button 
-                className="btn btn-sm" 
+                className="repl-btn repl-btn-reset" 
                 onClick={() => sendCtrlD()}
                 title="Send Ctrl+D (Soft Reset)"
               >
-                Reset
+                <i className="fas fa-redo"></i>
+                <span>Reset</span>
               </button>
-              <button className="btn btn-danger btn-sm" onClick={handleDisconnect}>
-                Disconnect
+              <button className="repl-btn repl-btn-disconnect" onClick={handleDisconnect}>
+                <i className="fas fa-power-off"></i>
+                <span>Disconnect</span>
               </button>
             </>
           )}
@@ -174,7 +217,14 @@ export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
         </div>
       )}
 
-      {serialPort && (
+      {serialPort && !isConnected && (
+        <div className="esp32-repl-notice">
+          <i className="fas fa-terminal"></i>
+          <span>Click "Connect REPL" to start the terminal session.</span>
+        </div>
+      )}
+
+      {serialPort && isConnected && (
         <div className="esp32-repl-container">
           <div className="esp32-repl-output" ref={outputRef}>
             {lines.map((line, index) => (
@@ -186,34 +236,19 @@ export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
               </div>
             ))}
             
-            {isConnected && (
-              <div className="repl-input-line">
-                <span className="repl-prompt">{'>>> '}</span>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  className="repl-input"
-                  value={currentInput}
-                  onChange={(e) => setCurrentInput(e.target.value)}
-                  onKeyDown={handleInputKeyDown}
-                  disabled={!isConnected || isExecuting}
-                  placeholder={isExecuting ? "Executing..." : "Enter MicroPython command..."}
-                />
-                {isExecuting && <div className="repl-spinner"></div>}
-              </div>
-            )}
-          </div>
-
-          <div className="esp32-repl-help">
-            <div className="help-section">
-              <strong>Quick Commands:</strong>
-              <ul>
-                <li><code>help()</code> - Show help</li>
-                <li><code>import os; os.listdir()</code> - List files</li>
-                <li><code>machine.reset()</code> - Hard reset</li>
-                <li><code>Ctrl+C</code> - KeyboardInterrupt</li>
-                <li><code>Ctrl+D</code> - Soft reset</li>
-              </ul>
+            <div className="repl-input-line">
+              <span className="repl-prompt">{'>>> '}</span>
+              <input
+                ref={inputRef}
+                type="text"
+                className="repl-input"
+                value={currentInput}
+                onChange={(e) => setCurrentInput(e.target.value)}
+                onKeyDown={handleInputKeyDown}
+                disabled={!isConnected || isExecuting}
+                placeholder={isExecuting ? "Executing..." : "Enter MicroPython command..."}
+              />
+              {isExecuting && <div className="repl-spinner"></div>}
             </div>
           </div>
         </div>

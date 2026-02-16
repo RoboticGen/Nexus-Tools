@@ -56,11 +56,19 @@ export function useESP32REPL(serialPort: any) {
     } catch (error) {
       // Clean up on error
       if (readerRef.current) {
-        readerRef.current.releaseLock();
+        try {
+          readerRef.current.releaseLock();
+        } catch (e) {
+          // Already released
+        }
         readerRef.current = null;
       }
       if (writerRef.current) {
-        writerRef.current.releaseLock();
+        try {
+          writerRef.current.releaseLock();
+        } catch (e) {
+          // Already released
+        }
         writerRef.current = null;
       }
       throw error;
@@ -164,21 +172,38 @@ export function useESP32REPL(serialPort: any) {
    */
   const disconnect = useCallback(async () => {
     try {
-      // Release streams
+      // Release streams first
       if (readerRef.current) {
-        readerRef.current.releaseLock();
+        try {
+          readerRef.current.releaseLock();
+        } catch (e) {
+          // Already released or stream closed
+        }
         readerRef.current = null;
       }
       if (writerRef.current) {
-        writerRef.current.releaseLock();
+        try {
+          writerRef.current.releaseLock();
+        } catch (e) {
+          // Already released or stream closed
+        }
         writerRef.current = null;
+      }
+
+      // Close the underlying serial port
+      if (serialPort) {
+        try {
+          await serialPort.close();
+        } catch (e) {
+          console.warn("Error closing serial port:", e);
+        }
       }
 
       setIsConnected(false);
     } catch (error) {
       console.warn("Error disconnecting REPL:", error);
     }
-  }, []);
+  }, [serialPort]);
 
   return {
     isConnected,
