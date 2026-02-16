@@ -399,7 +399,7 @@ walk('')
             content: [],
           };
           current.push(newNode);
-          current = newNode.content;
+          current = newNode.content || [];
         }
       }
 

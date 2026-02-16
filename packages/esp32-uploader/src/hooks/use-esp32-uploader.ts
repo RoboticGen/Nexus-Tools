@@ -23,6 +23,7 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
   const [showUploader, setShowUploader] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [serialPort, setSerialPort] = useState<any>(null);
   const [isFlashing, setIsFlashing] = useState(false);
   const [flashProgress, setFlashProgress] = useState(0);
   const [espSupported, setEspSupported] = useState<boolean | null>(null);
@@ -93,11 +94,13 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
       if (connectedPortRef.current && connectedPortRef.current.readable) {
         onStatusUpdate?.("Using existing connection...");
         port = connectedPortRef.current;
+        setSerialPort(port);
         setFlashProgress(50);
       } else {
         onStatusUpdate?.("Connecting to ESP32...");
         port = await connectToESP32();
         connectedPortRef.current = port;
+        setSerialPort(port);
         setIsConnected(true);
         setFlashProgress(50);
       }
@@ -141,6 +144,7 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
       if (connectedPortRef.current) {
         await closePort(connectedPortRef.current);
         connectedPortRef.current = null;
+        setSerialPort(null);
         setIsConnected(false);
       }
       
@@ -172,12 +176,14 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
       // Connect and keep the port open for future uploads
       const port = await connectToESP32();
       connectedPortRef.current = port;
+      setSerialPort(port);
       setIsConnected(true);
       onStatusUpdate?.("Connected to ESP32 - ready for upload!");
       
     } catch (error: any) {
       setIsConnected(false);
       connectedPortRef.current = null;
+      setSerialPort(null);
       
       // Handle user cancellation gracefully
       if (error.message && error.message.includes('Connection cancelled')) {
@@ -203,6 +209,7 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
     }
     
     setIsConnected(false);
+    setSerialPort(null);
     setConnectionError(null);
     setFlashProgress(0);
     espToolRef.current = null;
@@ -265,6 +272,7 @@ export function useESP32Uploader({ code, onStatusUpdate, onError }: UseESP32Uplo
     showUploader,
     isMounted,
     isConnected,
+    serialPort,
     isFlashing,
     flashProgress,
     espSupported,

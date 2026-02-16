@@ -5,7 +5,11 @@
 
 "use client";
 
+import { useState, useMemo } from "react";
+
 import { useESP32Uploader } from "../hooks/use-esp32-uploader";
+import { FileBrowser } from "./FileBrowser";
+import { ESP32REPL } from "./ESP32REPL";
 
 interface ESP32UploaderSidebarProps {
   code: string;
@@ -19,6 +23,7 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
     selectedDevice,
     isMounted,
     isConnected,
+    serialPort,
     isFlashing,
     flashProgress,
     espSupported,
@@ -31,6 +36,12 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
     connectToDevice,
     resetConnection,
   } = useESP32Uploader({ code, onStatusUpdate, onError });
+
+  const [activeView, setActiveView] = useState<"uploader" | "files" | "repl">("uploader");
+
+  const canShowAdvancedFeatures = useMemo(() => {
+    return Boolean(espSupported) && Boolean(serialPort);
+  }, [espSupported, serialPort]);
 
   if (!isMounted) {
     return (
@@ -55,122 +66,218 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
       )}
 
       {espSupported && (
-        <div className="esp32-tools">
-          {/* Device Selection */}
-          <div className="device-section">
-            <h4>Device Selection</h4>
-            <select
-              className="device-select"
-              value={selectedDevice.chipFamily}
-              onChange={(e) => {
-                const device = devices.find(d => d.chipFamily === e.target.value);
-                if (device) setSelectedDevice(device);
-              }}
-              disabled={isFlashing}
-            >
-              {devices.map((device) => (
-                <option key={device.chipFamily} value={device.chipFamily}>
-                  {device.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Connection Status */}
-          <div className="connection-section">
-            <h4>Connection</h4>
-            <div className="connection-status">
-              <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
-                <i className={`fas ${isConnected ? 'fa-link' : 'fa-unlink'}`}></i>
-                <span>
-                  {isConnected ? `Connected to ${selectedDevice.chipFamily}` : 'Not Connected'}
-                </span>
-              </div>
-              
-              {connectionError && (
-                <div className="connection-error">
-                  <i className="fas fa-exclamation-circle"></i>
-                  <span>{connectionError}</span>
-                </div>
-              )}
-
-              <div className="connection-actions">
-                {!isConnected ? (
-                  <button
-                    className="btn-connect"
-                    onClick={connectToDevice}
-                    disabled={isFlashing}
-                  >
-                    <i className="fas fa-plug"></i>
-                    Connect Device
-                  </button>
-                ) : (
-                  <button
-                    className="btn-disconnect"
-                    onClick={resetConnection}
-                    disabled={isFlashing}
-                  >
-                    <i className="fas fa-unlink"></i>
-                    Disconnect
-                  </button>
-                )}
-              </div>
+        <div className="esp32-sidebar-inner">
+          {/* Tab Navigation */}
+          <div className="esp32-sidebar-header">
+            <div className="esp32-sidebar-tabs" role="tablist" aria-label="ESP32 tools">
+              <button
+                type="button"
+                className={`esp32-tab-btn ${activeView === "uploader" ? "active" : ""}`}
+                onClick={() => setActiveView("uploader")}
+                role="tab"
+                aria-selected={activeView === "uploader"}
+              >
+                <i className="fas fa-upload"></i>
+                Uploader
+              </button>
+              <button
+                type="button"
+                className={`esp32-tab-btn ${activeView === "files" ? "active" : ""}`}
+                onClick={() => setActiveView("files")}
+                role="tab"
+                aria-selected={activeView === "files"}
+                disabled={!canShowAdvancedFeatures}
+              >
+                <i className="fas fa-folder"></i>
+                Files
+              </button>
+              <button
+                type="button"
+                className={`esp32-tab-btn ${activeView === "repl" ? "active" : ""}`}
+                onClick={() => setActiveView("repl")}
+                role="tab"
+                aria-selected={activeView === "repl"}
+                disabled={!canShowAdvancedFeatures}
+              >
+                <i className="fas fa-terminal"></i>
+                REPL
+              </button>
             </div>
           </div>
 
-          {/* Upload Section */}
-          <div className="upload-section">
-            <h4>Code Upload</h4>
-            
-            {/* Progress */}
-            {isFlashing && (
-              <div className="upload-progress">
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill" 
-                    style={{ width: `${flashProgress}%` }}
-                  ></div>
+          {/* Tab Content */}
+          {activeView === "uploader" && (
+            <div className="esp32-tab-content" role="tabpanel">
+              <div className="esp32-tools">
+                {/* Device Selection */}
+                <div className="device-section">
+                  <h4>Device Selection</h4>
+                  <select
+                    className="device-select"
+                    value={selectedDevice.chipFamily}
+                    onChange={(e) => {
+                      const device = devices.find((d) => d.chipFamily === e.target.value);
+                      if (device) setSelectedDevice(device);
+                    }}
+                    disabled={isFlashing}
+                  >
+                    {devices.map((device) => (
+                      <option key={device.chipFamily} value={device.chipFamily}>
+                        {device.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div className="progress-text">Uploading... {flashProgress}%</div>
+
+                {/* Connection Status */}
+                <div className="connection-section">
+                  <h4>Connection</h4>
+                  <div className="connection-status">
+                    <div className={`status-indicator ${isConnected ? "connected" : "disconnected"}`}>
+                      <i className={`fas ${isConnected ? "fa-link" : "fa-unlink"}`}></i>
+                      <span>{isConnected ? `Connected to ${selectedDevice.chipFamily}` : "Not Connected"}</span>
+                    </div>
+
+                    {connectionError && (
+                      <div className="connection-error">
+                        <i className="fas fa-exclamation-circle"></i>
+                        <span>{connectionError}</span>
+                      </div>
+                    )}
+
+                    <div className="connection-actions">
+                      {!isConnected ? (
+                        <button className="btn-connect" onClick={connectToDevice} disabled={isFlashing}>
+                          <i className="fas fa-plug"></i>
+                          Connect Device
+                        </button>
+                      ) : (
+                        <button className="btn-disconnect" onClick={resetConnection} disabled={isFlashing}>
+                          <i className="fas fa-unlink"></i>
+                          Disconnect
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upload Section */}
+                <div className="upload-section">
+                  <h4>Code Upload</h4>
+
+                  {/* Progress */}
+                  {isFlashing && (
+                    <div className="upload-progress">
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{ width: `${flashProgress}%` }}></div>
+                      </div>
+                      <div className="progress-text">Uploading... {flashProgress}%</div>
+                    </div>
+                  )}
+
+                  <button
+                    className={`btn-upload ${isFlashing ? "uploading" : ""}`}
+                    onClick={uploadCode}
+                    disabled={!code.trim() || isFlashing || !isConnected}
+                  >
+                    {isFlashing ? (
+                      <>
+                        <div className="spinner"></div>
+                        Uploading... {flashProgress}%
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-upload"></i>
+                        Upload Code
+                      </>
+                    )}
+                  </button>
+
+                  {!code.trim() && (
+                    <p className="upload-hint">
+                      <i className="fas fa-info-circle"></i>
+                      Write some code to enable upload
+                    </p>
+                  )}
+                </div>
+
+                {/* Instructions */}
+                <div className="instructions-section">
+                  <h4>Instructions</h4>
+                  <ol className="instructions-list">
+                    <li>Select your ESP32 device type from the dropdown</li>
+                    <li>Click "Connect Device" to establish connection</li>
+                    <li>Write or paste your Python code in the editor</li>
+                    <li>Click "Upload Code"</li>
+                  </ol>
+                </div>
               </div>
-            )}
+            </div>
+          )}
 
-            <button
-              className={`btn-upload ${isFlashing ? 'uploading' : ''}`}
-              onClick={uploadCode}
-              disabled={!code.trim() || isFlashing || !isConnected}
-            >
-              {isFlashing ? (
-                <>
-                  <div className="spinner"></div>
-                  Uploading... {flashProgress}%
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-upload"></i>
-                  Upload Code
-                </>
+          {activeView === "files" && (
+            <div className="esp32-tab-content" role="tabpanel">
+              {!canShowAdvancedFeatures && (
+                <div className="esp32-feature-notice">
+                  <div className="connection-info">
+                    <i className="fas fa-info-circle"></i>
+                    <span>Connect your device first to access the file manager.</span>
+                  </div>
+
+                  {!isConnected ? (
+                    <button className="btn-connect" onClick={connectToDevice} disabled={isFlashing}>
+                      <i className="fas fa-plug"></i>
+                      Connect Device
+                    </button>
+                  ) : (
+                    <button className="btn-disconnect" onClick={resetConnection} disabled={isFlashing}>
+                      <i className="fas fa-unlink"></i>
+                      Disconnect
+                    </button>
+                  )}
+                </div>
               )}
-            </button>
-            
-            {!code.trim() && (
-              <p className="upload-hint">
-                <i className="fas fa-info-circle"></i>
-                Write some code to enable upload
-              </p>
-            )}
-          </div>
 
-          {/* Instructions */}
-          <div className="instructions-section">
-            <h4>Instructions</h4>
-            <ol className="instructions-list">
-              <li>Select your ESP32 device type from the dropdown</li>
-              <li>Click "Connect Device" to establish connection</li>
-              <li>Write or paste your Python code in the editor</li>
-              <li>Click "Upload Code" </li>
-            </ol>
-          </div>
+              {canShowAdvancedFeatures && (
+                <FileBrowser
+                  serialPort={serialPort}
+                  onError={onError}
+                />
+              )}
+            </div>
+          )}
+
+          {activeView === "repl" && (
+            <div className="esp32-tab-content" role="tabpanel">
+              {!canShowAdvancedFeatures && (
+                <div className="esp32-feature-notice">
+                  <div className="connection-info">
+                    <i className="fas fa-info-circle"></i>
+                    <span>Connect your device first to access the REPL.</span>
+                  </div>
+
+                  {!isConnected ? (
+                    <button className="btn-connect" onClick={connectToDevice} disabled={isFlashing}>
+                      <i className="fas fa-plug"></i>
+                      Connect Device
+                    </button>
+                  ) : (
+                    <button className="btn-disconnect" onClick={resetConnection} disabled={isFlashing}>
+                      <i className="fas fa-unlink"></i>
+                      Disconnect
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {canShowAdvancedFeatures && (
+                <ESP32REPL
+                  serialPort={serialPort}
+                  onError={onError}
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

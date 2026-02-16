@@ -4,13 +4,14 @@
  */
 
 // Components
-export { ESP32Uploader, ESP32UploaderSidebar, FileBrowser } from "./components";
+export { ESP32Uploader, ESP32UploaderSidebar, FileBrowser, ESP32REPL } from "./components";
 export type { ESP32UploaderProps } from "./components";
 
 // Hooks
 export { useESP32Uploader } from "./hooks/use-esp32-uploader";
 export { useESP32Serial } from "./hooks/use-esp32-serial";
 export { useFileManager } from "./hooks/use-file-manager";
+export { useESP32REPL } from "./hooks/use-esp32-repl";
 
 // Types
 export type { 

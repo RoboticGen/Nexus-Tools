@@ -136,10 +136,43 @@
 .esp32-sidebar {
   height: 100%;
   display: flex;
-  flex-direction: row;
-  overflow-y: auto;
-  gap: 2rem;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 0;
   padding: 0;
+}
+
+/* ESP32 Sidebar Inner Container for Tabs */
+.esp32-sidebar .esp32-sidebar-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tab Header */
+.esp32-sidebar .esp32-sidebar-header {
+  flex-shrink: 0;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+/* Tab Content */
+.esp32-sidebar .esp32-tab-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+/* Adjust tools container for tabbed interface */
+.esp32-sidebar .esp32-tools {
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  align-items: flex-start;
+  width: 100%;
+  height: auto;
+  overflow-x: auto;
+  padding: 1rem;
 }
 
 /* Warning Section */

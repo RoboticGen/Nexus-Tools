@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useFileManager } from '../hooks/use-file-manager';
 import type { FileSystemNode } from '../types/file-manager';
 import '../styles/file-browser.css';
@@ -79,7 +79,7 @@ export function FileBrowser({
       try {
         const data = await readFile(filepath);
 
-        const blob = new Blob([data], { type: 'application/octet-stream' });
+        const blob = new Blob([new Uint8Array(data)], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;

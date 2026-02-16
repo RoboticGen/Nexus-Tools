@@ -6,10 +6,6 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { FileSystemManager } from '../utils/file-system-manager';
 import type {
   FileManagerState,
-  FileOperation,
-  FileSystemNode,
-  FileSystemStats,
-  DeviceInfo,
   FileManagerOptions,
 } from '../types/file-manager';
 
@@ -26,7 +22,6 @@ const INITIAL_STATE: FileManagerState = {
 export function useFileManager(serialPort: any) {
   const [state, setState] = useState<FileManagerState>(INITIAL_STATE);
   const managerRef = useRef<FileSystemManager | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
 
   /**
    * Initialize file manager connection
@@ -112,7 +107,6 @@ export function useFileManager(serialPort: any) {
         throw new Error('File manager not connected');
       }
 
-      const opId = Date.now();
       try {
         setState((prev) => ({
           ...prev,
