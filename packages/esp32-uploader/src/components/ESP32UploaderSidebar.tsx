@@ -7,8 +7,6 @@
 
 import { useESP32Uploader } from "../hooks/use-esp32-uploader";
 
-import type { ESP32Device } from "../types/esp32";
-
 interface ESP32UploaderSidebarProps {
   code: string;
   onStatusUpdate?: (status: string) => void;

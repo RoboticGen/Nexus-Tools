@@ -12,12 +12,11 @@
     "clean": "rimraf .next .turbo node_modules"
   },
   "dependencies": {
-    "@codemirror/lang-python": "^6.1.4",
     "@nexus-tools/esp32-uploader": "workspace:*",
+    "@nexus-tools/monaco-editor": "workspace:*",
     "@nexus-tools/types": "workspace:*",
     "@nexus-tools/ui": "workspace:*",
     "@nexus-tools/utils": "workspace:*",
-    "@uiw/react-codemirror": "^4.21.21",
     "blockly": "^12.3.1",
     "esp-web-tools": "^10.2.1",
     "next": "14.1.0",

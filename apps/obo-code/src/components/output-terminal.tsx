@@ -18,7 +18,12 @@ export function OutputTerminal({
       <div className="panel-header">
         <span className="panel-title">Output</span>
         <div className="button-group">
-          <button className="action-btn clear-btn" onClick={onClear} title="Clear Output">
+          <button 
+            className="action-btn clear-btn" 
+            onClick={onClear} 
+            disabled={isRunning}
+            title={isRunning ? "Stop execution first to clear output" : "Clear Output"}
+          >
             <i className="fa fa-trash" />
             <span>Clear</span>
           </button>
@@ -35,7 +40,7 @@ export function OutputTerminal({
       <div className="terminal-wrapper">
         <textarea
           className="terminal-output"
-          value={output || "Python 3.10 \n>>> "}
+          value={output || "Python \n>>> "}
           readOnly
           rows={10}
         />

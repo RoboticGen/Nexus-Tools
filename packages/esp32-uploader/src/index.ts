@@ -4,12 +4,13 @@
  */
 
 // Components
-export { ESP32Uploader, ESP32UploaderSidebar } from "./components";
+export { ESP32Uploader, ESP32UploaderSidebar, FileBrowser } from "./components";
 export type { ESP32UploaderProps } from "./components";
 
 // Hooks
 export { useESP32Uploader } from "./hooks/use-esp32-uploader";
 export { useESP32Serial } from "./hooks/use-esp32-serial";
+export { useFileManager } from "./hooks/use-file-manager";
 
 // Types
 export type { 
@@ -18,9 +19,19 @@ export type {
   SerialPortOptions, 
   USBFilter 
 } from "./types/esp32";
+export type {
+  FileManagerState,
+  FileOperation,
+  FileSystemNode,
+  FileSystemStats,
+  DeviceInfo,
+  FileManagerOptions,
+  FileTransferProgress,
+} from "./types/file-manager";
 
 // Constants
 export { ESP32_DEVICES, ESP32_USB_FILTERS, DEFAULT_SERIAL_OPTIONS } from "./constants/esp32";
 
 // Utilities
 export { convertToMicroPython, createMainPyFile } from "./utils/micropython-converter";
+export { FileSystemManager } from "./utils/file-system-manager";
