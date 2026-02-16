@@ -239,10 +239,22 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
               )}
 
               {canShowAdvancedFeatures && (
-                <FileBrowser
-                  serialPort={serialPort}
-                  onError={onError}
-                />
+                <div className="esp32-file-manager-wrapper">
+                  {isFlashing && (
+                    <div className="esp32-feature-notice">
+                      <div className="connection-info">
+                        <i className="fas fa-info-circle"></i>
+                        <span>File manager is disabled during code upload. Please wait for upload to complete.</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <FileBrowser
+                    serialPort={serialPort}
+                    onError={onError}
+                    disabled={isFlashing}
+                  />
+                </div>
               )}
             </div>
           )}
@@ -271,10 +283,21 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
               )}
 
               {canShowAdvancedFeatures && (
-                <ESP32REPL
-                  serialPort={serialPort}
-                  onError={onError}
-                />
+                <div className="esp32-repl-wrapper">
+                  {isFlashing && (
+                    <div className="esp32-feature-notice">
+                      <div className="connection-info">
+                        <i className="fas fa-info-circle"></i>
+                        <span>REPL is disabled during code upload. Please wait for upload to complete.</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <ESP32REPL
+                    serialPort={serialPort}
+                    onError={onError}
+                  />
+                </div>
               )}
             </div>
           )}

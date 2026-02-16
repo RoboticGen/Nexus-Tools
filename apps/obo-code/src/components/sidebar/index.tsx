@@ -5,8 +5,8 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
 import { ESP32UploaderSidebar } from "@nexus-tools/esp32-uploader";
+import { useState, useEffect } from "react";
 
 interface SidebarProps {
   code: string;

@@ -98,6 +98,43 @@
   background: #c62828;
 }
 
+/* Button Disabled States */
+.btn:disabled {
+  background: #f5f5f5 !important;
+  color: #c0c0c0 !important;
+  border-color: #e0e0e0 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  opacity: 0.6;
+}
+
+/* Disabled File Browser */
+.file-browser.disabled {
+  opacity: 0.7;
+}
+
+.file-browser.disabled .file-tree {
+  pointer-events: none;
+}
+
+.disabled-message {
+  padding: 12px 16px;
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  color: #856404;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 1px;
+}
+
+/* Action Button Disabled States */
+.action-btn:disabled {
+  background: #f5f5f5 !important;
+  color: #c0c0c0 !important;
+  cursor: not-allowed !important;
+  opacity: 0.5;
+}
+
 /* Device Info */
 .device-info {
   display: flex;

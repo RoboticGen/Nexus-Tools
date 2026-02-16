@@ -15,6 +15,7 @@ interface FileBrowserProps {
   onConnected?: () => void;
   onDisconnected?: () => void;
   onError?: (error: string) => void;
+  disabled?: boolean;
 }
 
 export function FileBrowser({
@@ -22,6 +23,7 @@ export function FileBrowser({
   onConnected,
   onDisconnected,
   onError,
+  disabled = false,
 }: FileBrowserProps) {
   const {
     state,
@@ -205,6 +207,7 @@ export function FileBrowser({
                 className="action-btn"
                 onClick={() => handleDownloadFile(node.path)}
                 title="Download"
+                disabled={disabled}
               >
                 ⬇
               </button>
@@ -212,6 +215,7 @@ export function FileBrowser({
                 className="action-btn delete"
                 onClick={() => handleDeleteFile(node.path)}
                 title="Delete"
+                disabled={disabled}
               >
                 ✕
               </button>
@@ -229,7 +233,7 @@ export function FileBrowser({
   };
 
   return (
-    <div className="file-browser">
+    <div className={`file-browser ${disabled ? 'disabled' : ''}`}>
       <div className="file-browser-header">
         <h2>File Manager</h2>
         <div className="connection-status">
@@ -241,19 +245,34 @@ export function FileBrowser({
         </div>
       </div>
 
+      {/* Disabled State Message */}
+      {disabled && (
+        <div className="disabled-message">
+          File manager is temporarily unavailable during uploads.
+        </div>
+      )}
+
       {/* Connection Controls */}
       <div className="file-browser-controls">
         {!state.connected ? (
-          <button className="btn btn-primary" onClick={handleConnect}>
+          <button 
+            className="btn btn-primary" 
+            onClick={handleConnect}
+            disabled={disabled}
+          >
             Connect
           </button>
         ) : (
-          <button className="btn btn-danger" onClick={handleDisconnect}>
+          <button 
+            className="btn btn-danger" 
+            onClick={handleDisconnect}
+            disabled={disabled}
+          >
             Disconnect
           </button>
         )}
 
-        {state.connected && (
+        {state.connected && !disabled && (
           <>
             <button className="btn" onClick={handleRefresh}>
               Refresh

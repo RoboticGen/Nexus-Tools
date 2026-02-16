@@ -31,7 +31,35 @@ export function useFileManager(serialPort: any) {
       try {
         setState((prev) => ({ ...prev, error: null }));
 
-        const manager = await FileSystemManager.begin(serialPort, options?.softReboot);
+        // Check if serial port is available
+        if (!serialPort) {
+          throw new Error('Serial port is not available');
+        }
+
+        // Additional check for port readiness
+        if (!serialPort.readable || !serialPort.writable) {
+          throw new Error('Serial port is not ready for communication');
+        }
+
+        let manager: FileSystemManager;
+        
+        try {
+          // Try normal begin first
+          manager = await FileSystemManager.begin(serialPort, options?.softReboot);
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          
+          // If it's a lock-related error, try force begin
+          if (errorMsg.includes('locked') || errorMsg.includes('in use') || errorMsg.includes('Timeout waiting')) {
+            console.log('Port appears locked, attempting force connection...');
+            setState((prev) => ({ ...prev, error: 'Port locked, attempting automatic recovery...' }));
+            
+            manager = await FileSystemManager.forceBegin(serialPort, options?.softReboot);
+          } else {
+            throw error;
+          }
+        }
+        
         managerRef.current = manager;
 
         // Fetch initial device info and filesystem
@@ -52,8 +80,19 @@ export function useFileManager(serialPort: any) {
         return manager;
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        setState((prev) => ({ ...prev, error: errorMsg, connected: false }));
-        throw error;
+        
+        // Provide more helpful error messages
+        let userFriendlyMessage = errorMsg;
+        if (errorMsg.includes('locked') || errorMsg.includes('in use')) {
+          userFriendlyMessage = 'Serial port is currently in use. Please disconnect your ESP32, wait a moment, and reconnect it.';
+        } else if (errorMsg.includes('not available') || errorMsg.includes('not ready')) {
+          userFriendlyMessage = 'ESP32 device is not connected or not ready. Please connect your device first.';
+        } else if (errorMsg.includes('Board is not responding')) {
+          userFriendlyMessage = 'ESP32 is not responding. Please check that MicroPython is installed and reset your device.';
+        }
+        
+        setState((prev) => ({ ...prev, error: userFriendlyMessage, connected: false }));
+        throw new Error(userFriendlyMessage);
       }
     },
     [serialPort]

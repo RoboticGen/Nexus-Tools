@@ -35,4 +35,4 @@ export { ESP32_DEVICES, ESP32_USB_FILTERS, DEFAULT_SERIAL_OPTIONS } from "./cons
 
 // Utilities
 export { convertToMicroPython, createMainPyFile } from "./utils/micropython-converter";
-export { FileSystemManager } from "./utils/file-system-manager";
+// Utils\nexport { FileSystemManager } from \"./utils/file-system-manager\";\nexport { WebSerialPortAdapter } from \"./utils/web-serial-adapter\";

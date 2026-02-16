@@ -2,6 +2,7 @@
  * ESP32 File System Manager
  * Handles file operations in MicroPython REPL mode (based on Viper IDE implementation)
  */
+import { WebSerialPortAdapter } from './web-serial-adapter';
 
 export interface FileSystemNode {
   name: string;
@@ -29,11 +30,11 @@ export interface FileSystemStats {
 }
 
 export class FileSystemManager {
-  private port: any;
+  private port: WebSerialPortAdapter;
   private endFn: (() => Promise<void>) | null = null;
 
-  constructor(port: any) {
-    this.port = port;
+  constructor(serialPort: any) {
+    this.port = new WebSerialPortAdapter(serialPort);
   }
 
   /**
@@ -41,14 +42,45 @@ export class FileSystemManager {
    */
   static async begin(port: any, soft_reboot = false): Promise<FileSystemManager> {
     const manager = new FileSystemManager(port);
-    await manager.enterRawRepl(soft_reboot);
+    
     try {
+      // Wait for port to be available if it's currently locked
+      await manager.port.waitForAvailable();
+      
+      await manager.enterRawRepl(soft_reboot);
       await manager.exec(`import sys,os`);
     } catch (err) {
       await manager.end();
       throw err;
     }
     return manager;
+  }
+
+  /**
+   * Force begin - attempts cleanup and retry if initial connection fails
+   */
+  static async forceBegin(port: any, soft_reboot = false): Promise<FileSystemManager> {
+    try {
+      return await FileSystemManager.begin(port, soft_reboot);
+    } catch (error) {
+      console.log('Initial connection failed, attempting force cleanup...');
+      
+      const manager = new FileSystemManager(port);
+      await manager.port.forceCleanup();
+      
+      // Wait a bit after cleanup
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Try again
+      try {
+        await manager.enterRawRepl(soft_reboot);
+        await manager.exec(`import sys,os`);
+        return manager;
+      } catch (retryErr) {
+        await manager.end();
+        throw retryErr;
+      }
+    }
   }
 
   /**
