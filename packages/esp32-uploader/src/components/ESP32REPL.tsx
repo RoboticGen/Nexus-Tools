@@ -7,6 +7,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useESP32REPL } from "../hooks/use-esp32-repl";
+import { translateErrorMessage } from "../utils/error-messages";
 
 interface ESP32REPLProps {
   serialPort: any;
@@ -21,7 +22,7 @@ interface REPLLine {
 
 export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
   const [lines, setLines] = useState<REPLLine[]>([
-    { type: "output", content: "ESP32 REPL - Click 'Connect REPL' to start", timestamp: new Date() }
+    { type: "output", content: "ESP32 REPL", timestamp: new Date() }
   ]);
   const [currentInput, setCurrentInput] = useState("");
   const [isConnected, setIsConnected] = useState(false);
@@ -76,14 +77,14 @@ export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
       
       await connectToREPL();
       setIsConnected(true);
-      addLine("output", "=== MicroPython REPL Connected ===");
+      addLine("output", "=== REPL Connected ===");
       addLine("output", "Type commands below. Use Ctrl+C to interrupt, Ctrl+D to soft reset.");
       addLine("output", ">>> ");
     } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
+      const userFriendlyMsg = translateErrorMessage(error);
       console.error("REPL Connection error:", error);
-      onError?.(msg);
-      addLine("error", `❌ Connection error: ${msg}`);
+      onError?.(userFriendlyMsg);
+      addLine("error", `❌ ${userFriendlyMsg.split('\n')[0]}`);
       addLine("output", ">>> ");
       setIsConnected(false);
     } finally {

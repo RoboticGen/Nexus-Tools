@@ -659,10 +659,10 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  color: #39ff14;
+  color: #000000;
   font-size: 0.8rem;
   text-align: center;
-  background: #0d1117;
+  background: #ffffff;
   margin: 0;
   flex: 1;
   height: 100%;
@@ -676,20 +676,20 @@
   height: 100%;
   margin: 0;
   padding: 0;
-  background: #0d1117;
+  background: #f3f3f3;
   position: relative;
 }
 
 .esp32-repl-output {
   flex: 1;
   padding: 0.375rem 0.5rem 0;
-  background: #0d1117;
-  color: #39ff14;
+  background: #f3f3f3;
+  color: #000000;
   font-family: 'Courier New', 'SFMono-Regular', 'Monaco', 'Consolas', monospace;
   font-size: 0.75rem;
   line-height: 1.2;
   overflow-y: auto;
-  border: 1px solid #30363d;
+  border: 1px solid #9c9d9e;
   border-bottom: none;
   margin: 0;
   min-height: 0;
@@ -705,12 +705,12 @@
 }
 
 .repl-line-input .repl-content {
-  color: #39ff14;
+  color: #000000;
   font-weight: 500;
 }
 
 .repl-line-output .repl-content {
-  color: #39ff14;
+  color: #000000;
 }
 
 .repl-line-error .repl-content {
@@ -727,7 +727,7 @@
   align-items: center;
   gap: 0.25rem;
   padding: 0.25rem 0.4rem;
-  background: #0d1117;
+  background: #f3f3f3;
   border: 1px solid #30363d;
   border-top: none;
   position: absolute;
@@ -741,7 +741,7 @@
 }
 
 .repl-prompt {
-  color: #39ff14;
+  color: #1d1d1d;
   font-weight: bold;
   flex-shrink: 0;
   font-size: 0.75rem;
@@ -752,7 +752,7 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: #39ff14;
+  color: #000000;
   font-family: inherit;
   font-size: 0.75rem;
   outline: none;
@@ -850,4 +850,89 @@
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   margin-right: 0.25rem;
+}
+
+/* Modal Dialog Components */
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+  color: var(--text-primary);
+}
+
+.modal-body p {
+  margin: 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.modal-body i {
+  color: var(--btn-copy);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.modal-actions {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  background: var(--panel-bg);
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-cancel {
+  background-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background-color: #95a3b3;
+  transform: translateY(-1px);
+}
+
+.btn-confirm {
+  background-color: var(--btn-run);
+  color: #ffffff;
+}
+
+.btn-confirm:hover:not(:disabled) {
+  background-color: #29d67d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(41, 214, 125, 0.3);
+}
+
+.btn-confirm:disabled {
+  background-color: #757575;
+  cursor: not-allowed;
+  opacity: 0.6;
 }

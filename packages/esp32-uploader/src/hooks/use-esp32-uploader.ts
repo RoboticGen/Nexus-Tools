@@ -7,6 +7,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 
 import { ESP32_DEVICES } from "../constants/esp32";
 import { convertToMicroPython, createMainPyFile } from "../utils/micropython-converter";
+import { translateErrorMessage } from "../utils/error-messages";
 
 import { useESP32Serial } from "./use-esp32-serial";
 
@@ -65,12 +66,12 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
    */
   const uploadCode = useCallback(async () => {
     if (!espSupported) {
-      onError?.("Web Serial API not supported. Use Chrome/Edge with HTTPS or localhost.");
+      onError?.(translateErrorMessage("Web Serial API not supported. Use Chrome/Edge with HTTPS or localhost."));
       return;
     }
 
     if (!code.trim()) {
-      onError?.("No code to upload");
+      onError?.(translateErrorMessage("No code to upload"));
       return;
     }
 
@@ -132,7 +133,9 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
     } catch (error: any) {
       setIsFlashing(false);
       setFlashProgress(0);
-      setIsConnected(false);
+      
+      const errorMsg = error.message || 'Unknown upload error';
+      const isWritableStreamLocked = errorMsg.includes("WritableStream is locked") || errorMsg.includes("Cannot create writer");
       
       // Handle user cancellation gracefully
       if (error.message && error.message.includes('Connection cancelled')) {
@@ -140,6 +143,18 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
         onStatusUpdate?.("Upload cancelled by user");
         return;
       }
+      
+      // If it's a WritableStream locked error, keep the connection alive
+      // User can manually disconnect REPL and retry
+      if (isWritableStreamLocked) {
+        const userFriendlyMsg = translateErrorMessage(error);
+        setConnectionError(userFriendlyMsg);
+        onError?.(userFriendlyMsg);
+        return; // Don't disconnect, let user fix it
+      }
+      
+      // For other errors, clear the connection
+      setIsConnected(false);
       
       // Clear the stored connection on upload error
       if (connectedPortRef.current) {
@@ -149,9 +164,9 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
         setIsConnected(false);
       }
       
-      const errorMsg = error.message || 'Unknown upload error';
-      setConnectionError(errorMsg);
-      onError?.(errorMsg);
+      const userFriendlyMsg = translateErrorMessage(error);
+      setConnectionError(userFriendlyMsg);
+      onError?.(userFriendlyMsg);
     } finally {
       // Don't close the port after upload - keep it for future uploads
       // Only close if there was an error and no existing connection
@@ -196,9 +211,9 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
         return;
       }
       
-      const errorMsg = error.message || 'Unknown connection error';
-      setConnectionError(errorMsg);
-      onError?.(errorMsg);
+      const userFriendlyMsg = translateErrorMessage(error);
+      setConnectionError(userFriendlyMsg);
+      onError?.(userFriendlyMsg);
     }
   }, [espSupported, connectToESP32, onStatusUpdate, onError]);
 

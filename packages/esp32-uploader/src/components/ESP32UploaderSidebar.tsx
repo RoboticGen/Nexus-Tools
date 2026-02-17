@@ -8,6 +8,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 
 import { useESP32Uploader } from "../hooks/use-esp32-uploader";
+import { translateErrorMessage } from "../utils/error-messages";
 import { ESP32REPL } from "./ESP32REPL";
 
 interface ESP32UploaderSidebarProps {
@@ -52,10 +53,6 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
     flashProgress,
     espSupported,
     connectionError,
-    devices,
-    
-    // Actions
-    setSelectedDevice,
     uploadCode,
     connectToDevice,
     resetConnection,
@@ -69,6 +66,14 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
   const canShowAdvancedFeatures = useMemo(() => {
     return Boolean(espSupported) && Boolean(serialPort);
   }, [espSupported, serialPort]);
+
+  // Handle upload with proper error handling
+  const handleUploadClick = useCallback(() => {
+    uploadCode().catch((error) => {
+      const userMessage = translateErrorMessage(error);
+      onError?.(userMessage);
+    });
+  }, [uploadCode, onError]);
 
   // Reset auto-detection state when disconnected
   useEffect(() => {
@@ -142,25 +147,7 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
           {activeView === "uploader" && (
             <div className="esp32-tab-content" role="tabpanel">
               <div className="esp32-tools">
-                {/* Device Selection */}
-                <div className="device-section">
-                  <h4>Device Selection</h4>
-                  <select
-                    className="device-select"
-                    value={selectedDevice.chipFamily}
-                    onChange={(e) => {
-                      const device = devices.find((d) => d.chipFamily === e.target.value);
-                      if (device) setSelectedDevice(device);
-                    }}
-                    disabled={isFlashing}
-                  >
-                    {devices.map((device) => (
-                      <option key={device.chipFamily} value={device.chipFamily}>
-                        {device.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                
 
                 {/* Connection Status */}
                 <div className="connection-section">
@@ -224,7 +211,7 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
 
                   <button
                     className={`btn-upload ${isFlashing ? "uploading" : ""}`}
-                    onClick={uploadCode}
+                    onClick={handleUploadClick}
                     disabled={!code.trim() || isFlashing || !isConnected}
                   >
                     {isFlashing ? (
@@ -262,48 +249,47 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
             </div>
           )}
 
-          {activeView === "repl" && (
-            <div className="esp32-tab-content" role="tabpanel">
-              {!canShowAdvancedFeatures && (
-                <div className="esp32-feature-notice">
-                  <div className="connection-info">
-                    <i className="fas fa-info-circle"></i>
-                    <span>Connect your device first to access the REPL.</span>
-                  </div>
-
-                  {!isConnected ? (
-                    <button className="btn-connect" onClick={connectToDevice} disabled={isFlashing}>
-                      <i className="fas fa-plug"></i>
-                      Connect Device
-                    </button>
-                  ) : (
-                    <button className="btn-disconnect" onClick={resetConnection} disabled={isFlashing}>
-                      <i className="fas fa-unlink"></i>
-                      Disconnect
-                    </button>
-                  )}
+          {/* REPL Tab - Always render component to maintain connection */}
+          <div className={`esp32-tab-content ${activeView === "repl" ? "active" : "hidden"}`} role="tabpanel" style={{ display: activeView === "repl" ? "block" : "none" }}>
+            {!canShowAdvancedFeatures && (
+              <div className="esp32-feature-notice">
+                <div className="connection-info">
+                  <i className="fas fa-info-circle"></i>
+                  <span>Connect your device first to access the REPL.</span>
                 </div>
-              )}
 
-              {canShowAdvancedFeatures && (
-                <div className="esp32-repl-wrapper">
-                  {isFlashing && (
-                    <div className="esp32-feature-notice">
-                      <div className="connection-info">
-                        <i className="fas fa-info-circle"></i>
-                        <span>REPL is disabled during code upload. Please wait for upload to complete.</span>
-                      </div>
+                {!isConnected ? (
+                  <button className="btn-connect" onClick={connectToDevice} disabled={isFlashing}>
+                    <i className="fas fa-plug"></i>
+                    Connect Device
+                  </button>
+                ) : (
+                  <button className="btn-disconnect" onClick={resetConnection} disabled={isFlashing}>
+                    <i className="fas fa-unlink"></i>
+                    Disconnect
+                  </button>
+                )}
+              </div>
+            )}
+
+            {canShowAdvancedFeatures && (
+              <div className="esp32-repl-wrapper">
+                {isFlashing && (
+                  <div className="esp32-feature-notice">
+                    <div className="connection-info">
+                      <i className="fas fa-info-circle"></i>
+                      <span>REPL is disabled during code upload. Please wait for upload to complete.</span>
                     </div>
-                  )}
-                  
-                  <ESP32REPL
-                    serialPort={serialPort}
-                    onError={onError}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+                  </div>
+                )}
+                
+                <ESP32REPL
+                  serialPort={serialPort}
+                  onError={onError}
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
