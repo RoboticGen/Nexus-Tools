@@ -27,6 +27,17 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
   const [error, setError] = useState<string | null>(null);
 
   /**
+   * Check if the serial port is still accessible
+   */
+  const isPortValid = useCallback((): boolean => {
+    if (!serialPort) return false;
+    // Check if readable/writable streams are still accessible
+    const hasReadable = serialPort.readable !== undefined && serialPort.readable !== null;
+    const hasWritable = serialPort.writable !== undefined && serialPort.writable !== null;
+    return hasReadable && hasWritable;
+  }, [serialPort]);
+
+  /**
    * Read response from serial port with timeout
    */
   const readSerialResponse = useCallback(async (
@@ -61,7 +72,13 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
    */
   const fetchFiles = useCallback(async (path: string = "/"): Promise<void> => {
     if (!serialPort) {
-      setError("Serial port not available");
+      setError("Serial port not available. Please connect to ESP32.");
+      return;
+    }
+
+    if (!isPortValid()) {
+      setError("Serial port connection lost. Please reconnect to ESP32.");
+      setFiles([]);
       return;
     }
 
@@ -73,7 +90,9 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
       const writer = serialPort.writable?.getWriter();
 
       if (!reader || !writer) {
-        throw new Error("Cannot access serial port for reading/writing");
+        throw new Error(
+          "Cannot access serial port. REPL may have closed the connection. Please wait a moment and try reconnecting."
+        );
       }
 
       try {
@@ -170,14 +189,19 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
     } finally {
       setIsLoading(false);
     }
-  }, [serialPort, readSerialResponse]);
+  }, [serialPort, isPortValid, readSerialResponse]);
 
   /**
    * Download file from ESP32
    */
   const downloadFile = useCallback(async (filename: string): Promise<void> => {
     if (!serialPort) {
-      setError("Serial port not available");
+      setError("Serial port not available. Please connect to ESP32.");
+      return;
+    }
+
+    if (!isPortValid()) {
+      setError("Serial port connection lost. Please reconnect to ESP32.");
       return;
     }
 
@@ -186,7 +210,9 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
       const writer = serialPort.writable?.getWriter();
 
       if (!reader || !writer) {
-        throw new Error("Cannot access serial port for reading/writing");
+        throw new Error(
+          "Cannot access serial port. REPL may have closed the connection. Please wait a moment and try reconnecting."
+        );
       }
 
       try {
@@ -350,7 +376,128 @@ print(binascii.hexlify(d).decode())
       console.error("Download error:", err);
       setError(`Failed to download file: ${msg}`);
     }
-  }, [serialPort]);
+  }, [serialPort, isPortValid]);
+
+  /**
+   * View file content as text
+   */
+  const viewFile = useCallback(async (filename: string): Promise<string> => {
+    if (!serialPort) {
+      throw new Error("Serial port not available. Please connect to ESP32.");
+    }
+
+    if (!isPortValid()) {
+      throw new Error("Serial port connection lost. Please reconnect to ESP32.");
+    }
+
+    try {
+      const reader = serialPort.readable?.getReader();
+      const writer = serialPort.writable?.getWriter();
+
+      if (!reader || !writer) {
+        throw new Error(
+          "Cannot access serial port. REPL may have closed the connection. Please wait a moment and try reconnecting."
+        );
+      }
+
+      try {
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+
+        await delay(SERIAL_DELAYS.BEFORE_READ);
+
+        // Send Ctrl+C to interrupt
+        await writer.write(encoder.encode("\x03"));
+        await delay(100);
+
+        // Send Ctrl+A to enter raw REPL mode
+        await writer.write(encoder.encode("\x01"));
+        await delay(100);
+
+        // Clear buffer
+        try {
+          let clearAttempts = 0;
+          while (clearAttempts < 5) {
+            const { value } = await Promise.race([
+              reader.read(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("timeout")), 50)
+              ),
+            ]);
+            if (!value) break;
+            clearAttempts++;
+          }
+        } catch (e) {
+          // Timeout expected
+        }
+
+        // Read file as text
+        const readCmd = `
+try:
+    with open('${filename}','r') as f:
+        print(f.read())
+except:
+    with open('${filename}','rb') as f:
+        print(f.read())
+`;
+
+        await writer.write(encoder.encode(readCmd));
+        await writer.write(encoder.encode("\x04")); // Ctrl+D
+
+        await delay(SERIAL_DELAYS.AFTER_COMMAND + 300);
+
+        // Read response
+        let response = "";
+        let readTimeout = SERIAL_DELAYS.READ_TIMEOUT * 2;
+        const readStartTime = Date.now();
+        let lastDataTime = Date.now();
+
+        while (Date.now() - readStartTime < readTimeout) {
+          try {
+            const { value, done } = await Promise.race([
+              reader.read(),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("timeout")), 100)
+              ),
+            ]);
+            if (done) break;
+            if (value) {
+              response += decoder.decode(value, { stream: true });
+              lastDataTime = Date.now();
+            }
+          } catch (e) {
+            if (response.length > 0 && Date.now() - lastDataTime > 500) {
+              break;
+            }
+          }
+        }
+
+        // Extract file content from response (remove REPL markers)
+        let content = response
+          .split("\n")
+          .filter(line => {
+            const trimmed = line.trim();
+            // Remove lines that are REPL prompts or control markers
+            if (trimmed === ">" || trimmed === ">>" || trimmed === ">>>") return false;
+            if (trimmed === "..." || trimmed.startsWith(">>>") || trimmed.startsWith("...")) return false;
+            return true;
+          })
+          .join("\n")
+          .trim();
+
+        // Remove any trailing REPL prompt characters (>, >>, >>>)
+        content = content.replace(/>>>+\s*$/, "").replace(/>+\s*$/, "").trim();
+
+        return content;
+      } finally {
+        reader.releaseLock();
+        writer.releaseLock();
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Failed to view file: ${msg}`);
+    }
+  }, [serialPort, isPortValid]);
 
   /**
    * Refresh the file list
@@ -366,6 +513,7 @@ print(binascii.hexlify(d).decode())
     fetchFiles,
     refreshFiles,
     downloadFile,
+    viewFile,
   };
 }
 

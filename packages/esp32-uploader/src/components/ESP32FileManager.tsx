@@ -19,9 +19,11 @@ export function ESP32FileManager({
   isConnected,
   onError,
 }: ESP32FileManagerProps) {
-  const { files, isLoading, error, fetchFiles, refreshFiles, downloadFile } =
+  const { files, isLoading, error, fetchFiles, refreshFiles, downloadFile, viewFile } =
     useESP32FileManager({ serialPort });
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
+  const [viewingFile, setViewingFile] = useState<{ name: string; content: string } | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
   // Fetch files when connected
   useEffect(() => {
@@ -54,6 +56,24 @@ export function ESP32FileManager({
     [downloadFile, onError]
   );
 
+  // Handle file view
+  const handleViewFile = useCallback(
+    async (filename: string) => {
+      try {
+        setViewLoading(true);
+        const content = await viewFile(filename);
+        setViewingFile({ name: filename, content });
+        onError?.(null as any);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        onError?.(msg);
+      } finally {
+        setViewLoading(false);
+      }
+    },
+    [viewFile, onError]
+  );
+
   if (!isConnected) {
     return (
       <div className="esp32-file-manager">
@@ -67,82 +87,133 @@ export function ESP32FileManager({
 
   return (
     <div className="esp32-file-manager">
-      <div className="file-manager-header">
-        <div className="file-manager-info">
-          <i className="fas fa-folder"></i>
-          <span className="path">/</span>
-        </div>
-        <button
-          className="btn-refresh"
-          onClick={refreshFiles}
-          disabled={isLoading}
-          title="Refresh file list"
-        >
-          <i className={`fas fa-sync ${isLoading ? "fa-spin" : ""}`}></i>
-          {isLoading ? "Refreshing..." : "Refresh"}
-        </button>
-      </div>
-
-      {isLoading && !files.length && (
-        <div className="file-list-loading">
-          <div className="spinner"></div>
-          <span>Loading files...</span>
-        </div>
-      )}
-
-      {error && (
-        <div className="file-list-error">
-          <i className="fas fa-exclamation-circle"></i>
-          <span>{error}</span>
-        </div>
-      )}
-
-      {!isLoading && files.length === 0 && !error && (
-        <div className="file-list-empty">
-          <i className="fas fa-folder-open"></i>
-          <p>No files found on ESP32</p>
-        </div>
-      )}
-
-      {files.length > 0 && (
-        <div className="file-list">
-          {files.map((file) => (
-            <div key={file.name} className="file-item">
-              <div className="file-icon">
-                <i
-                  className={`fas ${
-                    file.isDirectory ? "fa-folder" : "fa-file"
-                  }`}
-                ></i>
-              </div>
-              <div className="file-info">
-                <div className="file-name" title={file.name}>
-                  {file.name}
-                </div>
-                {file.size !== undefined && (
-                  <div className="file-size">{formatFileSize(file.size)}</div>
-                )}
-              </div>
-              {!file.isDirectory && (
-                <button
-                  className="btn-download-file"
-                  onClick={() => handleDownloadFile(file.name)}
-                  disabled={downloadingFile === file.name}
-                  title="Download file"
-                >
-                  {downloadingFile === file.name ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i>
-                    </>
-                  ) : (
-                    <i className="fas fa-download"></i>
-                  )}
-                </button>
-              )}
+      <div className="file-manager-layout">
+        {/* File List Sidebar */}
+        <div className="file-manager-sidebar">
+          <div className="file-manager-header">
+            <div className="file-manager-info">
+              <i className="fas fa-folder"></i>
+              <span className="path">/</span>
             </div>
-          ))}
+            <button
+              className="btn-refresh"
+              onClick={refreshFiles}
+              disabled={isLoading}
+              title="Refresh file list"
+            >
+              <i className={`fas fa-sync ${isLoading ? "fa-spin" : ""}`}></i>
+              {isLoading ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+
+          {isLoading && !files.length && (
+            <div className="file-list-loading">
+              <div className="spinner"></div>
+              <span>Loading files...</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="file-list-error">
+              <i className="fas fa-exclamation-circle"></i>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {!isLoading && files.length === 0 && !error && (
+            <div className="file-list-empty">
+              <i className="fas fa-folder-open"></i>
+              <p>No files found on ESP32</p>
+            </div>
+          )}
+
+          {files.length > 0 && (
+            <div className="file-list">
+              {files.map((file) => (
+                <div key={file.name} className="file-item">
+                  <div className="file-icon">
+                    <i
+                      className={`fas ${
+                        file.isDirectory ? "fa-folder" : "fa-file"
+                      }`}
+                    ></i>
+                  </div>
+                  <div className="file-info">
+                    <div className="file-name" title={file.name}>
+                      {file.name}
+                    </div>
+                    {file.size !== undefined && (
+                      <div className="file-size">{formatFileSize(file.size)}</div>
+                    )}
+                  </div>
+                  {!file.isDirectory && (
+                    <div className="file-actions">
+                      <button
+                        className="btn-view-file"
+                        onClick={() => handleViewFile(file.name)}
+                        disabled={viewLoading}
+                        title="View file content"
+                      >
+                        {viewLoading && viewingFile?.name === file.name ? (
+                          <>
+                            <i className="fas fa-spinner fa-spin"></i>
+                            <span>Loading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-eye"></i>
+                            <span>View</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        className="btn-download-file"
+                        onClick={() => handleDownloadFile(file.name)}
+                        disabled={downloadingFile === file.name}
+                        title="Download file"
+                      >
+                        {downloadingFile === file.name ? (
+                          <>
+                            <i className="fas fa-spinner fa-spin"></i>
+                            <span>Downloading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-download"></i>
+                            <span>Download</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* File Viewer Panel */}
+        {viewingFile && (
+          <div className="file-viewer-panel">
+            <div className="file-viewer-header">
+              <div className="file-viewer-title">
+                <i className="fas fa-file-alt"></i>
+                <span>{viewingFile.name}</span>
+              </div>
+              <button
+                className="btn-close-viewer"
+                onClick={() => setViewingFile(null)}
+                title="Close viewer"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="file-viewer-content">
+              <pre>{viewingFile.content}</pre>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
