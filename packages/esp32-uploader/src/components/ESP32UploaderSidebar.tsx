@@ -10,6 +10,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useESP32Uploader } from "../hooks/use-esp32-uploader";
 import { translateErrorMessage } from "../utils/error-messages";
 import { ESP32REPL } from "./ESP32REPL";
+import { ESP32FileManager } from "./ESP32FileManager";
 
 interface ESP32UploaderSidebarProps {
   code: string;
@@ -18,7 +19,7 @@ interface ESP32UploaderSidebarProps {
 }
 
 export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32UploaderSidebarProps) {
-  const [activeView, setActiveView] = useState<"uploader" | "repl">("uploader");
+  const [activeView, setActiveView] = useState<"uploader" | "repl" | "files">("uploader");
   const [replReady, setReplReady] = useState(false);
   const [autoDetecting, setAutoDetecting] = useState(false);
   const autoDetectionTriggeredRef = useRef(false);
@@ -139,6 +140,17 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
                     <i className="fas fa-play"></i>
                   </span>
                 )}
+              </button>
+              <button
+                type="button"
+                className={`esp32-tab-btn ${activeView === "files" ? "active" : ""}`}
+                onClick={() => setActiveView("files")}
+                role="tab"
+                aria-selected={activeView === "files"}
+                disabled={!isConnected}
+              >
+                <i className="fas fa-folder"></i>
+                Files
               </button>
             </div>
           </div>
@@ -289,6 +301,15 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
                 />
               </div>
             )}
+          </div>
+
+          {/* Files Tab */}
+          <div className={`esp32-tab-content ${activeView === "files" ? "active" : "hidden"}`} role="tabpanel" style={{ display: activeView === "files" ? "block" : "none" }}>
+            <ESP32FileManager
+              serialPort={serialPort}
+              isConnected={isConnected}
+              onError={onError}
+            />
           </div>
         </div>
       )}
