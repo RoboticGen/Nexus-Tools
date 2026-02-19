@@ -6,6 +6,8 @@
 "use client";
 
 import { useEffect, useCallback, useState } from "react";
+import { Button, Space } from "antd";
+import { SyncOutlined, EyeOutlined, DownloadOutlined, CloseOutlined } from "@ant-design/icons";
 import { useESP32FileManager } from "../hooks/use-esp32-file-manager";
 
 interface ESP32FileManagerProps {
@@ -95,15 +97,14 @@ export function ESP32FileManager({
               <i className="fas fa-folder"></i>
               <span className="path">/</span>
             </div>
-            <button
-              className="btn-refresh"
+            <Button
+              icon={<SyncOutlined spin={isLoading} />}
               onClick={refreshFiles}
               disabled={isLoading}
               title="Refresh file list"
             >
-              <i className={`fas fa-sync ${isLoading ? "fa-spin" : ""}`}></i>
               {isLoading ? "Refreshing..." : "Refresh"}
-            </button>
+            </Button>
           </div>
 
           {isLoading && !files.length && (
@@ -147,44 +148,26 @@ export function ESP32FileManager({
                     )}
                   </div>
                   {!file.isDirectory && (
-                    <div className="file-actions">
-                      <button
-                        className="btn-view-file"
+                    <Space>
+                      <Button
+                        size="small"
+                        icon={<EyeOutlined />}
                         onClick={() => handleViewFile(file.name)}
-                        disabled={viewLoading}
+                        loading={viewLoading && viewingFile?.name === file.name}
                         title="View file content"
                       >
-                        {viewLoading && viewingFile?.name === file.name ? (
-                          <>
-                            <i className="fas fa-spinner fa-spin"></i>
-                            <span>Loading...</span>
-                          </>
-                        ) : (
-                          <>
-                            <i className="fas fa-eye"></i>
-                            <span>View</span>
-                          </>
-                        )}
-                      </button>
-                      <button
-                        className="btn-download-file"
+                        View
+                      </Button>
+                      <Button
+                        size="small"
+                        icon={<DownloadOutlined />}
                         onClick={() => handleDownloadFile(file.name)}
-                        disabled={downloadingFile === file.name}
+                        loading={downloadingFile === file.name}
                         title="Download file"
                       >
-                        {downloadingFile === file.name ? (
-                          <>
-                            <i className="fas fa-spinner fa-spin"></i>
-                            <span>Downloading...</span>
-                          </>
-                        ) : (
-                          <>
-                            <i className="fas fa-download"></i>
-                            <span>Download</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
+                        Download
+                      </Button>
+                    </Space>
                   )}
                 </div>
               ))}
@@ -200,13 +183,12 @@ export function ESP32FileManager({
                 <i className="fas fa-file-alt"></i>
                 <span>{viewingFile.name}</span>
               </div>
-              <button
-                className="btn-close-viewer"
+              <Button
+                type="text"
+                icon={<CloseOutlined />}
                 onClick={() => setViewingFile(null)}
                 title="Close viewer"
-              >
-                <i className="fas fa-times"></i>
-              </button>
+              />
             </div>
             <div className="file-viewer-content">
               <pre>{viewingFile.content}</pre>

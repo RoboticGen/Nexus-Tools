@@ -18,9 +18,8 @@
     "clean": "rimraf dist .turbo"
   },
   "dependencies": {
-    "class-variance-authority": "^0.7.0",
-    "clsx": "^2.1.0",
-    "tailwind-merge": "^2.2.0"
+    "antd": "^5.11.0",
+    "@ant-design/icons": "^5.2.0"
   },
   "devDependencies": {
     "@nexus-tools/eslint-config": "workspace:*",

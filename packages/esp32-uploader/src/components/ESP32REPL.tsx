@@ -6,6 +6,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Button, Space } from "antd";
+import { LinkOutlined, DeleteOutlined, StopOutlined, ReloadOutlined, PoweroffOutlined } from "@ant-design/icons";
 import { useESP32REPL } from "../hooks/use-esp32-repl";
 import { translateErrorMessage } from "../utils/error-messages";
 
@@ -159,54 +161,46 @@ export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
         
         <div className="esp32-repl-controls">
           {!isConnected ? (
-            <button 
-              className="repl-btn repl-btn-connect" 
+            <Button
+              type="primary"
+              icon={<LinkOutlined />}
               onClick={handleConnect}
               disabled={!serialPort || isConnecting}
+              loading={isConnecting}
             >
-              {isConnecting ? (
-                <>
-                  <span className="spinner-small"></span>
-                  <span>Connecting...</span>
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-plug"></i>
-                  <span>Connect REPL</span>
-                </>
-              )}
-            </button>
+              Connect REPL
+            </Button>
           ) : (
-            <>
-              <button 
-                className="repl-btn repl-btn-clear" 
+            <Space wrap style={{ width: "100%", justifyContent: "flex-end" }}>
+              <Button
+                icon={<DeleteOutlined />}
                 onClick={handleClearOutput}
                 title="Clear output"
               >
-                <i className="fas fa-trash-alt"></i>
-                <span>Clear</span>
-              </button>
-              <button 
-                className="repl-btn repl-btn-interrupt" 
+                Clear
+              </Button>
+              <Button
+                icon={<StopOutlined />}
                 onClick={() => sendCtrlC()}
                 title="Send Ctrl+C (KeyboardInterrupt)"
               >
-                <i className="fas fa-stop"></i>
-                <span>Ctrl+C</span>
-              </button>
-              <button 
-                className="repl-btn repl-btn-reset" 
+                Ctrl+C
+              </Button>
+              <Button
+                icon={<ReloadOutlined />}
                 onClick={() => sendCtrlD()}
                 title="Send Ctrl+D (Soft Reset)"
               >
-                <i className="fas fa-redo"></i>
-                <span>Reset</span>
-              </button>
-              <button className="repl-btn repl-btn-disconnect" onClick={handleDisconnect}>
-                <i className="fas fa-power-off"></i>
-                <span>Disconnect</span>
-              </button>
-            </>
+                Reset
+              </Button>
+              <Button
+                danger
+                icon={<PoweroffOutlined />}
+                onClick={handleDisconnect}
+              >
+                Disconnect
+              </Button>
+            </Space>
           )}
         </div>
       </div>

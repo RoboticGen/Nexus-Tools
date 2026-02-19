@@ -1,7 +1,9 @@
-import type { Metadata, Viewport } from "next";
 import { Roboto } from "next/font/google";
 
+import type { Metadata, Viewport } from "next";
+
 import "@/styles/globals.css";
+import "antd/dist/reset.css";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -35,7 +37,7 @@ export const metadata: Metadata = {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "Obo Blocks",
+    title: "Obo Code",
     description:
       "Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions",
     images: ["/obo_blocks.webp"],

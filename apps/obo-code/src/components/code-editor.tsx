@@ -1,6 +1,8 @@
 "use client";
 
 import { OBO_CODE_CONFIG } from "@nexus-tools/monaco-editor";
+import { Button } from "@nexus-tools/ui";
+import { CopyOutlined, ExportOutlined, PlayCircleOutlined } from "@ant-design/icons";
 import dynamic from "next/dynamic";
 import { useCallback } from "react";
 
@@ -38,19 +40,29 @@ export function CodeEditor({
     <div className="code-panel">
       <div className="panel-header">
         <span className="panel-title">Python Code</span>
-        <div className="button-group">
-          <button className="action-btn run-btn" onClick={onRun} title="Run Python Code">
-            <i className="fa fa-flag" />
-            <span>Run</span>
-          </button>
-          <button className="action-btn copy-btn" onClick={onCopy} title="Copy Code">
-            <i className="fa fa-copy" />
-            <span>Copy</span>
-          </button>
-          <button className="action-btn export-btn" onClick={onExport} title="Export Code">
-            <i className="fa fa-file-export" />
-            <span>Export</span>
-          </button>
+        <div className="button-group" style={{ display: "flex", gap: "8px" }}>
+          <Button
+            variant="default"
+            icon={<PlayCircleOutlined />}
+            onClick={onRun}
+            title="Run Python Code (Ctrl+Enter)"
+          >
+            Run
+          </Button>
+          <Button
+            icon={<CopyOutlined />}
+            onClick={onCopy}
+            title="Copy Code to Clipboard"
+          >
+            Copy
+          </Button>
+          <Button
+            icon={<ExportOutlined />}
+            onClick={onExport}
+            title="Export Code"
+          >
+            Export
+          </Button>
         </div>
       </div>
       <div className="code-editor-wrapper">

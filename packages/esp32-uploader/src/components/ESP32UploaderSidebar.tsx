@@ -6,6 +6,8 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { Tabs, Button, Space, Progress } from "antd";
+import { LinkOutlined, DisconnectOutlined, UploadOutlined } from "@ant-design/icons";
 
 import { useESP32Uploader } from "../hooks/use-esp32-uploader";
 import { translateErrorMessage } from "../utils/error-messages";
@@ -111,54 +113,15 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
       {espSupported && (
         <div className="esp32-sidebar-inner">
           {/* Tab Navigation */}
-          <div className="esp32-sidebar-header">
-            <div className="esp32-sidebar-tabs" role="tablist" aria-label="ESP32 tools">
-              <button
-                type="button"
-                className={`esp32-tab-btn ${activeView === "uploader" ? "active" : ""}`}
-                onClick={() => setActiveView("uploader")}
-                role="tab"
-                aria-selected={activeView === "uploader"}
-              >
-                <i className="fas fa-upload"></i>
-                Uploader
-              </button>
-              <button
-                type="button"
-                className={`esp32-tab-btn ${
-                  activeView === "repl" ? "active" : ""
-                } ${replReady ? "ready" : ""}`}
-                onClick={() => setActiveView("repl")}
-                role="tab"
-                aria-selected={activeView === "repl"}
-                disabled={!canShowAdvancedFeatures}
-              >
-                <i className="fas fa-terminal"></i>
-                REPL
-                {replReady && (
-                  <span className="tab-indicator">
-                    <i className="fas fa-play"></i>
-                  </span>
-                )}
-              </button>
-              <button
-                type="button"
-                className={`esp32-tab-btn ${activeView === "files" ? "active" : ""}`}
-                onClick={() => setActiveView("files")}
-                role="tab"
-                aria-selected={activeView === "files"}
-                disabled={!isConnected}
-              >
-                <i className="fas fa-folder"></i>
-                Files
-              </button>
-            </div>
-          </div>
-
-          {/* Tab Content */}
-          {activeView === "uploader" && (
-            <div className="esp32-tab-content" role="tabpanel">
-              <div className="esp32-tools">
+          <Tabs
+            activeKey={activeView}
+            onChange={(key) => setActiveView(key as "uploader" | "repl" | "files")}
+            items={[
+              {
+                key: "uploader",
+                label: "Uploader",
+                children: (
+                  <div className="esp32-tools">
                 
 
                 {/* Connection Status */}
@@ -193,15 +156,25 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
 
                     <div className="connection-actions">
                       {!isConnected ? (
-                        <button className="btn-connect" onClick={connectToDevice} disabled={isFlashing}>
-                          <i className="fas fa-plug"></i>
+                        <Button
+                          type="primary"
+                          icon={<LinkOutlined />}
+                          onClick={connectToDevice}
+                          disabled={isFlashing}
+                          block
+                        >
                           Connect Device
-                        </button>
+                        </Button>
                       ) : (
-                        <button className="btn-disconnect" onClick={resetConnection} disabled={isFlashing}>
-                          <i className="fas fa-unlink"></i>
+                        <Button
+                          danger
+                          icon={<DisconnectOutlined />}
+                          onClick={resetConnection}
+                          disabled={isFlashing}
+                          block
+                        >
                           Disconnect
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -213,31 +186,22 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
 
                   {/* Progress */}
                   {isFlashing && (
-                    <div className="upload-progress">
-                      <div className="progress-bar">
-                        <div className="progress-fill" style={{ width: `${flashProgress}%` }}></div>
-                      </div>
-                      <div className="progress-text">Uploading... {flashProgress}%</div>
+                    <div className="upload-progress" style={{ marginBottom: "16px" }}>
+                      <Progress percent={flashProgress} status="active" />
                     </div>
                   )}
 
-                  <button
-                    className={`btn-upload ${isFlashing ? "uploading" : ""}`}
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<UploadOutlined />}
                     onClick={handleUploadClick}
                     disabled={!code.trim() || isFlashing || !isConnected}
+                    loading={isFlashing}
+                    block
                   >
-                    {isFlashing ? (
-                      <>
-                        <div className="spinner"></div>
-                        Uploading... {flashProgress}%
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-upload"></i>
-                        Upload Code
-                      </>
-                    )}
-                  </button>
+                    {isFlashing ? `Uploading... ${flashProgress}%` : "Upload Code"}
+                  </Button>
 
                   {!code.trim() && (
                     <p className="upload-hint">
@@ -258,59 +222,82 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
                   </ol>
                 </div>
               </div>
-            </div>
-          )}
+                ),
+              },
+              {
+                key: "repl",
+                label: "REPL",
+                disabled: !canShowAdvancedFeatures,
+                children: (
+                  <>
+                    {!canShowAdvancedFeatures && (
+                      <div className="esp32-feature-notice">
+                        <div className="connection-info">
+                          <i className="fas fa-info-circle" style={{ marginRight: "8px" }}></i>
+                          <span>Connect your device first to access the REPL.</span>
+                        </div>
+                        <Space style={{ marginTop: "12px", width: "100%" }}>
+                          {!isConnected ? (
+                            <Button
+                              type="primary"
+                              icon={<LinkOutlined />}
+                              onClick={connectToDevice}
+                              disabled={isFlashing}
+                              block
+                            >
+                              Connect Device
+                            </Button>
+                          ) : (
+                            <Button
+                              danger
+                              icon={<DisconnectOutlined />}
+                              onClick={resetConnection}
+                              disabled={isFlashing}
+                              block
+                            >
+                              Disconnect
+                            </Button>
+                          )}
+                        </Space>
+                      </div>
+                    )}
 
-          {/* REPL Tab - Always render component to maintain connection */}
-          <div className={`esp32-tab-content ${activeView === "repl" ? "active" : "hidden"}`} role="tabpanel" style={{ display: activeView === "repl" ? "block" : "none" }}>
-            {!canShowAdvancedFeatures && (
-              <div className="esp32-feature-notice">
-                <div className="connection-info">
-                  <i className="fas fa-info-circle"></i>
-                  <span>Connect your device first to access the REPL.</span>
-                </div>
-
-                {!isConnected ? (
-                  <button className="btn-connect" onClick={connectToDevice} disabled={isFlashing}>
-                    <i className="fas fa-plug"></i>
-                    Connect Device
-                  </button>
-                ) : (
-                  <button className="btn-disconnect" onClick={resetConnection} disabled={isFlashing}>
-                    <i className="fas fa-unlink"></i>
-                    Disconnect
-                  </button>
-                )}
-              </div>
-            )}
-
-            {canShowAdvancedFeatures && (
-              <div className="esp32-repl-wrapper">
-                {isFlashing && (
-                  <div className="esp32-feature-notice">
-                    <div className="connection-info">
-                      <i className="fas fa-info-circle"></i>
-                      <span>REPL is disabled during code upload. Please wait for upload to complete.</span>
-                    </div>
-                  </div>
-                )}
-                
-                <ESP32REPL
-                  serialPort={serialPort}
-                  onError={onError}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Files Tab */}
-          <div className={`esp32-tab-content ${activeView === "files" ? "active" : "hidden"}`} role="tabpanel" style={{ display: activeView === "files" ? "block" : "none" }}>
-            <ESP32FileManager
-              serialPort={serialPort}
-              isConnected={isConnected}
-              onError={onError}
-            />
-          </div>
+                    {canShowAdvancedFeatures && (
+                      <>
+                        {isFlashing && (
+                          <div className="esp32-feature-notice">
+                            <div className="connection-info">
+                              <i className="fas fa-info-circle"></i>
+                              <span>REPL is disabled during code upload. Please wait for upload to complete.</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <ESP32REPL
+                          serialPort={serialPort}
+                          onError={onError}
+                        />
+                      </>
+                    )}
+                  </>
+                ),
+              },
+              {
+                key: "files",
+                label: "Files",
+                disabled: !isConnected,
+                children: (
+                  <>
+                    <ESP32FileManager
+                      serialPort={serialPort}
+                      isConnected={isConnected}
+                      onError={onError}
+                    />
+                  </>
+                ),
+              },
+            ]}
+          />
         </div>
       )}
     </div>

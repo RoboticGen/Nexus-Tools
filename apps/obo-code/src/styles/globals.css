@@ -175,9 +175,86 @@ textarea.iPadShowKeyboard {
 .output-panel {
   flex: 1;
   min-height: 150px;
-  overflow: auto;
+  overflow: hidden;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tabs styling for output panel */
+.output-panel .ant-tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  width: 100%;
+}
+
+.output-panel .ant-tabs-nav {
+  margin: 0 !important;
+  flex-shrink: 0;
+  background: transparent;
+  border-bottom: 1px solid #d9d9d9;
+  z-index: 10;
+  position: relative;
+}
+
+.output-panel .ant-tabs-nav-list {
+  display: flex;
+  gap: 0;
+}
+
+.output-panel .ant-tabs-tab {
+  padding: 8px 16px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  user-select: none;
+  position: relative;
+  z-index: 11;
+  pointer-events: auto;
+}
+
+.output-panel .ant-tabs-tab:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.output-panel .ant-tabs-tab-active {
+  color: #1890ff;
+}
+
+.output-panel .ant-tabs-content-holder {
+  flex: 1;
+  overflow: hidden;
+}
+
+.output-panel .ant-tabs-tabpane {
+  display: flex !important;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.output-panel .ant-tabs-tabpane-hidden {
+  display: none !important;
+}
+
+.tab-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: auto;
+}
+
+/* Additional tab styling for better visibility */
+.output-panel .ant-tabs-tab-btn {
+  pointer-events: auto;
+  z-index: 11;
+}
+
+.output-panel .ant-tabs-ink-bar {
+  background: #1890ff !important;
+  z-index: 10;
 }
 
 .turtle-panel {
@@ -430,6 +507,8 @@ textarea.iPadShowKeyboard {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .terminal-output {
@@ -449,6 +528,7 @@ textarea.iPadShowKeyboard {
   -webkit-overflow-scrolling: touch;
   touch-action: manipulation;
   box-sizing: border-box;
+  flex: 1;
 }
 
 .terminal-output:focus {

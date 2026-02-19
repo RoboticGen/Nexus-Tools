@@ -1,54 +1,113 @@
+import { Card as AntCard } from "antd";
 import * as React from "react";
 
-import { cn } from "../utils/cn";
-
+// Card wrapper - uses Ant Design Card
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)}
-      {...props}
-    />
+  ({ children, style, ...props }, ref) => (
+    <AntCard
+      ref={ref as any}
+      style={{ ...style }}
+      {...(props as any)}
+    >
+      {children}
+    </AntCard>
   )
 );
 Card.displayName = "Card";
 
+// CardHeader - wrapper div inside card
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
+  ({ children, style, ...props }, ref) => (
+    <div
+      ref={ref}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.375rem",
+        marginBottom: "1rem",
+        ...style,
+      }}
+      {...props}
+    >
+      {children}
+    </div>
   )
 );
 CardHeader.displayName = "CardHeader";
 
+// CardTitle - heading inside card header
 const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  ({ className, ...props }, ref) => (
+  ({ children, style, ...props }, ref) => (
     <h3
-      ref={ref}
-      className={cn("text-2xl font-semibold leading-none tracking-tight", className)}
+      ref={ref as any}
+      style={{
+        fontSize: "1.5rem",
+        fontWeight: 600,
+        lineHeight: 1,
+        letterSpacing: "-0.02em",
+        ...style,
+      }}
       {...props}
-    />
+    >
+      {children}
+    </h3>
   )
 );
 CardTitle.displayName = "CardTitle";
 
+// CardDescription - subtitle in card header
 const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+>(({ children, style, ...props }, ref) => (
+  <p
+    ref={ref}
+    style={{
+      fontSize: "0.875rem",
+      color: "#666",
+      ...style,
+    }}
+    {...props}
+  >
+    {children}
+  </p>
 ));
 CardDescription.displayName = "CardDescription";
 
+// CardContent - main content area
 const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+  ({ children, style, ...props }, ref) => (
+    <div
+      ref={ref}
+      style={{
+        padding: "1.5rem",
+        paddingTop: 0,
+        ...style,
+      }}
+      {...props}
+    >
+      {children}
+    </div>
   )
 );
 CardContent.displayName = "CardContent";
 
+// CardFooter - footer area at bottom
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex items-center p-6 pt-0", className)} {...props} />
+  ({ children, style, ...props }, ref) => (
+    <div
+      ref={ref}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "1.5rem",
+        paddingTop: 0,
+        ...style,
+      }}
+      {...props}
+    >
+      {children}
+    </div>
   )
 );
 CardFooter.displayName = "CardFooter";

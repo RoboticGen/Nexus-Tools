@@ -6,6 +6,8 @@
 "use client";
 
 import { ESP32UploaderSidebar } from "@nexus-tools/esp32-uploader";
+import { Button } from "@nexus-tools/ui";
+import { CaretDownOutlined, CaretUpOutlined } from "@ant-design/icons";
 import { useState, useEffect } from "react";
 
 interface SidebarProps {
@@ -69,19 +71,21 @@ export function Sidebar({ code, onStatusUpdate, onError, onExpandedChange }: Sid
   return (
     <div className={`sidebar ${isCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`}>
       {/* Sidebar Toggle Button */}
-      <button
-        className="sidebar-toggle"
+      <Button
+        variant="ghost"
+        shape="circle"
+        size="lg"
+        icon={isCollapsed ? <CaretUpOutlined /> : <CaretDownOutlined />}
         onClick={toggleSidebar}
         title={isCollapsed ? "Expand toolbar" : "Collapse toolbar"}
-      >
-        <span className="tool-icon">
-          <i className={`fas ${isCollapsed ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ 
-            fontFamily: '"Font Awesome 6 Free", sans-serif',
-            fontWeight: 900 
-          }}></i>
-          <span className="icon-fallback">{isCollapsed ? '▲' : '▼'}</span>
-        </span>
-      </button>
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "40px",
+          height: "40px",
+        }}
+      />
 
       {/* Active Panel Content - Always show when not collapsed */}
       {!isCollapsed && activePanel && (

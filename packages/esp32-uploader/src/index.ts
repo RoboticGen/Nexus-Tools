@@ -4,7 +4,7 @@
  */
 
 // Components
-export { ESP32Uploader, ESP32UploaderSidebar, ESP32REPL } from "./components";
+export { ESP32Uploader, ESP32UploaderSidebar, ESP32REPL, ESP32FileManager } from "./components";
 export type { ESP32UploaderProps } from "./components";
 
 // Hooks
