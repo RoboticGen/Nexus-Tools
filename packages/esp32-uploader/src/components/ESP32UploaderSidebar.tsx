@@ -162,16 +162,17 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
                           onClick={connectToDevice}
                           disabled={isFlashing}
                           block
+                          style={{ backgroundColor: "var(--btn-run)", borderColor: "var(--btn-run)" }}
                         >
                           Connect Device
                         </Button>
                       ) : (
                         <Button
-                          danger
                           icon={<DisconnectOutlined />}
                           onClick={resetConnection}
                           disabled={isFlashing}
                           block
+                          style={{ backgroundColor: "var(--btn-stop)", color: "#fff", border: "none" }}
                         >
                           Disconnect
                         </Button>
@@ -199,6 +200,7 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
                     disabled={!code.trim() || isFlashing || !isConnected}
                     loading={isFlashing}
                     block
+                    style={{ backgroundColor: "var(--btn-run)", borderColor: "var(--btn-run)", fontSize: "1rem" }}
                   >
                     {isFlashing ? `Uploading... ${flashProgress}%` : "Upload Code"}
                   </Button>
@@ -244,16 +246,17 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
                               onClick={connectToDevice}
                               disabled={isFlashing}
                               block
+                              style={{ backgroundColor: "var(--btn-run)", borderColor: "var(--btn-run)" }}
                             >
                               Connect Device
                             </Button>
                           ) : (
                             <Button
-                              danger
                               icon={<DisconnectOutlined />}
                               onClick={resetConnection}
                               disabled={isFlashing}
                               block
+                              style={{ backgroundColor: "var(--btn-stop)", color: "#fff", border: "none" }}
                             >
                               Disconnect
                             </Button>

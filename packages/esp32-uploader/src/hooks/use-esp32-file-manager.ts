@@ -124,8 +124,9 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
           // Timeout expected, that's fine
         }
 
-        // Send file listing command
-        const fileListCmd = `import os\nfor f in os.listdir('${path}'):\n  try:\n    stat = os.stat('${path}' + '/' + f if '${path}' != '/' else '/' + f)\n    size = stat[6]\n    is_dir = stat[0] & 0x4000\n    print(f'{f}|{size}|{is_dir}')\n  except:\n    print(f'{f}|0|0')\n`;
+        // Send file listing command with marker at start
+        // Using simpler single-line approach with exec to avoid echo issues
+        const fileListCmd = `import os,sys\nfor f in sorted(os.listdir('${path}')):\n s=os.stat('${path}'+'/'+f if '${path}'!='/' else '/'+f)\n print(f+'|'+str(s[6])+'|'+str(int(s[0]&0x4000>0)))\n`;
 
         await writer.write(encoder.encode(fileListCmd));
         await writer.write(encoder.encode("\x04")); // Ctrl+D to execute
@@ -156,20 +157,42 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
           }
         }
 
-        // Parse the file list
-        const lines = response.split("\n").filter((line) => line.includes("|"));
-        const fileList: FileInfo[] = lines.map((line) => {
-          const parts = line.trim().split("|");
+        // Parse the file list - extract only valid file entries (name|size|isdir format)
+        const lines = response.split("\n");
+        const fileList: FileInfo[] = [];
+        
+        for (const line of lines) {
+          const trimmed = line.trim();
+          // Skip empty lines and REPL control characters
+          if (!trimmed) continue;
+          
+          // Only process lines with exactly 3 pipe-separated values where last 2 are numbers
+          const parts = trimmed.split("|");
+          if (parts.length !== 3) continue;
+          
+          // Validate format: name|number|number
+          const sizeStr = parts[1];
+          const isDirStr = parts[2];
+          
+          if (!/^\d+$/.test(sizeStr) || !/^[01]$/.test(isDirStr)) continue;
+          
           const name = parts[0];
-          const size = parseInt(parts[1]) || 0;
-          const isDir = parseInt(parts[2]) !== 0;
-
-          return {
+          const size = parseInt(sizeStr);
+          const isDir = isDirStr === "1";
+          
+          // Skip entries with obviously corrupted names
+          if (name.includes(">>>") || name.includes("...") || 
+              name.includes("import") || name.includes("stat") ||
+              name.includes("print") || name.includes("os.")) {
+            continue;
+          }
+          
+          fileList.push({
             name,
             size: isDir ? undefined : size,
             isDirectory: isDir,
-          };
-        });
+          });
+        }
 
         setFiles(fileList.sort((a, b) => {
           // Directories first, then alphabetical

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
-import { CodeEditor } from "@/components/code-editor";
+import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor";
 import { Navbar } from "@/components/navbar";
 import { Notification } from "@/components/notification";
 import { OutputTerminal } from "@/components/output-terminal";
@@ -26,6 +26,7 @@ export default function Home() {
   const [code, setCode] = useState(DEFAULT_CODE);
   const [notification, setNotification] = useState<string | null>(null);
   const [background, setBackground] = useState<string>("No-Background");
+  const codeEditorRef = useRef<CodeEditorHandle>(null);
 
   // Set the document title explicitly to ensure it shows correct app name
   useEffect(() => {
@@ -36,6 +37,12 @@ export default function Home() {
     setNotification(message);
     setTimeout(() => setNotification(null), 1500);
   }, []);
+
+  // Callback to open file in code editor
+  const handleOpenFileInEditor = useCallback((filename: string, content: string) => {
+    codeEditorRef.current?.openFileInTab(filename, content);
+    showNotification(`Opened ${filename}`);
+  }, [showNotification]);
 
   const { runCode, stopCode, isRunning, isLoading, output, clearOutput } = usePythonRunner({
     onError: (error) => showNotification(error),
@@ -126,6 +133,7 @@ export default function Home() {
       <div className="main-content">
         <div className="left-panel">
           <CodeEditor
+            ref={codeEditorRef}
             code={code}
             onChange={setCode}
             onRun={handleRun}
@@ -140,6 +148,7 @@ export default function Home() {
             code={code}
             onStatusUpdate={showNotification}
             onError={showNotification}
+            onOpenFileInEditor={handleOpenFileInEditor}
           />
         </div>
 

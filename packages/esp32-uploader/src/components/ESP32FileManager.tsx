@@ -14,18 +14,20 @@ interface ESP32FileManagerProps {
   serialPort: any;
   isConnected: boolean;
   onError?: (error: string) => void;
+  onOpenFileInEditor?: (filename: string, content: string) => void;
 }
 
 export function ESP32FileManager({
   serialPort,
   isConnected,
   onError,
+  onOpenFileInEditor,
 }: ESP32FileManagerProps) {
   const { files, isLoading, error, fetchFiles, refreshFiles, downloadFile, viewFile } =
     useESP32FileManager({ serialPort });
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [viewingFile, setViewingFile] = useState<{ name: string; content: string } | null>(null);
-  const [viewLoading, setViewLoading] = useState(false);
+  const [loadingViewFile, setLoadingViewFile] = useState<string | null>(null);
 
   // Fetch files when connected
   useEffect(() => {
@@ -62,15 +64,22 @@ export function ESP32FileManager({
   const handleViewFile = useCallback(
     async (filename: string) => {
       try {
-        setViewLoading(true);
+        setLoadingViewFile(filename);
         const content = await viewFile(filename);
         setViewingFile({ name: filename, content });
+        
+        // If callback is provided, open in code editor instead
+        if (onOpenFileInEditor) {
+          onOpenFileInEditor(filename, content);
+          setViewingFile(null); // Close local viewer when opening in editor
+        }
+        
         onError?.(null as any);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         onError?.(msg);
       } finally {
-        setViewLoading(false);
+        setLoadingViewFile(null);
       }
     },
     [viewFile, onError]
@@ -102,6 +111,7 @@ export function ESP32FileManager({
               onClick={refreshFiles}
               disabled={isLoading}
               title="Refresh file list"
+              style={{ backgroundColor: "var(--btn-run)", color: "#fff", border: "none" }}
             >
               {isLoading ? "Refreshing..." : "Refresh"}
             </Button>
@@ -153,20 +163,18 @@ export function ESP32FileManager({
                         size="small"
                         icon={<EyeOutlined />}
                         onClick={() => handleViewFile(file.name)}
-                        loading={viewLoading && viewingFile?.name === file.name}
+                        loading={loadingViewFile === file.name}
                         title="View file content"
-                      >
-                        View
-                      </Button>
+                        style={{ backgroundColor: "var(--btn-run)", color: "#fff", border: "none" }}
+                      />
                       <Button
                         size="small"
                         icon={<DownloadOutlined />}
                         onClick={() => handleDownloadFile(file.name)}
                         loading={downloadingFile === file.name}
                         title="Download file"
-                      >
-                        Download
-                      </Button>
+                        style={{ backgroundColor: "var(--btn-copy)", color: "#fff", border: "none" }}
+                      />
                     </Space>
                   )}
                 </div>

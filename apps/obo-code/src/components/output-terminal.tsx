@@ -14,6 +14,7 @@ interface OutputTerminalProps {
   code?: string;
   onStatusUpdate?: (status: string) => void;
   onError?: (error: string) => void;
+  onOpenFileInEditor?: (filename: string, content: string) => void;
 }
 
 export function OutputTerminal({
@@ -24,6 +25,7 @@ export function OutputTerminal({
   code = "",
   onStatusUpdate,
   onError,
+  onOpenFileInEditor,
 }: OutputTerminalProps) {
   const [activeTab, setActiveTab] = useState<string>("output");
   const [replReady, setReplReady] = useState(false);
@@ -257,6 +259,7 @@ export function OutputTerminal({
         serialPort={serialPort}
         isConnected={isConnected}
         onError={onError}
+        onOpenFileInEditor={onOpenFileInEditor}
       />
     </div>
   );

@@ -167,6 +167,7 @@ export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
               onClick={handleConnect}
               disabled={!serialPort || isConnecting}
               loading={isConnecting}
+              style={{ backgroundColor: "var(--btn-run)" }}
             >
               Connect REPL
             </Button>
@@ -176,6 +177,7 @@ export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
                 icon={<DeleteOutlined />}
                 onClick={handleClearOutput}
                 title="Clear output"
+                style={{ backgroundColor: "var(--btn-clear)", color: "#fff", border: "none" }}
               >
                 Clear
               </Button>
@@ -183,6 +185,7 @@ export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
                 icon={<StopOutlined />}
                 onClick={() => sendCtrlC()}
                 title="Send Ctrl+C (KeyboardInterrupt)"
+                style={{ backgroundColor: "#d97706", color: "#fff", border: "none" }}
               >
                 Ctrl+C
               </Button>
@@ -190,13 +193,14 @@ export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
                 icon={<ReloadOutlined />}
                 onClick={() => sendCtrlD()}
                 title="Send Ctrl+D (Soft Reset)"
+                style={{ backgroundColor: "var(--btn-run)", color: "#fff", border: "none" }}
               >
                 Reset
               </Button>
               <Button
-                danger
                 icon={<PoweroffOutlined />}
                 onClick={handleDisconnect}
+                style={{ backgroundColor: "var(--btn-stop)", color: "#fff", border: "none" }}
               >
                 Disconnect
               </Button>
