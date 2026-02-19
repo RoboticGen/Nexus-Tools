@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Button as UIButton } from "@nexus-tools/ui";
-import { DeleteOutlined, StopOutlined, LinkOutlined, DisconnectOutlined, UploadOutlined } from "@ant-design/icons";
-import { Tabs, Space, Progress, Button } from "antd";
+import { DeleteOutlined, StopOutlined, LinkOutlined, DisconnectOutlined } from "@ant-design/icons";
 import { useESP32Uploader, ESP32REPL, ESP32FileManager } from "@nexus-tools/esp32-uploader";
+import { Button as UIButton } from "@nexus-tools/ui";
+import { Tabs, Space, Button } from "antd";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 
 interface OutputTerminalProps {
   output: string;
@@ -16,6 +16,7 @@ interface OutputTerminalProps {
   onError?: (error: string) => void;
   onOpenFileInEditor?: (filename: string, content: string) => void;
   onSaveFileToDevice?: (saveFunc: (filename: string, content: string) => Promise<void>) => void;
+  onConnectionStatusChange?: (isConnected: boolean) => void;
 }
 
 export function OutputTerminal({
@@ -28,6 +29,7 @@ export function OutputTerminal({
   onError,
   onOpenFileInEditor,
   onSaveFileToDevice,
+  onConnectionStatusChange,
 }: OutputTerminalProps) {
   const [activeTab, setActiveTab] = useState<string>("output");
   const [replReady, setReplReady] = useState(false);
@@ -58,13 +60,11 @@ export function OutputTerminal({
     isConnected,
     serialPort,
     isFlashing,
-    flashProgress,
     espSupported,
     connectionError,
-    uploadCode,
-    saveFileToDevice,
     connectToDevice,
     resetConnection,
+    saveFileToDevice,
   } = useESP32Uploader({ 
     code, 
     onStatusUpdate, 
@@ -76,29 +76,26 @@ export function OutputTerminal({
     return Boolean(espSupported) && Boolean(serialPort);
   }, [espSupported, serialPort]);
 
-  const handleUploadClick = useCallback(() => {
-    uploadCode()
-      .then(() => {
-        // After successful upload, open the file in code editor
-        onOpenFileInEditor?.("main.py", code);
-      })
-      .catch((error) => {
-        onError?.(error?.message || "Upload failed");
-      });
-  }, [uploadCode, code, onError, onOpenFileInEditor]);
-
-  // Notify parent about saveFileToDevice function
   useEffect(() => {
-    onSaveFileToDevice?.(saveFileToDevice);
-  }, [saveFileToDevice, onSaveFileToDevice]);
-
-  useEffect(() => {
-    if (!isConnected || !serialPort) {
+    // Only reset REPL state when actually disconnected, not on tab switches
+    if (!isConnected) {
       autoDetectionTriggeredRef.current = false;
       setReplReady(false);
       setAutoDetecting(false);
     }
-  }, [isConnected, serialPort]);
+  }, [isConnected]);
+
+  // Pass saveFileToDevice function to parent component
+  useEffect(() => {
+    if (onSaveFileToDevice && saveFileToDevice) {
+      onSaveFileToDevice(saveFileToDevice);
+    }
+  }, [saveFileToDevice, onSaveFileToDevice]);
+
+  // Update parent about connection status
+  useEffect(() => {
+    onConnectionStatusChange?.(isConnected);
+  }, [isConnected, onConnectionStatusChange]);
 
   if (!isMounted) {
     return (
@@ -173,78 +170,7 @@ export function OutputTerminal({
             </div>
           </div>
 
-          {/* Device Details or Upload Section */}
-          {isConnected ? (
-            <div style={{ padding: "0.75rem", background: "rgba(255, 255, 255, 0.02)", borderRadius: "4px", flexShrink: 0 }}>
-              <h4 style={{ margin: "0 0 0.75rem 0", fontSize: "0.875rem", fontWeight: 600 }}>Device Information</h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.875rem" }}>
-                <div style={{ paddingBottom: "0.5rem", borderBottom: "1px solid var(--panel-border)" }}>
-                  <div style={{ color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Chip Family</div>
-                  <div style={{ color: "var(--text-primary)", fontWeight: "500", fontFamily: "monospace" }}>
-                    {selectedDevice?.chipFamily}
-                  </div>
-                </div>
-                <div style={{ paddingBottom: "0.5rem", borderBottom: "1px solid var(--panel-border)" }}>
-                  <div style={{ color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Device Name</div>
-                  <div style={{ color: "var(--text-primary)", fontWeight: "500", fontFamily: "monospace" }}>
-                    {selectedDevice?.name}
-                  </div>
-                </div>
-                <div style={{ paddingBottom: "0.5rem", borderBottom: "1px solid var(--panel-border)" }}>
-                  <div style={{ color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Baud Rate</div>
-                  <div style={{ color: "var(--text-primary)", fontWeight: "500", fontFamily: "monospace" }}>
-                    {selectedDevice?.baudRate} bps
-                  </div>
-                </div>
-                <div>
-                  <div style={{ color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Status</div>
-                  <div style={{ color: "var(--btn-run)", fontWeight: "500", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--btn-run)" }}></span>
-                    Connected
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div style={{ padding: "0.75rem", background: "rgba(255, 255, 255, 0.02)", borderRadius: "4px", flexShrink: 0 }}>
-              <h4 style={{ margin: "0 0 0.75rem 0", fontSize: "0.875rem", fontWeight: 600 }}>Code Upload</h4>
-
-              {isFlashing && (
-                <div style={{ marginBottom: "1rem" }}>
-                  <Progress percent={flashProgress} status="active" />
-                </div>
-              )}
-
-              <Button
-                type="primary"
-                size="large"
-                icon={<UploadOutlined />}
-                onClick={handleUploadClick}
-                disabled={!code.trim() || isFlashing || !isConnected}
-                loading={isFlashing}
-                block
-              >
-                {isFlashing ? `Uploading... ${flashProgress}%` : "Upload Code"}
-              </Button>
-
-              {!code.trim() && (
-                <p style={{ fontSize: "0.8rem", marginTop: "0.5rem", color: "#666" }}>
-                  Write some code to enable upload
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Instructions */}
-          <div style={{ padding: "0.75rem", background: "rgba(255, 255, 255, 0.02)", borderRadius: "4px", flexShrink: 0 }}>
-            <h4 style={{ margin: "0 0 0.75rem 0", fontSize: "0.875rem", fontWeight: 600 }}>Instructions</h4>
-            <ol style={{ margin: 0, paddingLeft: "1.25rem", fontSize: "0.8rem", lineHeight: 1.5 }}>
-              <li style={{ marginBottom: "0.5rem" }}>Select your ESP32 device type from the dropdown</li>
-              <li style={{ marginBottom: "0.5rem" }}>Click "Connect Device" to establish connection</li>
-              <li style={{ marginBottom: "0.5rem" }}>Write or paste your Python code in the editor</li>
-              <li>Click "Upload Code"</li>
-            </ol>
-          </div>
+          {/* Code Upload Section - REMOVED, use Save Device in Code Editor instead */}
         </div>
       )}
     </div>
@@ -292,6 +218,7 @@ export function OutputTerminal({
           )}
           <ESP32REPL
             serialPort={serialPort}
+            isConnected={isConnected}
             onError={onError}
           />
         </>

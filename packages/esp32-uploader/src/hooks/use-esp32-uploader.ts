@@ -47,6 +47,7 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
    */
   const initializeEspWebTools = useCallback(async () => {
     try {
+      // @ts-ignore - esp-web-tools is loaded via CDN in HTML
       await import('esp-web-tools');
       
       if (espToolRef.current) {
@@ -177,46 +178,6 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
   }, [espSupported, code, connectToESP32, stopRunningCode, writeFileToESP32, softResetESP32, closePort, onStatusUpdate, onError]);
 
   /**
-   * Save a file to ESP32 device with custom filename
-   */
-  const saveFileToDevice = useCallback(async (filename: string, fileContent: string) => {
-    if (!espSupported) {
-      onError?.("Web Serial API not supported");
-      return;
-    }
-
-    if (!filename.trim() || !fileContent.trim()) {
-      onError?.("Filename and content cannot be empty");
-      return;
-    }
-
-    let port: any = null;
-
-    try {
-      onStatusUpdate?.(`Saving ${filename} to ESP32...`);
-
-      // Use existing connection or create new one
-      if (connectedPortRef.current && connectedPortRef.current.readable) {
-        port = connectedPortRef.current;
-      } else {
-        port = await connectToESP32();
-        connectedPortRef.current = port;
-        setSerialPort(port);
-        setIsConnected(true);
-      }
-
-      // Write file to ESP32
-      onStatusUpdate?.(`Writing ${filename}...`);
-      await writeFileToESP32(port, filename, fileContent);
-
-      onStatusUpdate?.(`Successfully saved ${filename} to ESP32`);
-    } catch (error: any) {
-      const errorMsg = error.message || "Failed to save file";
-      onError?.(errorMsg);
-    }
-  }, [espSupported, connectToESP32, writeFileToESP32, onStatusUpdate, onError]);
-
-  /**
    * Connect to ESP32 (without uploading)
    */
   const connectToDevice = useCallback(async () => {
@@ -305,6 +266,31 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
     return mainPyContent.slice(0, maxLength) + (mainPyContent.length > maxLength ? '...' : '');
   }, [code]);
 
+  /**
+   * Save a file directly to ESP32
+   */
+  const saveFileToDevice = useCallback(async (filename: string, content: string) => {
+    if (!isConnected || !connectedPortRef.current) {
+      onError?.('Device not connected. Please connect first.');
+      return;
+    }
+
+    if (!content.trim()) {
+      onError?.('No content to save');
+      return;
+    }
+
+    try {
+      onStatusUpdate?.(`Saving ${filename} to device...`);
+      await writeFileToESP32(connectedPortRef.current, filename, content);
+      onStatusUpdate?.(`Successfully saved ${filename} to device`);
+    } catch (error: any) {
+      const errorMsg = error.message || 'Failed to save file';
+      onError?.(errorMsg);
+      throw error;
+    }
+  }, [isConnected, writeFileToESP32, onStatusUpdate, onError]);
+
   // Initialize on mount
   useEffect(() => {
     setIsMounted(true);
@@ -341,11 +327,11 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
     // Actions
     setSelectedDevice,
     uploadCode,
-    saveFileToDevice,
     connectToDevice,
     resetConnection,
     openUploader,
     closeUploader,
     getMainPyPreview,
+    saveFileToDevice,
   };
 }

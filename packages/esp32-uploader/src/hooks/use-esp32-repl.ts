@@ -172,7 +172,17 @@ export function useESP32REPL(serialPort: any) {
    */
   const disconnect = useCallback(async () => {
     try {
-      // Release streams first
+      // Exit REPL mode by sending Ctrl+D (soft reset)
+      if (writerRef.current && serialPort) {
+        try {
+          await writerRef.current.write(new TextEncoder().encode('\x04'));
+          await delay(100);
+        } catch (e) {
+          // Port may already be closed
+        }
+      }
+
+      // Release streams
       if (readerRef.current) {
         try {
           readerRef.current.releaseLock();

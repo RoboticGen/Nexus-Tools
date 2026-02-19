@@ -13,6 +13,7 @@ import { translateErrorMessage } from "../utils/error-messages";
 
 interface ESP32REPLProps {
   serialPort: any;
+  isConnected?: boolean;
   onError?: (error: string) => void;
 }
 
@@ -22,7 +23,7 @@ interface REPLLine {
   timestamp: Date;
 }
 
-export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
+export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, onError }: ESP32REPLProps) {
   const [lines, setLines] = useState<REPLLine[]>([
     { type: "output", content: "ESP32 REPL", timestamp: new Date() }
   ]);
@@ -47,6 +48,16 @@ export function ESP32REPL({ serialPort, onError }: ESP32REPLProps) {
       outputRef.current.scrollTop = outputRef.current.scrollHeight;
     }
   }, [lines]);
+
+  // Reset REPL state when parent disconnects
+  useEffect(() => {
+    if (!parentIsConnected && isConnected) {
+      setIsConnected(false);
+      setLines([{ type: "output", content: "ESP32 REPL", timestamp: new Date() }]);
+      setCurrentInput("");
+      disconnect();
+    }
+  }, [parentIsConnected, isConnected, disconnect]);
 
   // Focus input when component mounts
   useEffect(() => {

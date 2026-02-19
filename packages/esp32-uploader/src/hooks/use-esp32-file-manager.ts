@@ -85,9 +85,33 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
     setIsLoading(true);
     setError(null);
 
+    let reader: any;
+    let writer: any;
+    let retries = 0;
+    const maxRetries = 3;
+
     try {
-      const reader = serialPort.readable?.getReader();
-      const writer = serialPort.writable?.getWriter();
+      // Retry logic for stream locking
+      while (retries < maxRetries) {
+        try {
+          reader = serialPort.readable?.getReader();
+          writer = serialPort.writable?.getWriter();
+          if (reader && writer) break; // Successfully got streams
+        } catch (e: any) {
+          if (e.message?.includes("already locked") || e.message?.includes("lock")) {
+            // Stream is locked, wait and retry
+            retries++;
+            if (retries >= maxRetries) {
+              throw new Error(
+                "Stream is locked by another operation. Please wait a moment and try again."
+              );
+            }
+            await delay(200 * retries); // Exponential backoff
+          } else {
+            throw e;
+          }
+        }
+      }
 
       if (!reader || !writer) {
         throw new Error(
@@ -202,8 +226,17 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
           return a.name.localeCompare(b.name);
         }));
       } finally {
-        reader.releaseLock();
-        writer.releaseLock();
+        // Release locks safely
+        try {
+          if (reader) reader.releaseLock();
+        } catch (e) {
+          // Already released or stream closed
+        }
+        try {
+          if (writer) writer.releaseLock();
+        } catch (e) {
+          // Already released or stream closed
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -228,9 +261,32 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
       return;
     }
 
+    let reader: any;
+    let writer: any;
+    let retries = 0;
+    const maxRetries = 3;
+
     try {
-      const reader = serialPort.readable?.getReader();
-      const writer = serialPort.writable?.getWriter();
+      // Retry logic for stream locking
+      while (retries < maxRetries) {
+        try {
+          reader = serialPort.readable?.getReader();
+          writer = serialPort.writable?.getWriter();
+          if (reader && writer) break;
+        } catch (e: any) {
+          if (e.message?.includes("already locked") || e.message?.includes("lock")) {
+            retries++;
+            if (retries >= maxRetries) {
+              throw new Error(
+                "Stream is locked by another operation. Please wait a moment and try again."
+              );
+            }
+            await delay(200 * retries);
+          } else {
+            throw e;
+          }
+        }
+      }
 
       if (!reader || !writer) {
         throw new Error(
@@ -391,8 +447,17 @@ print(binascii.hexlify(d).decode())
 
         setError(null);
       } finally {
-        reader.releaseLock();
-        writer.releaseLock();
+        // Release locks safely
+        try {
+          if (reader) reader.releaseLock();
+        } catch (e) {
+          // Already released or stream closed
+        }
+        try {
+          if (writer) writer.releaseLock();
+        } catch (e) {
+          // Already released or stream closed
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -413,9 +478,32 @@ print(binascii.hexlify(d).decode())
       throw new Error("Serial port connection lost. Please reconnect to ESP32.");
     }
 
+    let reader: any;
+    let writer: any;
+    let retries = 0;
+    const maxRetries = 3;
+
     try {
-      const reader = serialPort.readable?.getReader();
-      const writer = serialPort.writable?.getWriter();
+      // Retry logic for stream locking
+      while (retries < maxRetries) {
+        try {
+          reader = serialPort.readable?.getReader();
+          writer = serialPort.writable?.getWriter();
+          if (reader && writer) break;
+        } catch (e: any) {
+          if (e.message?.includes("already locked") || e.message?.includes("lock")) {
+            retries++;
+            if (retries >= maxRetries) {
+              throw new Error(
+                "Stream is locked by another operation. Please wait a moment and try again."
+              );
+            }
+            await delay(200 * retries);
+          } else {
+            throw e;
+          }
+        }
+      }
 
       if (!reader || !writer) {
         throw new Error(
@@ -513,140 +601,23 @@ except:
 
         return content;
       } finally {
-        reader.releaseLock();
-        writer.releaseLock();
+        // Release locks safely
+        try {
+          if (reader) reader.releaseLock();
+        } catch (e) {
+          // Already released or stream closed
+        }
+        try {
+          if (writer) writer.releaseLock();
+        } catch (e) {
+          // Already released or stream closed
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       throw new Error(`Failed to view file: ${msg}`);
     }
   }, [serialPort, isPortValid]);
-
-  /**
-   * Delete a file from ESP32
-   */
-  const deleteFile = useCallback(async (filename: string): Promise<void> => {
-    if (!serialPort) {
-      throw new Error("Serial port not available. Please connect to ESP32.");
-    }
-
-    if (!isPortValid()) {
-      throw new Error("Serial port connection lost. Please reconnect to ESP32.");
-    }
-
-    let reader: any = null;
-    let writer: any = null;
-
-    try {
-      // Wait a bit to ensure no other reader is active
-      await delay(200);
-
-      reader = serialPort.readable?.getReader();
-      writer = serialPort.writable?.getWriter();
-
-      if (!reader || !writer) {
-        throw new Error(
-          "Cannot access serial port. REPL may have closed the connection. Please wait a moment and try reconnecting."
-        );
-      }
-
-      try {
-        const encoder = new TextEncoder();
-        const decoder = new TextDecoder();
-
-        await delay(SERIAL_DELAYS.BEFORE_READ);
-
-        // Send Ctrl+C to interrupt
-        await writer.write(encoder.encode("\x03"));
-        await delay(100);
-
-        // Send Ctrl+A to enter raw REPL mode
-        await writer.write(encoder.encode("\x01"));
-        await delay(100);
-
-        // Clear buffer
-        try {
-          let clearAttempts = 0;
-          while (clearAttempts < 5) {
-            const { value } = await Promise.race([
-              reader.read(),
-              new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("timeout")), 50)
-              ),
-            ]);
-            if (!value) break;
-            clearAttempts++;
-          }
-        } catch (e) {
-          // Timeout expected
-        }
-
-        // Delete file using Python
-        const deleteCmd = `
-import os
-try:
-    os.remove('${filename}')
-    print('Deleted: ${filename}')
-except Exception as e:
-    print('Error:', str(e))
-`;
-
-        await writer.write(encoder.encode(deleteCmd));
-        await writer.write(encoder.encode("\x04")); // Ctrl+D
-
-        await delay(SERIAL_DELAYS.AFTER_COMMAND);
-
-        // Read response
-        let response = "";
-        const readStartTime = Date.now();
-        const readTimeout = 3000;
-
-        while (Date.now() - readStartTime < readTimeout) {
-          try {
-            const { value, done } = await Promise.race([
-              reader.read(),
-              new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("timeout")), 100)
-              ),
-            ]);
-            if (done) break;
-            if (value) {
-              response += decoder.decode(value, { stream: true });
-            }
-          } catch (e) {
-            if (response.length > 0) break;
-          }
-        }
-
-        // Check for errors
-        if (response.includes("Error") || response.includes("Traceback")) {
-          throw new Error(`Failed to delete file: ${response}`);
-        }
-
-        // Refresh file list after deletion
-        await delay(300);
-        await fetchFiles("/");
-      } finally {
-        try {
-          if (reader) reader.releaseLock();
-        } catch (e) {
-          // Already released
-        }
-        try {
-          if (writer) writer.releaseLock();
-        } catch (e) {
-          // Already released
-        }
-      }
-    } catch (err) {
-      if (err instanceof Error && err.message.includes("Cannot access serial port")) {
-        setError("Serial connection lost");
-      } else {
-        const msg = err instanceof Error ? err.message : String(err);
-        throw new Error(`Failed to delete file: ${msg}`);
-      }
-    }
-  }, [serialPort, isPortValid, fetchFiles]);
 
   /**
    * Refresh the file list
@@ -663,7 +634,6 @@ except Exception as e:
     refreshFiles,
     downloadFile,
     viewFile,
-    deleteFile,
   };
 }
 

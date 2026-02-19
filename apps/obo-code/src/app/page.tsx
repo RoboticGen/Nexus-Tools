@@ -26,6 +26,7 @@ export default function Home() {
   const [code, setCode] = useState(DEFAULT_CODE);
   const [notification, setNotification] = useState<string | null>(null);
   const [background, setBackground] = useState<string>("No-Background");
+  const [isDeviceConnected, setIsDeviceConnected] = useState(false);
   const codeEditorRef = useRef<CodeEditorHandle>(null);
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
 
@@ -103,19 +104,22 @@ export default function Home() {
     showNotification("Code exported as script.py");
   }, [code, showNotification]);
 
-  const handleSaveToDevice = useCallback((filename: string, content: string) => {
-    if (!saveFileToDeviceRef.current) {
-      showNotification("ESP32 connection not ready");
-      return;
-    }
-    saveFileToDeviceRef.current(filename, content).catch((error) => {
-      showNotification(error?.message || "Failed to save file to device");
-    });
-  }, [showNotification]);
-
-  const handleSaveFileToDeviceCallback = useCallback((saveFunc: (filename: string, content: string) => Promise<void>) => {
-    saveFileToDeviceRef.current = saveFunc;
-  }, []);
+  const handleSaveToDevice = useCallback(
+    async (filename: string, content: string) => {
+      try {
+        if (saveFileToDeviceRef.current) {
+          await saveFileToDeviceRef.current(filename, content);
+          showNotification(`Saved ${filename} to device`);
+        } else {
+          showNotification("Device not connected");
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : "Failed to save file";
+        showNotification(errorMsg);
+      }
+    },
+    [showNotification]
+  );
 
   const handleClear = useCallback(() => {
     if (isRunning) {
@@ -155,6 +159,7 @@ export default function Home() {
             onCopy={handleCopy}
             onExport={handleExport}
             onSaveToDevice={handleSaveToDevice}
+            isConnected={isDeviceConnected}
           />
           <OutputTerminal
             output={output}
@@ -165,7 +170,10 @@ export default function Home() {
             onStatusUpdate={showNotification}
             onError={showNotification}
             onOpenFileInEditor={handleOpenFileInEditor}
-            onSaveFileToDevice={handleSaveFileToDeviceCallback}
+            onSaveFileToDevice={(saveFunc) => {
+              saveFileToDeviceRef.current = saveFunc;
+            }}
+            onConnectionStatusChange={setIsDeviceConnected}
           />
         </div>
 

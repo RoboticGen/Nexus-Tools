@@ -7,7 +7,7 @@
 
 import { useEffect, useCallback, useState } from "react";
 import { Button, Space } from "antd";
-import { SyncOutlined, EyeOutlined, DownloadOutlined, DeleteOutlined, CloseOutlined } from "@ant-design/icons";
+import { SyncOutlined, EyeOutlined, DownloadOutlined, CloseOutlined } from "@ant-design/icons";
 import { useESP32FileManager } from "../hooks/use-esp32-file-manager";
 
 interface ESP32FileManagerProps {
@@ -23,12 +23,11 @@ export function ESP32FileManager({
   onError,
   onOpenFileInEditor,
 }: ESP32FileManagerProps) {
-  const { files, isLoading, error, fetchFiles, refreshFiles, downloadFile, viewFile, deleteFile } =
+  const { files, isLoading, error, fetchFiles, refreshFiles, downloadFile, viewFile } =
     useESP32FileManager({ serialPort });
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [viewingFile, setViewingFile] = useState<{ name: string; content: string } | null>(null);
   const [loadingViewFile, setLoadingViewFile] = useState<string | null>(null);
-  const [deletingFile, setDeletingFile] = useState<string | null>(null);
 
   // Fetch files when connected
   useEffect(() => {
@@ -83,24 +82,7 @@ export function ESP32FileManager({
         setLoadingViewFile(null);
       }
     },
-    [viewFile, onError, onOpenFileInEditor]
-  );
-
-  // Handle file delete
-  const handleDeleteFile = useCallback(
-    async (filename: string) => {
-      try {
-        setDeletingFile(filename);
-        await deleteFile(filename);
-        onError?.(null as any); // Clear any previous errors on success
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        onError?.(msg);
-      } finally {
-        setDeletingFile(null);
-      }
-    },
-    [deleteFile, onError]
+    [viewFile, onError]
   );
 
   if (!isConnected) {
@@ -192,15 +174,6 @@ export function ESP32FileManager({
                         loading={downloadingFile === file.name}
                         title="Download file"
                         style={{ backgroundColor: "var(--btn-copy)", color: "#fff", border: "none" }}
-                      />
-                      <Button
-                        size="small"
-                        icon={<DeleteOutlined />}
-                        onClick={() => handleDeleteFile(file.name)}
-                        loading={deletingFile === file.name}
-                        title="Delete file"
-                        danger
-                        style={{ backgroundColor: "var(--btn-stop)", color: "#fff", border: "none" }}
                       />
                     </Space>
                   )}

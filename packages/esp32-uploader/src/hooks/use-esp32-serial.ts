@@ -77,32 +77,56 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
     filename: string, 
     content: string
   ): Promise<void> => {
+    const reader = port.readable?.getReader();
     const writer = port.writable?.getWriter();
-    if (!writer) throw new Error("Cannot write to ESP32 port");
+    if (!writer || !reader) throw new Error("Cannot access ESP32 port");
 
     const encoder = new TextEncoder();
     
     try {
+      // Send Ctrl+C to interrupt any running code
+      await writer.write(encoder.encode(REPL_CONTROL.CTRL_C));
+      await delay(100);
+      
       // Enter raw REPL mode
       await writer.write(encoder.encode(REPL_CONTROL.CTRL_A));
       await delay(SERIAL_DELAYS.AFTER_CTRL_A);
       
-      // Write file creation command
-      const escapedContent = content.replace(/'/g, "\\'");
-      const fileCommand = `
+      // Clear input buffer
+      try {
+        let clearAttempts = 0;
+        while (clearAttempts < 5) {
+          const { value } = await Promise.race([
+            reader.read(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error("timeout")), 50)
+            ),
+          ]);
+          if (!value) break;
+          clearAttempts++;
+        }
+      } catch (e) {
+        // Timeout expected
+      }
+      
+      // Use raw REPL to write file - send actual bytes to execute
+      // This writes the code directly without echoing REPL markers
+      const pythonCode = `
+import os
 with open('${filename}', 'w') as f:
-    f.write('''${escapedContent}
-''')
-print('File ${filename} saved successfully')
+    f.write(${JSON.stringify(content)})
 `;
       
-      await writer.write(encoder.encode(fileCommand));
+      await writer.write(encoder.encode(pythonCode));
       await writer.write(encoder.encode(REPL_CONTROL.CTRL_D));
       
       // Wait for execution
       await delay(SERIAL_DELAYS.AFTER_FILE_WRITE);
       
     } finally {
+      try {
+        reader?.releaseLock();
+      } catch (e) {}
       writer.releaseLock();
     }
   }, []);

@@ -5,9 +5,9 @@
 
 "use client";
 
+import { CaretDownOutlined, CaretUpOutlined } from "@ant-design/icons";
 import { ESP32UploaderSidebar } from "@nexus-tools/esp32-uploader";
 import { Button } from "@nexus-tools/ui";
-import { CaretDownOutlined, CaretUpOutlined } from "@ant-design/icons";
 import { useState, useEffect } from "react";
 
 interface SidebarProps {

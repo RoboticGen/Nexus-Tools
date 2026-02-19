@@ -27,6 +27,7 @@ interface CodeEditorProps {
   onCopy: () => void;
   onExport: () => void;
   onSaveToDevice?: (filename: string, content: string) => void;
+  isConnected?: boolean;
 }
 
 export interface CodeEditorHandle {
@@ -42,6 +43,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
       onCopy,
       onExport,
       onSaveToDevice,
+      isConnected = false,
     },
     ref
   ) => {
@@ -86,7 +88,8 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
         { id: newTabId, name: filename, code: content },
       ]);
       setActiveTabId(newTabId);
-    }, []);
+      onChange(content);
+    }, [onChange]);
 
     // Expose openFileInTab method via ref
     useImperativeHandle(ref, () => ({
@@ -103,16 +106,22 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
         
         // Switch to another tab if closing active tab
         if (activeTabId === tabId) {
-          setActiveTabId(newTabs[0].id);
+          const nextTab = newTabs[0];
+          setActiveTabId(nextTab.id);
+          onChange(nextTab.code);
         }
     },
-    [tabs, activeTabId]
+    [tabs, activeTabId, onChange]
   );
 
   // Switch to tab
   const handleSwitchTab = useCallback((tabId: string) => {
-    setActiveTabId(tabId);
-  }, []);
+    const tabToSwitch = tabs.find((tab) => tab.id === tabId);
+    if (tabToSwitch) {
+      setActiveTabId(tabId);
+      onChange(tabToSwitch.code);
+    }
+  }, [tabs, onChange]);
 
   // Start renaming a tab
   const handleStartRename = (tabId: string) => {
@@ -189,7 +198,8 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
           <Button
             icon={<SaveOutlined />}
             onClick={handleSaveToDevice}
-            title="Save to ESP32 Device"
+            title={isConnected ? "Save to ESP32 Device" : "Connect device first"}
+            disabled={!isConnected}
           >
             Save Device
           </Button>
@@ -263,3 +273,5 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
   );
 }
 );
+
+CodeEditor.displayName = "CodeEditor";

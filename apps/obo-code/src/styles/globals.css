@@ -285,23 +285,25 @@ textarea.iPadShowKeyboard {
   color: #fff;
 }
 
-.tab-add-btn {
+.code-tabs-header .tab-add-btn {
   flex-shrink: 0;
-  height: 44px;
-  width: 44px;
+  height: 28px !important;
+  width: 28px !important;
+  min-width: 28px !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  color: var(--btn-run);
-  background: transparent;
+  border: none !important;
+  color: #254665 !important;
+  background: transparent !important;
   transition: all 0.2s ease;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  padding: 0 !important;
 }
 
-.tab-add-btn:hover {
-  background-color: rgba(69, 189, 152, 0.1);
-  color: var(--btn-run);
+.code-tabs-header .tab-add-btn:hover {
+  background-color: rgba(37, 70, 101, 0.1) !important;
+  color: #254665 !important;
 }
 
 .output-panel {
