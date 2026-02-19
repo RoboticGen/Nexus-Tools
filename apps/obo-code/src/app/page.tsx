@@ -27,6 +27,7 @@ export default function Home() {
   const [notification, setNotification] = useState<string | null>(null);
   const [background, setBackground] = useState<string>("No-Background");
   const codeEditorRef = useRef<CodeEditorHandle>(null);
+  const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
 
   // Set the document title explicitly to ensure it shows correct app name
   useEffect(() => {
@@ -102,6 +103,20 @@ export default function Home() {
     showNotification("Code exported as script.py");
   }, [code, showNotification]);
 
+  const handleSaveToDevice = useCallback((filename: string, content: string) => {
+    if (!saveFileToDeviceRef.current) {
+      showNotification("ESP32 connection not ready");
+      return;
+    }
+    saveFileToDeviceRef.current(filename, content).catch((error) => {
+      showNotification(error?.message || "Failed to save file to device");
+    });
+  }, [showNotification]);
+
+  const handleSaveFileToDeviceCallback = useCallback((saveFunc: (filename: string, content: string) => Promise<void>) => {
+    saveFileToDeviceRef.current = saveFunc;
+  }, []);
+
   const handleClear = useCallback(() => {
     if (isRunning) {
       showNotification("Stop the code execution first");
@@ -139,6 +154,7 @@ export default function Home() {
             onRun={handleRun}
             onCopy={handleCopy}
             onExport={handleExport}
+            onSaveToDevice={handleSaveToDevice}
           />
           <OutputTerminal
             output={output}
@@ -149,6 +165,7 @@ export default function Home() {
             onStatusUpdate={showNotification}
             onError={showNotification}
             onOpenFileInEditor={handleOpenFileInEditor}
+            onSaveFileToDevice={handleSaveFileToDeviceCallback}
           />
         </div>
 

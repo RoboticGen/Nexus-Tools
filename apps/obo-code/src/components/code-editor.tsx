@@ -1,8 +1,8 @@
 "use client";
 
+import { CopyOutlined, ExportOutlined, PlayCircleOutlined, PlusOutlined, CloseOutlined, SaveOutlined } from "@ant-design/icons";
 import { OBO_CODE_CONFIG } from "@nexus-tools/monaco-editor";
 import { Button } from "@nexus-tools/ui";
-import { CopyOutlined, ExportOutlined, PlayCircleOutlined, PlusOutlined, CloseOutlined } from "@ant-design/icons";
 import dynamic from "next/dynamic";
 import { useCallback, useState, forwardRef, useImperativeHandle } from "react";
 
@@ -26,6 +26,7 @@ interface CodeEditorProps {
   onRun: () => void;
   onCopy: () => void;
   onExport: () => void;
+  onSaveToDevice?: (filename: string, content: string) => void;
 }
 
 export interface CodeEditorHandle {
@@ -40,6 +41,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
       onRun,
       onCopy,
       onExport,
+      onSaveToDevice,
     },
     ref
   ) => {
@@ -149,6 +151,14 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
     }
   };
 
+  // Handle save to device
+  const handleSaveToDevice = useCallback(() => {
+    if (!activeTab.code.trim()) {
+      return;
+    }
+    onSaveToDevice?.(activeTab.name, activeTab.code);
+  }, [activeTab, onSaveToDevice]);
+
   return (
     <div className="code-panel">
       <div className="panel-header">
@@ -175,6 +185,13 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
             title="Export Code"
           >
             Export
+          </Button>
+          <Button
+            icon={<SaveOutlined />}
+            onClick={handleSaveToDevice}
+            title="Save to ESP32 Device"
+          >
+            Save Device
           </Button>
         </div>
       </div>

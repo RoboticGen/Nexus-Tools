@@ -177,6 +177,46 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
   }, [espSupported, code, connectToESP32, stopRunningCode, writeFileToESP32, softResetESP32, closePort, onStatusUpdate, onError]);
 
   /**
+   * Save a file to ESP32 device with custom filename
+   */
+  const saveFileToDevice = useCallback(async (filename: string, fileContent: string) => {
+    if (!espSupported) {
+      onError?.("Web Serial API not supported");
+      return;
+    }
+
+    if (!filename.trim() || !fileContent.trim()) {
+      onError?.("Filename and content cannot be empty");
+      return;
+    }
+
+    let port: any = null;
+
+    try {
+      onStatusUpdate?.(`Saving ${filename} to ESP32...`);
+
+      // Use existing connection or create new one
+      if (connectedPortRef.current && connectedPortRef.current.readable) {
+        port = connectedPortRef.current;
+      } else {
+        port = await connectToESP32();
+        connectedPortRef.current = port;
+        setSerialPort(port);
+        setIsConnected(true);
+      }
+
+      // Write file to ESP32
+      onStatusUpdate?.(`Writing ${filename}...`);
+      await writeFileToESP32(port, filename, fileContent);
+
+      onStatusUpdate?.(`Successfully saved ${filename} to ESP32`);
+    } catch (error: any) {
+      const errorMsg = error.message || "Failed to save file";
+      onError?.(errorMsg);
+    }
+  }, [espSupported, connectToESP32, writeFileToESP32, onStatusUpdate, onError]);
+
+  /**
    * Connect to ESP32 (without uploading)
    */
   const connectToDevice = useCallback(async () => {
@@ -301,6 +341,7 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
     // Actions
     setSelectedDevice,
     uploadCode,
+    saveFileToDevice,
     connectToDevice,
     resetConnection,
     openUploader,

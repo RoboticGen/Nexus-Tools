@@ -523,6 +523,132 @@ except:
   }, [serialPort, isPortValid]);
 
   /**
+   * Delete a file from ESP32
+   */
+  const deleteFile = useCallback(async (filename: string): Promise<void> => {
+    if (!serialPort) {
+      throw new Error("Serial port not available. Please connect to ESP32.");
+    }
+
+    if (!isPortValid()) {
+      throw new Error("Serial port connection lost. Please reconnect to ESP32.");
+    }
+
+    let reader: any = null;
+    let writer: any = null;
+
+    try {
+      // Wait a bit to ensure no other reader is active
+      await delay(200);
+
+      reader = serialPort.readable?.getReader();
+      writer = serialPort.writable?.getWriter();
+
+      if (!reader || !writer) {
+        throw new Error(
+          "Cannot access serial port. REPL may have closed the connection. Please wait a moment and try reconnecting."
+        );
+      }
+
+      try {
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+
+        await delay(SERIAL_DELAYS.BEFORE_READ);
+
+        // Send Ctrl+C to interrupt
+        await writer.write(encoder.encode("\x03"));
+        await delay(100);
+
+        // Send Ctrl+A to enter raw REPL mode
+        await writer.write(encoder.encode("\x01"));
+        await delay(100);
+
+        // Clear buffer
+        try {
+          let clearAttempts = 0;
+          while (clearAttempts < 5) {
+            const { value } = await Promise.race([
+              reader.read(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("timeout")), 50)
+              ),
+            ]);
+            if (!value) break;
+            clearAttempts++;
+          }
+        } catch (e) {
+          // Timeout expected
+        }
+
+        // Delete file using Python
+        const deleteCmd = `
+import os
+try:
+    os.remove('${filename}')
+    print('Deleted: ${filename}')
+except Exception as e:
+    print('Error:', str(e))
+`;
+
+        await writer.write(encoder.encode(deleteCmd));
+        await writer.write(encoder.encode("\x04")); // Ctrl+D
+
+        await delay(SERIAL_DELAYS.AFTER_COMMAND);
+
+        // Read response
+        let response = "";
+        const readStartTime = Date.now();
+        const readTimeout = 3000;
+
+        while (Date.now() - readStartTime < readTimeout) {
+          try {
+            const { value, done } = await Promise.race([
+              reader.read(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("timeout")), 100)
+              ),
+            ]);
+            if (done) break;
+            if (value) {
+              response += decoder.decode(value, { stream: true });
+            }
+          } catch (e) {
+            if (response.length > 0) break;
+          }
+        }
+
+        // Check for errors
+        if (response.includes("Error") || response.includes("Traceback")) {
+          throw new Error(`Failed to delete file: ${response}`);
+        }
+
+        // Refresh file list after deletion
+        await delay(300);
+        await fetchFiles("/");
+      } finally {
+        try {
+          if (reader) reader.releaseLock();
+        } catch (e) {
+          // Already released
+        }
+        try {
+          if (writer) writer.releaseLock();
+        } catch (e) {
+          // Already released
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("Cannot access serial port")) {
+        setError("Serial connection lost");
+      } else {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to delete file: ${msg}`);
+      }
+    }
+  }, [serialPort, isPortValid, fetchFiles]);
+
+  /**
    * Refresh the file list
    */
   const refreshFiles = useCallback(() => {
@@ -537,6 +663,7 @@ except:
     refreshFiles,
     downloadFile,
     viewFile,
+    deleteFile,
   };
 }
 
