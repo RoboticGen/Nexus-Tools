@@ -35,6 +35,7 @@ export function OutputTerminal({
   const [replReady, setReplReady] = useState(false);
   const [autoDetecting, setAutoDetecting] = useState(false);
   const autoDetectionTriggeredRef = useRef(false);
+  const fileManagerRefreshRef = useRef<(() => void) | null>(null);
 
   const handleConnectionEstablished = useCallback(async (_port: any) => {
     if (autoDetectionTriggeredRef.current) return;
@@ -88,7 +89,17 @@ export function OutputTerminal({
   // Pass saveFileToDevice function to parent component
   useEffect(() => {
     if (onSaveFileToDevice && saveFileToDevice) {
-      onSaveFileToDevice(saveFileToDevice);
+      // Wrap saveFileToDevice to also refresh file manager after saving
+      const wrappedSaveFileToDevice = async (filename: string, content: string) => {
+        await saveFileToDevice(filename, content);
+        // Refresh file manager after successful save
+        if (fileManagerRefreshRef.current) {
+          setTimeout(() => {
+            fileManagerRefreshRef.current?.();
+          }, 500);
+        }
+      };
+      onSaveFileToDevice(wrappedSaveFileToDevice);
     }
   }, [saveFileToDevice, onSaveFileToDevice]);
 
@@ -233,6 +244,9 @@ export function OutputTerminal({
         isConnected={isConnected}
         onError={onError}
         onOpenFileInEditor={onOpenFileInEditor}
+        onRefreshReady={(refreshFunc) => {
+          fileManagerRefreshRef.current = refreshFunc;
+        }}
       />
     </div>
   );

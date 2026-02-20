@@ -591,13 +591,20 @@ except:
             // Remove lines that are REPL prompts or control markers
             if (trimmed === ">" || trimmed === ">>" || trimmed === ">>>") return false;
             if (trimmed === "..." || trimmed.startsWith(">>>") || trimmed.startsWith("...")) return false;
+            // Remove OK markers that might appear after file operations
+            if (trimmed === "OK" || trimmed === "OK\r") return false;
+            // Remove raw REPL markers
+            if (trimmed.includes("raw REPL") || trimmed.includes("PASTE")) return false;
             return true;
           })
           .join("\n")
           .trim();
 
-        // Remove any trailing REPL prompt characters (>, >>, >>>)
-        content = content.replace(/>>>+\s*$/, "").replace(/>+\s*$/, "").trim();
+        // Remove any trailing REPL prompt characters (>, >>, >>>) and status messages
+        content = content.replace(/>>>+\s*$/, "").replace(/>+\s*$/, "").replace(/OK\s*$/, "").trim();
+        
+        // Remove any leading raw REPL mode markers
+        content = content.replace(/^raw REPL; CTRL-B to exit\s*/i, "").trim();
 
         return content;
       } finally {
@@ -620,6 +627,152 @@ except:
   }, [serialPort, isPortValid]);
 
   /**
+   * Delete a file from ESP32 filesystem
+   */
+  const deleteFile = useCallback(async (filename: string): Promise<void> => {
+    if (!serialPort) {
+      throw new Error("Serial port not available. Please connect to ESP32.");
+    }
+
+    if (!isPortValid()) {
+      throw new Error("Serial port connection lost. Please reconnect to ESP32.");
+    }
+
+    let reader: any;
+    let writer: any;
+    let retries = 0;
+    const maxRetries = 3;
+
+    try {
+      // Retry logic for stream locking
+      while (retries < maxRetries) {
+        try {
+          reader = serialPort.readable?.getReader();
+          writer = serialPort.writable?.getWriter();
+          if (reader && writer) break;
+        } catch (e: any) {
+          if (e.message?.includes("already locked") || e.message?.includes("lock")) {
+            retries++;
+            if (retries >= maxRetries) {
+              throw new Error(
+                "Stream is locked by another operation. Please wait a moment and try again."
+              );
+            }
+            await delay(200 * retries);
+          } else {
+            throw e;
+          }
+        }
+      }
+
+      if (!reader || !writer) {
+        throw new Error(
+          "Cannot access serial port. REPL may have closed the connection. Please wait a moment and try reconnecting."
+        );
+      }
+
+      try {
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+
+        await delay(SERIAL_DELAYS.BEFORE_READ);
+
+        // Send Ctrl+C to interrupt
+        await writer.write(encoder.encode("\x03"));
+        await delay(100);
+
+        // Send Ctrl+A to enter raw REPL mode
+        await writer.write(encoder.encode("\x01"));
+        await delay(100);
+
+        // Clear buffer
+        try {
+          let clearAttempts = 0;
+          while (clearAttempts < 5) {
+            const { value } = await Promise.race([
+              reader.read(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("timeout")), 50)
+              ),
+            ]);
+            if (!value) break;
+            clearAttempts++;
+          }
+        } catch (e) {
+          // Timeout expected
+        }
+
+        // Delete file command
+        const deleteCmd = `
+import os
+try:
+    os.remove('${filename}')
+    print('OK')
+except Exception as e:
+    print('ERROR:' + str(e))
+`;
+
+        await writer.write(encoder.encode(deleteCmd));
+        await writer.write(encoder.encode("\x04")); // Ctrl+D
+
+        await delay(SERIAL_DELAYS.AFTER_COMMAND);
+
+        // Read response
+        let response = "";
+        let readTimeout = SERIAL_DELAYS.READ_TIMEOUT;
+        const readStartTime = Date.now();
+
+        while (Date.now() - readStartTime < readTimeout) {
+          try {
+            const { value, done } = await Promise.race([
+              reader.read(),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("timeout")), 100)
+              ),
+            ]);
+            if (done) break;
+            if (value) {
+              response += decoder.decode(value, { stream: true });
+            }
+          } catch (e) {
+            if (response.length > 0) break;
+          }
+        }
+
+        // Check if deletion was successful
+        if (response.includes("ERROR:")) {
+          const errorMatch = response.match(/ERROR:(.+)/);
+          const errorMsg = errorMatch ? errorMatch[1].trim() : "Unknown error";
+          throw new Error(errorMsg);
+        }
+
+        if (!response.includes("OK")) {
+          throw new Error("Failed to delete file - no confirmation received");
+        }
+      } finally {
+        // Release locks safely
+        try {
+          if (reader) reader.releaseLock();
+        } catch (e) {
+          // Already released or stream closed
+        }
+        try {
+          if (writer) writer.releaseLock();
+        } catch (e) {
+          // Already released or stream closed
+        }
+      }
+
+      // Wait a moment for locks to be fully released, then refresh file list
+      await delay(300);
+      await fetchFiles("/");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Failed to delete file: ${msg}`);
+    }
+  }, [serialPort, isPortValid, fetchFiles]);
+
+  /**
    * Refresh the file list
    */
   const refreshFiles = useCallback(() => {
@@ -634,6 +787,7 @@ except:
     refreshFiles,
     downloadFile,
     viewFile,
+    deleteFile,
   };
 }
 

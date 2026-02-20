@@ -249,14 +249,26 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
               </button>
             </div>
           ))}
+          <Button
+            variant="default"
+            icon={<PlusOutlined />}
+            onClick={handleAddTab}
+            title="Add new tab"
+            style={{ 
+              color: '#ffffff', 
+              background: 'transparent',
+              border: 'none',
+              height: '24px',
+              width: '24px',
+              minWidth: '24px',
+              padding: '0',
+              fontSize: '0.85rem',
+              marginTop: '10px',
+              marginLeft: '4px',
+              flexShrink: 0,
+            }}
+          />
         </div>
-        <Button
-          variant="default"
-          icon={<PlusOutlined />}
-          onClick={handleAddTab}
-          title="Add new tab"
-          className="tab-add-btn"
-        />
       </div>
 
       <div className="code-editor-wrapper">

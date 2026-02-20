@@ -7,7 +7,7 @@
 
 import { useEffect, useCallback, useState } from "react";
 import { Button, Space } from "antd";
-import { SyncOutlined, EyeOutlined, DownloadOutlined, CloseOutlined } from "@ant-design/icons";
+import { SyncOutlined, EyeOutlined, DownloadOutlined, CloseOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useESP32FileManager } from "../hooks/use-esp32-file-manager";
 
 interface ESP32FileManagerProps {
@@ -15,6 +15,7 @@ interface ESP32FileManagerProps {
   isConnected: boolean;
   onError?: (error: string) => void;
   onOpenFileInEditor?: (filename: string, content: string) => void;
+  onRefreshReady?: (refreshFunc: () => void) => void;
 }
 
 export function ESP32FileManager({
@@ -22,12 +23,14 @@ export function ESP32FileManager({
   isConnected,
   onError,
   onOpenFileInEditor,
+  onRefreshReady,
 }: ESP32FileManagerProps) {
-  const { files, isLoading, error, fetchFiles, refreshFiles, downloadFile, viewFile } =
+  const { files, isLoading, error, fetchFiles, refreshFiles, downloadFile, viewFile, deleteFile } =
     useESP32FileManager({ serialPort });
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [viewingFile, setViewingFile] = useState<{ name: string; content: string } | null>(null);
   const [loadingViewFile, setLoadingViewFile] = useState<string | null>(null);
+  const [deletingFile, setDeletingFile] = useState<string | null>(null);
 
   // Fetch files when connected
   useEffect(() => {
@@ -42,6 +45,13 @@ export function ESP32FileManager({
       onError?.(error);
     }
   }, [error, onError]);
+
+  // Expose refresh function to parent
+  useEffect(() => {
+    if (onRefreshReady) {
+      onRefreshReady(refreshFiles);
+    }
+  }, [onRefreshReady, refreshFiles]);
 
   // Handle file download
   const handleDownloadFile = useCallback(
@@ -82,7 +92,29 @@ export function ESP32FileManager({
         setLoadingViewFile(null);
       }
     },
-    [viewFile, onError]
+    [viewFile, onError, onOpenFileInEditor]
+  );
+
+  // Handle file deletion
+  const handleDeleteFile = useCallback(
+    async (filename: string) => {
+      // Confirm deletion
+      if (!confirm(`Are you sure you want to delete "${filename}"? This action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        setDeletingFile(filename);
+        await deleteFile(filename);
+        onError?.(`File "${filename}" deleted successfully`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        onError?.(msg);
+      } finally {
+        setDeletingFile(null);
+      }
+    },
+    [deleteFile, onError]
   );
 
   if (!isConnected) {
@@ -158,7 +190,7 @@ export function ESP32FileManager({
                     )}
                   </div>
                   {!file.isDirectory && (
-                    <Space>
+                    <Space size="small">
                       <Button
                         size="small"
                         icon={<EyeOutlined />}
@@ -174,6 +206,15 @@ export function ESP32FileManager({
                         loading={downloadingFile === file.name}
                         title="Download file"
                         style={{ backgroundColor: "var(--btn-copy)", color: "#fff", border: "none" }}
+                      />
+                      <Button
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDeleteFile(file.name)}
+                        loading={deletingFile === file.name}
+                        title="Delete file"
+                        danger
+                        style={{ backgroundColor: "var(--btn-stop)", color: "#fff", border: "none" }}
                       />
                     </Space>
                   )}

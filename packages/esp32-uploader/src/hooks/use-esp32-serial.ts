@@ -111,10 +111,12 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
       
       // Use raw REPL to write file - send actual bytes to execute
       // This writes the code directly without echoing REPL markers
+      // Ensure content ends with newline for proper file formatting
+      const sanitizedContent = content.trimEnd();
       const pythonCode = `
 import os
 with open('${filename}', 'w') as f:
-    f.write(${JSON.stringify(content)})
+    f.write(${JSON.stringify(sanitizedContent)})
 `;
       
       await writer.write(encoder.encode(pythonCode));

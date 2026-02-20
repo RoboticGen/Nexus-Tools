@@ -53,9 +53,55 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="msvalidate.01" content="F880277201EB0168D24B534ADC14C549" />
+        {/* Preload fonts to prevent FOUC */}
+        <link rel="preload" as="font" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" />
+        {/* Preload images */}
         <link rel="preload" as="image" href="/academyLogo.webp" />
         <link rel="preload" as="image" href="/obo_blocks.webp" />
         <link rel="prefetch" as="image" href="/editing.gif" />
+        {/* Critical inline styles to prevent layout shift during CSS load */}
+        <style dangerouslySetInnerHTML={{__html: `
+          html, body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Roboto", sans-serif;
+            font-weight: 300;
+            background-color: rgba(77, 151, 255, 0.25);
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+          }
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          #__next {
+            height: 100vh;
+            width: 100vw;
+          }
+          .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            width: 100%;
+          }
+          /* Hide all buttons until app initializes */
+          button, .ant-btn, .action-btn {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+          }
+          /* Show buttons when app is ready */
+          html.app-ready button, 
+          html.app-ready .ant-btn, 
+          html.app-ready .action-btn {
+            opacity: 1;
+            pointer-events: auto;
+          }
+        `}} />
       </head>
       <body className={roboto.className}>{children}</body>
     </html>

@@ -33,6 +33,11 @@ export default function Home() {
   // Set the document title explicitly to ensure it shows correct app name
   useEffect(() => {
     document.title = "Obo Code";
+    // Mark app as ready to show buttons
+    document.documentElement.classList.add('app-ready');
+    return () => {
+      document.documentElement.classList.remove('app-ready');
+    };
   }, []);
 
   const showNotification = useCallback((message: string) => {
