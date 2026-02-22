@@ -24,12 +24,20 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   font-family: "Roboto", sans-serif;
   font-weight: 300;
   background-color: var(--primary-bg);
   margin: 0;
   overflow: hidden;
+  height: 100%;
+  width: 100%;
+}
+
+#__next {
+  height: 100vh;
+  width: 100vw;
 }
 
 /* App Container */
@@ -37,7 +45,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow: visible;
+  overflow: hidden;
   width: 100%;
   max-width: 100vw;
   box-sizing: border-box;
@@ -64,6 +72,12 @@ body {
 .academy-logo {
   height: 2.3rem;
   width: auto;
+}
+
+/* Hide Monaco Editor iPad Keyboard Widget */
+.iPadShowKeyboard,
+textarea.iPadShowKeyboard {
+  display: none !important;
 }
 
 /* Main Content */
@@ -114,21 +128,23 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  overflow: visible;
+  overflow: auto;
   min-height: 0;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
 }
 
 .right-panel {
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: auto;
   min-height: 0;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Panel Base Styles */
@@ -226,6 +242,18 @@ body {
 
 .action-btn span {
   pointer-events: none;
+}
+
+/* Disabled state for buttons */
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #c0c0c0;
+}
+
+.action-btn:disabled:hover {
+  background-color: #c0c0c0;
+  transform: none;
 }
 
 /* Tooltip for buttons when text is hidden on very small screens */

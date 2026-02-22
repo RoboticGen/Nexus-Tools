@@ -1,13 +1,16 @@
 "use client";
 
-import { python } from "@codemirror/lang-python";
+import { OBO_CODE_CONFIG } from "@nexus-tools/monaco-editor";
 import dynamic from "next/dynamic";
 import { useCallback } from "react";
 
-const CodeMirror = dynamic(() => import("@uiw/react-codemirror"), {
-  ssr: false,
-  loading: () => <div className="code-editor-loading">Loading editor...</div>,
-});
+const MonacoCodeEditorComponent = dynamic(
+  () => import("@nexus-tools/monaco-editor").then((mod) => ({ default: mod.MonacoCodeEditor })),
+  {
+    ssr: false,
+    loading: () => <div className="code-editor-loading">Loading editor...</div>,
+  }
+);
 
 interface CodeEditorProps {
   code: string;
@@ -51,36 +54,13 @@ export function CodeEditor({
         </div>
       </div>
       <div className="code-editor-wrapper">
-        <CodeMirror
-          value={code}
-          height="100%"
-          extensions={[python()]}
+        <MonacoCodeEditorComponent
+          code={code}
           onChange={handleChange}
-          basicSetup={{
-            lineNumbers: true,
-            highlightActiveLineGutter: true,
-            highlightSpecialChars: true,
-            foldGutter: true,
-            drawSelection: true,
-            dropCursor: true,
-            allowMultipleSelections: true,
-            indentOnInput: true,
-            syntaxHighlighting: true,
-            bracketMatching: true,
-            closeBrackets: true,
-            autocompletion: true,
-            rectangularSelection: true,
-            crosshairCursor: true,
-            highlightActiveLine: true,
-            highlightSelectionMatches: true,
-            closeBracketsKeymap: true,
-            defaultKeymap: true,
-            searchKeymap: true,
-            historyKeymap: true,
-            foldKeymap: true,
-            completionKeymap: true,
-            lintKeymap: true,
-          }}
+          language={OBO_CODE_CONFIG.language}
+          theme={OBO_CODE_CONFIG.theme}
+          height="100%"
+          showMinimap={OBO_CODE_CONFIG.showMinimap}
         />
       </div>
     </div>
