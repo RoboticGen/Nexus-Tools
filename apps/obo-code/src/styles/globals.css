@@ -6,31 +6,39 @@
 @import '@nexus-tools/esp32-uploader/styles';
 
 :root {
-  --primary-bg: rgba(77, 151, 255, 0.25);
-  --navbar-bg: #1a3a59ec;
+  /* Modern palette */
+  --primary-bg: #f0f4f8;
+  --primary-bg-subtle: rgba(77, 151, 255, 0.08);
+  --navbar-bg: rgba(26, 58, 89, 0.92);
+  --navbar-blur: 12px;
   --panel-bg: #ffffff;
-  --panel-border: rgba(77, 151, 255, 0.25);
-  --btn-default: #254665;
-  --btn-run: #254665;
-  --btn-copy: #254665;
-  --btn-stop: #254665;
-  --btn-export: #254665;
-  --btn-clear: #254665;
-  --text-muted: #9d9d9d;
+  --panel-border: rgba(77, 151, 255, 0.12);
+  --panel-radius: 12px;
+  --panel-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --panel-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --btn-default: #475569;
+  --btn-run: #0d9488;
+  --btn-copy: #0284c7;
+  --btn-stop: #dc2626;
+  --btn-export: #b45309;
+  --btn-clear: #ca8a04;
+  --btn-radius: 8px;
+  --text-muted: #64748b;
+  --text-primary: #1e293b;
   /* Status colors */
-  --status-success-bg: #d4edda;
-  --status-success-color: #155724;
-  --status-success-border: #c3e6cb;
-  --status-error-bg: #f8d7da;
-  --status-error-color: #721c24;
-  --status-error-border: #f5c6cb;
-  --status-info-bg: #d1ecf1;
-  --status-info-color: #0c5460;
-  --status-info-border: #bee5eb;
-  --status-warning-bg: #fff3cd;
-  --status-warning-color: #856404;
-  --status-warning-border: #ffeaa7;
-  --status-warning-icon: #f39c12;
+  --status-success-bg: #ecfdf5;
+  --status-success-color: #065f46;
+  --status-success-border: #a7f3d0;
+  --status-error-bg: #fef2f2;
+  --status-error-color: #991b1b;
+  --status-error-border: #fecaca;
+  --status-info-bg: #eff6ff;
+  --status-info-color: #1e40af;
+  --status-info-border: #bfdbfe;
+  --status-warning-bg: #fffbeb;
+  --status-warning-color: #92400e;
+  --status-warning-border: #fde68a;
+  --status-warning-icon: #f59e0b;
   /* Spacing */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
@@ -38,6 +46,10 @@
   --spacing-lg: 1rem;
   --spacing-xl: 1.5rem;
   --spacing-2xl: 2rem;
+  /* Transitions */
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --transition-fast: 0.15s var(--ease-out);
+  --transition-normal: 0.2s var(--ease-out);
 }
 
 * {
@@ -48,13 +60,15 @@
 
 html,
 body {
-  font-family: "Roboto", sans-serif;
-  font-weight: 300;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
   background-color: var(--primary-bg);
   margin: 0;
   overflow: hidden;
   height: 100%;
   width: 100%;
+  color: var(--text-primary);
 }
 
 #__next {
@@ -72,17 +86,21 @@ body {
   box-sizing: border-box;
 }
 
-/* Navbar */
+/* Navbar – modern glass bar */
 .navbar {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--navbar-bg);
-  padding: 0.5rem 1rem;
+  background: var(--navbar-bg);
+  backdrop-filter: blur(var(--navbar-blur));
+  -webkit-backdrop-filter: blur(var(--navbar-blur));
+  padding: 0.625rem 1.25rem;
   flex-shrink: 0;
   position: relative;
   z-index: 1000;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .obo-logo {
@@ -165,20 +183,27 @@ textarea.iPadShowKeyboard {
   box-sizing: border-box;
 }
 
-/* Panel Base Styles */
+/* Panel Base Styles – modern cards */
 .code-panel,
 .output-panel,
 .turtle-panel {
   background-color: var(--panel-bg);
-  border-radius: 0.6rem;
-  border: 0.1rem solid var(--panel-border);
-  box-shadow: 2px 3px 18px 0px rgba(0, 0, 0, 0.34);
+  border-radius: var(--panel-radius);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--panel-shadow);
   display: flex;
   flex-direction: column;
   overflow: auto;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
+}
+.code-panel:focus-within,
+.output-panel:focus-within,
+.turtle-panel:focus-within {
+  box-shadow: var(--panel-shadow-hover);
+  border-color: rgba(77, 151, 255, 0.2);
 }
 
 .code-panel {
@@ -194,13 +219,12 @@ textarea.iPadShowKeyboard {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-bottom: 2px solid rgba(69, 189, 152, 0.1);
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid var(--panel-border);
   padding: 0.5rem;
   flex-shrink: 0;
   max-height: 52px;
   overflow: hidden;
-  backdrop-filter: blur(10px);
 }
 
 .code-tabs-list {
@@ -268,10 +292,10 @@ textarea.iPadShowKeyboard {
 }
 
 .code-tab:hover {
-  background: rgba(255, 255, 255, 0.9);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-color: rgba(69, 189, 152, 0.3);
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: rgba(13, 148, 136, 0.2);
 }
 
 .code-tab:hover::before {
@@ -279,11 +303,11 @@ textarea.iPadShowKeyboard {
 }
 
 .code-tab.active {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(249, 251, 253, 1) 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border-bottom: 2px solid var(--btn-run);
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(69, 189, 152, 0.15), 0 2px 4px rgba(0, 0, 0, 0.05);
-  border-color: rgba(69, 189, 152, 0.3);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.12), 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-color: rgba(13, 148, 136, 0.25);
   transform: none;
 }
 
@@ -306,7 +330,7 @@ textarea.iPadShowKeyboard {
 }
 
 .code-tab.active .tab-name {
-  color: var(--btn-run);
+  color: #0f766e;
   font-weight: 600;
 }
 
@@ -497,26 +521,29 @@ textarea.iPadShowKeyboard {
   display: none !important;
 }
 
-/* Ant Design Button Overrides */
+/* Ant Design Button Overrides – align with action buttons */
 .ant-btn-primary {
   background-color: var(--btn-default) !important;
   border-color: var(--btn-default) !important;
+  border-radius: var(--btn-radius) !important;
+  transition: transform var(--transition-fast), box-shadow var(--transition-normal) !important;
 }
 
 .ant-btn-primary:hover,
 .ant-btn-primary:focus {
-  background-color: #1a3a59 !important;
-  border-color: #1a3a59 !important;
+  background-color: var(--btn-run) !important;
+  border-color: var(--btn-run) !important;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35) !important;
 }
 
 .ant-btn-primary:active {
-  background-color: #0f2434 !important;
-  border-color: #0f2434 !important;
+  transform: scale(0.98);
 }
 
 .ant-btn-primary:disabled {
-  background-color: #ccc !important;
-  border-color: #ccc !important;
+  background-color: #cbd5e1 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
 }
 
 .turtle-panel {
@@ -535,15 +562,16 @@ textarea.iPadShowKeyboard {
   flex-shrink: 0;
   flex-wrap: wrap;
   gap: 0.5rem;
-  background: linear-gradient(to bottom, #fafafa, #f5f5f5);
+  background: linear-gradient(180deg, #fafbfc 0%, #f1f5f9 100%);
   border-bottom: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius) var(--panel-radius) 0 0;
 }
 
 .panel-title {
   font-weight: 600;
-  font-size: 1rem;
-  color: #333;
-  letter-spacing: 0.3px;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
 }
 
 /* Button Group */
@@ -564,19 +592,23 @@ textarea.iPadShowKeyboard {
   gap: 0.4rem;
   padding: 0.5rem 1rem;
   min-width: auto;
-  border-radius: 0.4rem;
+  border-radius: var(--btn-radius);
   border: none;
   color: #ffffff;
   font-weight: 500;
   font-size: 0.875rem;
   background-color: var(--btn-default);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform var(--transition-fast), box-shadow var(--transition-normal), background-color var(--transition-fast);
   flex-shrink: 0;
   white-space: normal;
   position: relative;
   word-break: break-word;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.action-btn:focus-visible {
+  outline: 2px solid var(--btn-copy);
+  outline-offset: 2px;
 }
 
 .action-btn i {
@@ -646,25 +678,30 @@ textarea.iPadShowKeyboard {
   }
 }
 
-.run-btn:hover {
+.run-btn:hover:not(:disabled) {
   background-color: var(--btn-run);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
 }
 
-.copy-btn:hover {
+.copy-btn:hover:not(:disabled) {
   background-color: var(--btn-copy);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
 }
 
-.export-btn:hover {
+.export-btn:hover:not(:disabled) {
   background-color: var(--btn-export);
+  box-shadow: 0 4px 12px rgba(180, 83, 9, 0.35);
 }
 
-.clear-btn:hover {
+.clear-btn:hover:not(:disabled) {
   background-color: var(--btn-clear);
+  box-shadow: 0 4px 12px rgba(202, 138, 4, 0.35);
 }
 
-.stop-btn:hover,
+.stop-btn:hover:not(:disabled),
 .stop-btn.active {
   background-color: var(--btn-stop);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
 }
 
 /* Background Select */
@@ -691,6 +728,15 @@ textarea.iPadShowKeyboard {
 
 .background-select:focus {
   outline: none;
+}
+
+/* Code Editor Container and Tabs */
+.code-editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 .code-editor-wrapper {
@@ -793,45 +839,55 @@ textarea.iPadShowKeyboard {
   max-width: 100%;
   height: 100%;
   min-height: 80px;
-  color: var(--text-muted);
-  background-color: #f3f3f3;
-  border: none;
-  border-radius: 0.3rem;
-  padding: 0.5rem;
-  font-family: monospace;
-  font-size: 0.875rem;
+  color: var(--text-primary);
+  background-color: #f8fafc;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--btn-radius);
+  padding: 0.75rem 1rem;
+  font-family: "JetBrains Mono", "SF Mono", "Consolas", monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
   resize: none;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: manipulation;
   box-sizing: border-box;
   flex: 1;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .terminal-output:focus {
   outline: none;
+  border-color: var(--btn-copy);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
 }
 
-/* Notification */
+/* Notification – modern toast */
 .notification {
-  font-family: "Roboto", sans-serif;
-  font-weight: 300;
+  font-family: inherit;
+  font-weight: 500;
   position: fixed;
-  top: 20px;
+  top: 1.25rem;
   left: 50%;
-  transform: translateX(-50%);
-  background-color: #ffffff;
-  color: rgb(0, 0, 0);
-  padding: 10px 20px;
-  border-radius: 5px;
+  transform: translateX(-50%) translateY(-8px);
+  background: #ffffff;
+  color: var(--text-primary);
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
   opacity: 0;
-  transition: opacity 0.3s ease-in-out;
+  visibility: hidden;
+  transition: opacity 0.25s var(--ease-out), transform 0.25s var(--ease-out), visibility 0.25s;
   z-index: 9999;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  max-width: min(90vw, 420px);
+  text-align: center;
 }
 
 .notification.show {
   opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* Mobile specific styles for code editor */
@@ -1461,7 +1517,9 @@ textarea.iPadShowKeyboard {
 
 .code-title {
   margin: 1rem;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
 }
 
 .button-row {
@@ -1469,6 +1527,10 @@ textarea.iPadShowKeyboard {
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(180deg, #fafbfc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius) var(--panel-radius) 0 0;
 }
 
 .code-snippet {
@@ -1476,11 +1538,15 @@ textarea.iPadShowKeyboard {
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
-  background-color: #f3f3f3;
+  background-color: #f8fafc;
   width: 100%;
   height: 100%;
-  max-height: 35rem;
-  overflow-y: auto;
+  overflow: hidden;
+}
+
+.code-snippet > div {
+  width: 100%;
+  height: 100%;
 }
 
 .python {

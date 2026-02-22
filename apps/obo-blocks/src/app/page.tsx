@@ -1,16 +1,17 @@
 "use client";
 
+import { DeviceFileManagerSidebar } from "@nexus-tools/esp32-uploader";
+import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
 import dynamic from "next/dynamic";
 import { useState, useCallback, useEffect, useRef } from "react";
 
-import { CodePanel } from "@/components/code-panel";
+import { ESP32OutputPanel } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
 import { Notification } from "@/components/notification";
-import { OutputPanel } from "@/components/output-panel";
 import { useBlocklyHandlers } from "@/hooks/use-blockly-handlers";
 import { useEditorHandlers } from "@/hooks/use-editor-handlers";
 
-import type { CodeEditorHandle } from "@/components/code-editor";
+import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
 
 const BlocklyEditor = dynamic(
   () => import("@/components/blockly-editor").then((mod) => ({ default: mod.BlocklyEditor })),
@@ -26,8 +27,12 @@ export default function Home() {
   const [isEditing, setIsEditing] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isDeviceConnected, setIsDeviceConnected] = useState(false);
+  const [serialPort, setSerialPort] = useState<SerialPort | null>(null);
+  const [activeEditorFileName, setActiveEditorFileName] = useState<string | null>(null);
+  const [fileManagerExpanded, setFileManagerExpanded] = useState(true);
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
-  const codeEditorRef = useRef<CodeEditorHandle>(null);
+  const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
+  const outputPanelRef = useRef<{ switchToUploaderTab?: () => void }>(null);
 
   const { copyTextToClipboard, downloadPythonFile } = useEditorHandlers();
 
@@ -70,13 +75,27 @@ export default function Home() {
     [handleEditToggle]
   );
 
-  // Callback to open file in code editor
+  // Callback to open file in code editor (from file manager)
   const handleOpenFileInEditor = useCallback((filename: string, content: string) => {
     if (codeEditorRef.current) {
       codeEditorRef.current.openFileInTab(filename, content);
+      setActiveEditorFileName(filename);
       showNotification(`Opened ${filename} in editor`);
     }
   }, [showNotification]);
+
+  const handleUpload = useCallback(() => {
+    outputPanelRef.current?.switchToUploaderTab?.();
+    showNotification("Opening uploader...");
+  }, [showNotification]);
+
+  const handleConnect = useCallback(() => {
+    outputPanelRef.current?.connectToDevice?.();
+  }, []);
+
+  const handleDisconnect = useCallback(() => {
+    outputPanelRef.current?.resetConnection?.();
+  }, []);
 
   const handleSaveToDevice = useCallback(
     async (filename: string, content: string) => {
@@ -101,7 +120,9 @@ export default function Home() {
       <Navbar />
 
       {isClient && (
-        <div className={`main-layout ${isEditing ? 'editing-mode' : ''}`}>
+        <div
+          className={`main-layout main-content-with-file-manager${!fileManagerExpanded ? " file-manager-collapsed" : ""} ${isEditing ? "editing-mode" : ""}`}
+        >
           <div className="blockly-section">
             <BlocklyEditor
               onCodeChange={handleCodeChange}
@@ -111,34 +132,49 @@ export default function Home() {
           </div>
 
           <div className="panels-section">
-            <CodePanel
+            <SharedCodePanel
               code={code}
               isEditing={isEditing}
               onCodeChange={handleCodeChange}
+              onActiveTabChange={setActiveEditorFileName}
               onEditToggle={handleEditToggleWrapper}
               onRun={handleRunCode}
               onCopy={handleCopy}
               onExport={handleExport}
               onSaveToDevice={handleSaveToDevice}
-              isConnected={isDeviceConnected}
+              isConnected={serialPort !== null}
               codeEditorRef={codeEditorRef}
             />
 
-            <OutputPanel 
+            <ESP32OutputPanel 
+              ref={outputPanelRef}
               onClear={handleClearTerminal} 
               onStop={handleStopCode}
               code={code}
               onStatusUpdate={showNotification}
               onError={showNotification}
               onOpenFileInEditor={handleOpenFileInEditor}
-              onSaveFileToDevice={(saveFunc) => {
+              onSaveFileToDevice={(saveFunc: (filename: string, content: string) => Promise<void>) => {
                 saveFileToDeviceRef.current = saveFunc;
               }}
               onConnectionStatusChange={setIsDeviceConnected}
+              onSerialPortChange={setSerialPort}
             />
           </div>
         </div>
       )}
+
+      <DeviceFileManagerSidebar
+        serialPort={serialPort}
+        isConnected={serialPort !== null}
+        activeFileName={activeEditorFileName}
+        onError={showNotification}
+        onOpenFileInEditor={handleOpenFileInEditor}
+        onExpandChange={setFileManagerExpanded}
+        onUpload={handleUpload}
+        onConnect={handleConnect}
+        onDisconnect={handleDisconnect}
+      />
     </div>
   );
 }

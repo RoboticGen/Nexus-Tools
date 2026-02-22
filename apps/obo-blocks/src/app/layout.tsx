@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 
-import { Roboto } from "next/font/google";
+import { Inter } from "next/font/google";
 
 import "antd/dist/reset.css";
 import "@nexus-tools/esp32-uploader/styles";
 import "@/styles/globals.css";
 
-const roboto = Roboto({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -51,7 +52,7 @@ export default function RootLayout({
         <link rel="preload" as="image" href="/obo_blocks.webp" />
         <link rel="prefetch" as="image" href="/editing.gif" />
       </head>
-      <body className={roboto.className}>{children}</body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }

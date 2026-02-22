@@ -1,4 +1,4 @@
-import { Roboto } from "next/font/google";
+import { Inter } from "next/font/google";
 
 import type { Metadata, Viewport } from "next";
 
@@ -6,9 +6,10 @@ import "@/styles/globals.css";
 import "antd/dist/reset.css";
 import "@nexus-tools/esp32-uploader/styles";
 
-const roboto = Roboto({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -55,7 +56,7 @@ export default function RootLayout({
       <head>
         <meta name="msvalidate.01" content="F880277201EB0168D24B534ADC14C549" />
         {/* Preload fonts to prevent FOUC */}
-        <link rel="preload" as="font" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" />
+        <link rel="preload" as="font" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
         {/* Preload images */}
         <link rel="preload" as="image" href="/academyLogo.webp" />
         <link rel="preload" as="image" href="/obo_blocks.webp" />
@@ -66,9 +67,9 @@ export default function RootLayout({
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: "Roboto", sans-serif;
-            font-weight: 300;
-            background-color: rgba(77, 151, 255, 0.25);
+            font-family: "Inter", system-ui, sans-serif;
+            font-weight: 400;
+            background-color: #f0f4f8;
             overflow: hidden;
             height: 100%;
             width: 100%;
@@ -104,7 +105,7 @@ export default function RootLayout({
           }
         `}} />
       </head>
-      <body className={roboto.className}>{children}</body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }

@@ -521,3 +521,69 @@
   margin-bottom: 400px;
   height: calc(100vh - 3.5rem - 400px); /* navbar height + sidebar expanded height */
 }
+
+/* File Manager Sidebar */
+.file-manager-sidebar {
+  position: fixed;
+  left: 0;
+  top: 3.5rem;
+  width: 300px;
+  height: calc(100vh - 3.5rem);
+  background-color: var(--panel-bg, #ffffff);
+  border-right: 1px solid var(--panel-border, #e0e0e0);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-manager-sidebar .sidebar-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--panel-border, #e0e0e0);
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.file-manager-sidebar .sidebar-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.file-manager-sidebar .sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+/* Adjust main content when file manager sidebar is present */
+.main-content-with-file-manager {
+  margin-left: 300px;
+  min-height: calc(100vh - 3.5rem);
+  transition: margin-left 0.25s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.main-content-with-file-manager.file-manager-collapsed {
+  margin-left: 52px;
+}
+
+/* Responsive: Hide sidebar on small screens */
+@media (max-width: 1024px) {
+  .device-fm--expanded {
+    width: 250px;
+  }
+  
+  .main-content-with-file-manager {
+    margin-left: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  .device-fm {
+    display: none;
+  }
+  
+  .main-content-with-file-manager {
+    margin-left: 0;
+  }
+}

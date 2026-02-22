@@ -13,14 +13,21 @@ import { useESP32FileManager } from "../hooks/use-esp32-file-manager";
 interface ESP32FileManagerProps {
   serialPort: any;
   isConnected: boolean;
+  /** Filename currently open in the code editor – this file will be highlighted in the list */
+  activeFileName?: string | null;
   onError?: (error: string) => void;
   onOpenFileInEditor?: (filename: string, content: string) => void;
   onRefreshReady?: (refreshFunc: () => void) => void;
 }
 
+function normalizeFileName(name: string): string {
+  return name.replace(/^\/+/, "").trim() || name;
+}
+
 export function ESP32FileManager({
   serialPort,
   isConnected,
+  activeFileName = null,
   onError,
   onOpenFileInEditor,
   onRefreshReady,
@@ -172,8 +179,17 @@ export function ESP32FileManager({
 
           {files.length > 0 && (
             <div className="file-list">
-              {files.map((file) => (
-                <div key={file.name} className="file-item">
+              {files.map((file) => {
+                const isActive =
+                  !!activeFileName &&
+                  !file.isDirectory &&
+                  normalizeFileName(file.name) === normalizeFileName(activeFileName);
+                return (
+                <div
+                  key={file.name}
+                  className={`file-item${isActive ? " file-item-active" : ""}`}
+                  title={isActive ? "Open in editor" : undefined}
+                >
                   <div className="file-icon">
                     <i
                       className={`fas ${
@@ -219,7 +235,8 @@ export function ESP32FileManager({
                     </Space>
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>

@@ -2,10 +2,13 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 
-import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor";
+import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
+import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
+
+import { DeviceFileManagerSidebar } from "@nexus-tools/esp32-uploader";
+import { ESP32OutputPanel } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
 import { Notification } from "@/components/notification";
-import { OutputTerminal } from "@/components/output-terminal";
 import { TurtleWorkspace } from "@/components/turtle-workspace";
 import { usePythonRunner } from "@/hooks/use-python-runner";
 import "@/styles/sidebar.css";
@@ -27,7 +30,11 @@ export default function Home() {
   const [notification, setNotification] = useState<string | null>(null);
   const [background, setBackground] = useState<string>("No-Background");
   const [isDeviceConnected, setIsDeviceConnected] = useState(false);
-  const codeEditorRef = useRef<CodeEditorHandle>(null);
+  const [serialPort, setSerialPort] = useState<SerialPort | null>(null);
+  const [activeEditorFileName, setActiveEditorFileName] = useState<string | null>(null);
+  const [fileManagerExpanded, setFileManagerExpanded] = useState(true);
+  const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
+  const outputPanelRef = useRef<{ switchToUploaderTab?: () => void }>(null);
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
 
   // Set the document title explicitly to ensure it shows correct app name
@@ -45,11 +52,25 @@ export default function Home() {
     setTimeout(() => setNotification(null), 1500);
   }, []);
 
-  // Callback to open file in code editor
+  // Callback to open file in code editor (from file manager)
   const handleOpenFileInEditor = useCallback((filename: string, content: string) => {
     codeEditorRef.current?.openFileInTab(filename, content);
+    setActiveEditorFileName(filename);
     showNotification(`Opened ${filename}`);
   }, [showNotification]);
+
+  const handleUpload = useCallback(() => {
+    outputPanelRef.current?.switchToUploaderTab?.();
+    showNotification("Opening uploader...");
+  }, [showNotification]);
+
+  const handleConnect = useCallback(() => {
+    outputPanelRef.current?.connectToDevice?.();
+  }, []);
+
+  const handleDisconnect = useCallback(() => {
+    outputPanelRef.current?.resetConnection?.();
+  }, []);
 
   const { runCode, stopCode, isRunning, isLoading, output, clearOutput } = usePythonRunner({
     onError: (error) => showNotification(error),
@@ -154,19 +175,26 @@ export default function Home() {
       <Notification message={notification} />
       <Navbar />
 
-      <div className="main-content">
+      <div
+        className={`main-content main-content-with-file-manager${!fileManagerExpanded ? " file-manager-collapsed" : ""}`}
+      >
         <div className="left-panel">
-          <CodeEditor
-            ref={codeEditorRef}
+          <SharedCodePanel
             code={code}
-            onChange={setCode}
+            isEditing={true}
+            onCodeChange={setCode}
+            onActiveTabChange={setActiveEditorFileName}
             onRun={handleRun}
             onCopy={handleCopy}
             onExport={handleExport}
             onSaveToDevice={handleSaveToDevice}
-            isConnected={isDeviceConnected}
+            isConnected={serialPort !== null}
+            codeEditorRef={codeEditorRef}
+            showEditButton={false}
+            className="code-panel"
           />
-          <OutputTerminal
+          <ESP32OutputPanel
+            ref={outputPanelRef}
             output={output}
             onClear={handleClear}
             onStop={handleStop}
@@ -179,6 +207,8 @@ export default function Home() {
               saveFileToDeviceRef.current = saveFunc;
             }}
             onConnectionStatusChange={setIsDeviceConnected}
+            onSerialPortChange={setSerialPort}
+            className="output-panel"
           />
         </div>
 
@@ -189,6 +219,18 @@ export default function Home() {
           />
         </div>
       </div>
+
+      <DeviceFileManagerSidebar
+        serialPort={serialPort}
+        isConnected={serialPort !== null}
+        activeFileName={activeEditorFileName}
+        onError={showNotification}
+        onOpenFileInEditor={handleOpenFileInEditor}
+        onExpandChange={setFileManagerExpanded}
+        onUpload={handleUpload}
+        onConnect={handleConnect}
+        onDisconnect={handleDisconnect}
+      />
     </div>
   );
 }
