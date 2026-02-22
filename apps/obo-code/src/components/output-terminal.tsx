@@ -118,75 +118,6 @@ export function OutputTerminal({
     );
   }
 
-  const uploaderTab = (
-    <div className="tab-content-wrapper">
-      {espSupported === false && (
-        <div style={{ padding: "1rem", color: "#d32f2f" }}>
-          <strong>ESP Web Tools Not Available</strong>
-          <p>Use Chrome 89+ or Edge 89+ with HTTPS or localhost</p>
-        </div>
-      )}
-
-      {espSupported && (
-        <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "1rem", height: "100%", overflow: "auto" }}>
-          {/* Connection Status */}
-          <div style={{ padding: "0.75rem", background: "rgba(255, 255, 255, 0.02)", borderRadius: "4px" }}>
-            <h4 style={{ margin: "0 0 0.75rem 0", fontSize: "0.875rem", fontWeight: 600 }}>Connection</h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <div style={{ fontSize: "0.9rem", color: isConnected ? "#059669" : "#dc2626" }}>
-                {isConnected ? `✓ Connected to ${selectedDevice?.chipFamily}` : "✗ Not Connected"}
-              </div>
-
-              {connectionError && (
-                <div style={{ fontSize: "0.85rem", color: "#dc2626" }}>
-                  {connectionError}
-                </div>
-              )}
-
-              {autoDetecting && (
-                <div style={{ fontSize: "0.85rem", color: "#1890ff" }}>
-                  Auto-detecting ESP32 features...
-                </div>
-              )}
-
-              {isConnected && replReady && !autoDetecting && (
-                <div style={{ fontSize: "0.85rem", color: "#059669" }}>
-                  ✓ REPL ready!
-                </div>
-              )}
-
-              <div>
-                {!isConnected ? (
-                  <Button
-                    type="primary"
-                    icon={<LinkOutlined />}
-                    onClick={connectToDevice}
-                    disabled={isFlashing}
-                    block
-                  >
-                    Connect Device
-                  </Button>
-                ) : (
-                  <Button
-                    danger
-                    icon={<DisconnectOutlined />}
-                    onClick={resetConnection}
-                    disabled={isFlashing}
-                    block
-                  >
-                    Disconnect
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Code Upload Section - REMOVED, use Save Device in Code Editor instead */}
-        </div>
-      )}
-    </div>
-  );
-
   const replTab = (
     <div className="tab-content-wrapper">
       {!canShowAdvancedFeatures && (
@@ -292,11 +223,6 @@ export function OutputTerminal({
                 </div>
               </div>
             ),
-          },
-          {
-            key: "uploader",
-            label: "Uploader",
-            children: uploaderTab,
           },
           {
             key: "repl",

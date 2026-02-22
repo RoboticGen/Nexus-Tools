@@ -161,7 +161,7 @@ export function DeviceFileManagerSidebar({
         {expanded && (
           <div className="device-fm__title-wrap">
             <span className="device-fm__title">Device Files</span>
-            {activeFileName && (
+            {activeFileName && isConnected && (
               <div className="device-fm__badge" title={`Open in editor: ${activeFileName}`}>
                 <FileTextOutlined />
                 <span className="device-fm__badge-name">{activeFileName}</span>

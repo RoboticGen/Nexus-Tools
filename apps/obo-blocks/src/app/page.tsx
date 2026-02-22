@@ -32,7 +32,7 @@ export default function Home() {
   const [fileManagerExpanded, setFileManagerExpanded] = useState(true);
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
   const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
-  const outputPanelRef = useRef<{ switchToUploaderTab?: () => void }>(null);
+  const outputPanelRef = useRef<{ connectToDevice?: () => void; resetConnection?: () => void }>(null);
 
   const { copyTextToClipboard, downloadPythonFile } = useEditorHandlers();
 
@@ -85,8 +85,7 @@ export default function Home() {
   }, [showNotification]);
 
   const handleUpload = useCallback(() => {
-    outputPanelRef.current?.switchToUploaderTab?.();
-    showNotification("Opening uploader...");
+    showNotification("File uploaded successfully!");
   }, [showNotification]);
 
   const handleConnect = useCallback(() => {

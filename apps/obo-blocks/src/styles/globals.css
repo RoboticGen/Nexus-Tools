@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+@import '@nexus-tools/esp32-uploader/styles';
 
 :root {
   --primary-bg: rgba(77, 151, 255, 0.25);
@@ -82,6 +83,8 @@ body {
   margin: 0;
   padding: 0;
   flex-shrink: 0;
+  z-index: 1000;
+  top: 0;
 }
 
 .nav-bar h3 {
@@ -1414,12 +1417,14 @@ body {
 /* Adjust main content when file manager sidebar is present */
 .main-content-with-file-manager {
   margin-left: 300px;
+  width: calc(100% - 300px) !important;
   min-height: calc(100vh - 3.5rem);
-  transition: margin-left 0.25s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: margin-left 0.25s cubic-bezier(0.33, 1, 0.68, 1), width 0.25s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .main-content-with-file-manager.file-manager-collapsed {
   margin-left: 52px;
+  width: calc(100% - 52px) !important;
 }
 
 /* Responsive: Hide sidebar on small screens */
@@ -1430,6 +1435,7 @@ body {
   
   .main-content-with-file-manager {
     margin-left: 250px;
+    width: calc(100% - 250px) !important;
   }
 }
 

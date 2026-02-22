@@ -559,12 +559,14 @@
 /* Adjust main content when file manager sidebar is present */
 .main-content-with-file-manager {
   margin-left: 300px;
+  width: calc(100% - 300px) !important;
   min-height: calc(100vh - 3.5rem);
-  transition: margin-left 0.25s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: margin-left 0.25s cubic-bezier(0.33, 1, 0.68, 1), width 0.25s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .main-content-with-file-manager.file-manager-collapsed {
   margin-left: 52px;
+  width: calc(100% - 52px) !important;
 }
 
 /* Responsive: Hide sidebar on small screens */

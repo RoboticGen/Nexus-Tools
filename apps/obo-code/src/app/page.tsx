@@ -34,7 +34,7 @@ export default function Home() {
   const [activeEditorFileName, setActiveEditorFileName] = useState<string | null>(null);
   const [fileManagerExpanded, setFileManagerExpanded] = useState(true);
   const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
-  const outputPanelRef = useRef<{ switchToUploaderTab?: () => void }>(null);
+  const outputPanelRef = useRef<{ connectToDevice?: () => void; resetConnection?: () => void }>(null);
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
 
   // Set the document title explicitly to ensure it shows correct app name
@@ -60,8 +60,7 @@ export default function Home() {
   }, [showNotification]);
 
   const handleUpload = useCallback(() => {
-    outputPanelRef.current?.switchToUploaderTab?.();
-    showNotification("Opening uploader...");
+    showNotification("File uploaded successfully!");
   }, [showNotification]);
 
   const handleConnect = useCallback(() => {
