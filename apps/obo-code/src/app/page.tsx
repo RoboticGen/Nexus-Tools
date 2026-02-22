@@ -10,13 +10,15 @@ import { TurtleWorkspace } from "@/components/turtle-workspace";
 import { usePythonRunner } from "@/hooks/use-python-runner";
 
 const DEFAULT_CODE = `import turtle
+
 colors = ['red', 'purple', 'blue', 'green', 'orange', 'yellow']
 t = turtle.Turtle()
+
 for x in range(360):
-    t.pencolor(colors[x%6])
-    t.width(x//100 + 1)
-    t.forward(x)
-    t.left(59)
+  t.pencolor(colors[x % 6])
+  t.width(x // 100 + 1)
+  t.forward(x)
+  t.left(59)
 `;
 
 export default function Home() {
@@ -34,12 +36,16 @@ export default function Home() {
     setTimeout(() => setNotification(null), 1500);
   }, []);
 
-  const { runCode, stopCode, isRunning, output, clearOutput } = usePythonRunner({
+  const { runCode, stopCode, isRunning, isLoading, output, clearOutput } = usePythonRunner({
     onError: (error) => showNotification(error),
     onSuccess: () => {},
   });
 
   const handleRun = useCallback(() => {
+    if (isLoading) {
+      showNotification("Python engine is loading, please wait...");
+      return;
+    }
     if (!code.trim()) {
       showNotification("No code to run");
       return;
@@ -49,7 +55,7 @@ export default function Home() {
       return;
     }
     runCode(code);
-  }, [code, isRunning, runCode, showNotification]);
+  }, [code, isLoading, isRunning, runCode, showNotification]);
 
   const handleStop = useCallback(() => {
     if (!isRunning) {
@@ -94,15 +100,18 @@ export default function Home() {
       return;
     }
     clearOutput();
-    // Clear canvas
-    const canvasElements = document.getElementsByTagName("canvas");
-    for (let i = 0; i < canvasElements.length; i++) {
-      const context = canvasElements[i].getContext("2d");
-      if (context) {
-        context.save();
-        context.setTransform(1, 0, 0, 1, 0, 0);
-        context.clearRect(0, 0, canvasElements[i].width, canvasElements[i].height);
-        context.restore();
+    // Clear turtle workspace (Brython turtle uses SVG)
+    const turtleCanvas = document.getElementById("turtle-canvas");
+    if (turtleCanvas) {
+      // Remove SVG elements created by Brython turtle
+      const svgElements = turtleCanvas.getElementsByTagName("svg");
+      while (svgElements.length > 0) {
+        svgElements[0].remove();
+      }
+      // Also clear any canvas elements just in case
+      const canvasElements = turtleCanvas.getElementsByTagName("canvas");
+      while (canvasElements.length > 0) {
+        canvasElements[0].remove();
       }
     }
     showNotification("Terminal cleared");

@@ -6,12 +6,7 @@ const nextConfig = {
     optimizePackageImports: ["@nexus-tools/ui"],
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "skulpt.org",
-      },
-    ],
+    remotePatterns: [],
   },
 };
 
