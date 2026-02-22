@@ -1,3 +1,11 @@
+"use client";
+
+import { CopyOutlined, ExportOutlined, PlayCircleOutlined, EditOutlined, SaveOutlined } from "@ant-design/icons";
+import { Button } from "@nexus-tools/ui";
+import { RefObject } from "react";
+
+import { CodeEditor, CodeEditorHandle } from "./code-editor";
+
 interface CodePanelProps {
   code: string;
   isEditing: boolean;
@@ -6,9 +14,10 @@ interface CodePanelProps {
   onRun: () => void;
   onCopy: () => void;
   onExport: () => void;
+  onSaveToDevice?: (filename: string, content: string) => void;
+  isConnected?: boolean;
+  codeEditorRef?: RefObject<CodeEditorHandle>;
 }
-
-import { CodeEditor } from "./code-editor";
 
 export function CodePanel({
   code,
@@ -18,40 +27,69 @@ export function CodePanel({
   onRun,
   onCopy,
   onExport,
+  onSaveToDevice,
+  isConnected = false,
+  codeEditorRef,
 }: CodePanelProps) {
+  const handleSaveToDevice = () => {
+    if (!code.trim()) {
+      return;
+    }
+    onSaveToDevice?.("main.py", code);
+  };
+
   return (
     <div className="code" id="code">
       <div className="button-row">
         <p className="code-title">Python Code</p>
-        <div className="button-group">
-          <button
-            className="button"
-            id="edit-button"
+        <div className="button-group" style={{ display: "flex", gap: "8px" }}>
+          <Button
+            variant={isEditing ? "default" : "default"}
+            icon={<EditOutlined />}
             onClick={() => onEditToggle(!isEditing)}
             title={isEditing ? "Stop Editing" : "Edit Code"}
           >
-            <i className="fa fa-pencil" style={{ paddingRight: "2px" }}></i>
-            <span id="edit-text">{isEditing ? "Editing" : "Edit"}</span>
-          </button>
-          <button className="button" id="run-button" onClick={onRun} title="Run Python Code">
-            <i id="run-icon" className="fa fa-flag"></i>
-            <span id="run-text">Run</span>
-          </button>
-          <button className="button" id="copy-button" onClick={onCopy} title="Copy Code">
-            <i className="fa fa-copy"></i>
-            <span id="copy-text">Copy</span>
-          </button>
-          <button className="button" id="export-button" onClick={onExport} title="Export Code">
-            <i
-              className="fa fa-file-export"
-              style={{ paddingRight: "4px" }}
-            ></i>
-            <span id="export-text">Export</span>
-          </button>
+            {isEditing ? "Editing" : "Edit"}
+          </Button>
+          <Button
+            variant="default"
+            icon={<PlayCircleOutlined />}
+            onClick={onRun}
+            title="Run Python Code"
+          >
+            Run
+          </Button>
+          <Button
+            icon={<CopyOutlined />}
+            onClick={onCopy}
+            title="Copy Code to Clipboard"
+          >
+            Copy
+          </Button>
+          <Button
+            icon={<ExportOutlined />}
+            onClick={onExport}
+            title="Export Code"
+          >
+            Export
+          </Button>
+          <Button
+            icon={<SaveOutlined />}
+            onClick={handleSaveToDevice}
+            title={isConnected ? "Save to ESP32 Device" : "Connect device first"}
+            disabled={!isConnected}
+          >
+            Save Device
+          </Button>
         </div>
       </div>
       <div className="code-snippet" id="code-editor">
-        <CodeEditor code={code} onChange={onCodeChange} readOnly={!isEditing} />
+        <CodeEditor 
+          ref={codeEditorRef} 
+          code={code} 
+          onChange={onCodeChange} 
+          readOnly={!isEditing} 
+        />
       </div>
     </div>
   );

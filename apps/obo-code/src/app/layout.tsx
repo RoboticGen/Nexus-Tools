@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next";
 
 import "@/styles/globals.css";
 import "antd/dist/reset.css";
+import "@nexus-tools/esp32-uploader/styles";
 
 const roboto = Roboto({
   subsets: ["latin"],

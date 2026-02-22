@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { Roboto } from "next/font/google";
 
+import "antd/dist/reset.css";
+import "@nexus-tools/esp32-uploader/styles";
 import "@/styles/globals.css";
 
 const roboto = Roboto({
