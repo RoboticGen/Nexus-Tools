@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { useESP32FileManager } from "../hooks/use-esp32-file-manager";
 import { Button } from "antd";
 import {
@@ -53,7 +53,12 @@ export interface DeviceFileManagerSidebarProps {
   className?: string;
 }
 
-export function DeviceFileManagerSidebar({
+export interface DeviceFileManagerSidebarHandle {
+  refreshFiles: () => void;
+}
+
+export const DeviceFileManagerSidebar = forwardRef<DeviceFileManagerSidebarHandle, DeviceFileManagerSidebarProps>(
+function DeviceFileManagerSidebarComponent({
   serialPort,
   isConnected,
   activeFileName = null,
@@ -65,12 +70,17 @@ export function DeviceFileManagerSidebar({
   onDisconnect,
   defaultExpanded = true,
   className = "",
-}: DeviceFileManagerSidebarProps) {
+}: DeviceFileManagerSidebarProps, ref) {
   const { files, isLoading, error, fetchFiles, refreshFiles, downloadFile, viewFile, deleteFile } =
     useESP32FileManager({ serialPort });
 
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+
+  // Expose refreshFiles via ref
+  useImperativeHandle(ref, () => ({
+    refreshFiles,
+  }), [refreshFiles]);
 
   useEffect(() => {
     if (isConnected && serialPort) fetchFiles("/");
@@ -313,3 +323,6 @@ export function DeviceFileManagerSidebar({
     </aside>
   );
 }
+);
+
+DeviceFileManagerSidebar.displayName = "DeviceFileManagerSidebar";

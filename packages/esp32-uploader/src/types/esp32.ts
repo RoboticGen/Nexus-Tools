@@ -2,6 +2,18 @@
  * ESP32 Types and Interfaces
  */
 
+export interface SerialPort {
+  readable?: ReadableStream<Uint8Array>;
+  writable?: WritableStream<Uint8Array>;
+  addEventListener: (event: string, listener: EventListener) => void;
+  removeEventListener: (event: string, listener: EventListener) => void;
+  open: (options: SerialPortOptions) => Promise<void>;
+  close: () => Promise<void>;
+  getInfo?: () => { usbVendorId?: number; usbProductId?: number };
+  // Add other properties as needed
+  [key: string]: any;
+}
+
 export interface ESP32Device {
   name: string;
   chipFamily: string;

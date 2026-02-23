@@ -33,6 +33,8 @@ interface SharedCodeEditorProps {
   theme?: string;
   /** Whether to show minimap (default: false) */
   showMinimap?: boolean;
+  /** Callback when the active tab changes */
+  onActiveTabChange?: (filename: string) => void;
 }
 
 export interface SharedCodeEditorHandle {
@@ -53,11 +55,12 @@ export const SharedCodeEditor = forwardRef<SharedCodeEditorHandle, SharedCodeEdi
       language = "python",
       theme = "vs-light",
       showMinimap = false,
+      onActiveTabChange,
     },
     ref
   ) => {
     const [tabs, setTabs] = useState<CodeTab[]>([
-      { id: "main", name: "main.py", code: code || "" },
+      { id: "main", name: "test.py", code: code || "" },
     ]);
     const [activeTabId, setActiveTabId] = useState("main");
     const [renamingTabId, setRenamingTabId] = useState<string | null>(null);
@@ -103,19 +106,33 @@ export const SharedCodeEditor = forwardRef<SharedCodeEditorHandle, SharedCodeEdi
       setActiveTabId(newTabId);
       isInternalUpdate.current = true;
       onChange(""); // Sync empty code to parent
-    }, [tabs.length, onChange]);
+      onActiveTabChange?.(newTabName);
+    }, [tabs.length, onChange, onActiveTabChange]);
 
-    // Open file in new tab
+    // Open file in new tab or switch to existing
     const openFileInTab = useCallback((filename: string, content: string) => {
-      const newTabId = `file-${Date.now()}`;
-      setTabs((prevTabs) => [
-        ...prevTabs,
-        { id: newTabId, name: filename, code: content },
-      ]);
-      setActiveTabId(newTabId);
-      isInternalUpdate.current = true;
-      onChange(content);
-    }, [onChange]);
+      // Check if file is already open
+      const existingTab = tabs.find((tab) => tab.name === filename);
+      
+      if (existingTab) {
+        // Switch to existing tab
+        setActiveTabId(existingTab.id);
+        isInternalUpdate.current = true;
+        onChange(existingTab.code);
+        onActiveTabChange?.(filename);
+      } else {
+        // Create new tab
+        const newTabId = `file-${Date.now()}`;
+        setTabs((prevTabs) => [
+          ...prevTabs,
+          { id: newTabId, name: filename, code: content },
+        ]);
+        setActiveTabId(newTabId);
+        isInternalUpdate.current = true;
+        onChange(content);
+        onActiveTabChange?.(filename);
+      }
+    }, [tabs, onChange, onActiveTabChange]);
 
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
@@ -149,8 +166,9 @@ export const SharedCodeEditor = forwardRef<SharedCodeEditorHandle, SharedCodeEdi
       setActiveTabId(tabId);
       isInternalUpdate.current = true;
       onChange(tabToSwitch.code);
+      onActiveTabChange?.(tabToSwitch.name);
     }
-  }, [tabs, onChange]);
+  }, [tabs, onChange, onActiveTabChange]);
 
   // Start renaming a tab
   const handleStartRename = (tabId: string) => {

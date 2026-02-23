@@ -7,7 +7,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button, Space } from "antd";
-import { LinkOutlined, DeleteOutlined, StopOutlined, ReloadOutlined, PoweroffOutlined } from "@ant-design/icons";
+import { LinkOutlined, DeleteOutlined, StopOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useESP32REPL } from "../hooks/use-esp32-repl";
 import { translateErrorMessage } from "../utils/error-messages";
 
@@ -59,13 +59,6 @@ export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, o
     }
   }, [parentIsConnected, isConnected, disconnect]);
 
-  // Focus input when component mounts
-  useEffect(() => {
-    if (inputRef.current && isConnected) {
-      inputRef.current.focus();
-    }
-  }, [isConnected]);
-
   // Cleanup: disconnect REPL when component unmounts or serialPort changes
   useEffect(() => {
     return () => {
@@ -76,7 +69,14 @@ export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, o
   }, [isConnected, disconnect]);
 
   const addLine = useCallback((type: REPLLine["type"], content: string) => {
-    setLines(prev => [...prev, { type, content, timestamp: new Date() }]);
+    setLines(prev => {
+      const newLines = [...prev, { type, content, timestamp: new Date() }];
+      // Keep only last 100 lines to prevent memory issues and performance degradation
+      if (newLines.length > 100) {
+        return newLines.slice(-100);
+      }
+      return newLines;
+    });
   }, []);
 
   const handleConnect = useCallback(async () => {
@@ -96,14 +96,14 @@ export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, o
     } catch (error) {
       const userFriendlyMsg = translateErrorMessage(error);
       console.error("REPL Connection error:", error);
-      onError?.(userFriendlyMsg);
-      addLine("error", `❌ ${userFriendlyMsg.split('\n')[0]}`);
+      // Only call onError on first connection attempt, not on retries
+      // addLine will show the error in the terminal
       addLine("output", ">>> ");
       setIsConnected(false);
     } finally {
       setIsConnecting(false);
     }
-  }, [connectToREPL, serialPort, onError, addLine]);
+  }, [connectToREPL, serialPort, addLine]);
 
   const handleDisconnect = useCallback(async () => {
     try {
@@ -161,6 +161,24 @@ export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, o
     }
   }, [isConnected, addLine]);
 
+  // Auto-connect when serialPort and parentIsConnected are available
+  useEffect(() => {
+    if (serialPort && parentIsConnected && !isConnected && !isConnecting) {
+      handleConnect();
+    }
+  }, [serialPort, parentIsConnected, isConnected, isConnecting, handleConnect]);
+
+  // Retry connection after failure
+  useEffect(() => {
+    if (serialPort && parentIsConnected && !isConnected && !isConnecting) {
+      const retryTimer = setTimeout(() => {
+        handleConnect();
+      }, 3000); // Retry every 3 seconds
+
+      return () => clearTimeout(retryTimer);
+    }
+  }, [serialPort, parentIsConnected, isConnected, isConnecting, handleConnect]);
+
   return (
     <div className="esp32-repl">
       <div className="esp32-repl-header">
@@ -171,18 +189,7 @@ export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, o
         </div>
         
         <div className="esp32-repl-controls">
-          {!isConnected ? (
-            <Button
-              type="primary"
-              icon={<LinkOutlined />}
-              onClick={handleConnect}
-              disabled={!serialPort || isConnecting}
-              loading={isConnecting}
-              style={{ backgroundColor: "var(--btn-run)" }}
-            >
-              Connect REPL
-            </Button>
-          ) : (
+          {isConnected && (
             <Space wrap style={{ width: "100%", justifyContent: "flex-end" }}>
               <Button
                 icon={<DeleteOutlined />}
@@ -208,13 +215,6 @@ export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, o
               >
                 Reset
               </Button>
-              <Button
-                icon={<PoweroffOutlined />}
-                onClick={handleDisconnect}
-                style={{ backgroundColor: "var(--btn-stop)", color: "#fff", border: "none" }}
-              >
-                Disconnect
-              </Button>
             </Space>
           )}
         </div>
@@ -227,15 +227,22 @@ export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, o
         </div>
       )}
 
-      {serialPort && !isConnected && (
-        <div className="esp32-repl-notice">
-          <i className="fas fa-terminal"></i>
-          <span>Click "Connect REPL" to start the terminal session.</span>
-        </div>
-      )}
-
-      {serialPort && isConnected && (
+      {serialPort && (
         <div className="esp32-repl-container">
+          {isConnecting && (
+            <div className="esp32-repl-notice">
+              <i className="fas fa-spinner fa-spin"></i>
+              <span>Connecting to REPL...</span>
+            </div>
+          )}
+          
+          {!isConnected && !isConnecting && (
+            <div className="esp32-repl-notice">
+              <i className="fas fa-exclamation-triangle"></i>
+              <span>Connection failed. Trying to reconnect...</span>
+            </div>
+          )}
+
           <div className="esp32-repl-output" ref={outputRef}>
             {lines.map((line, index) => (
               <div key={index} className={`repl-line repl-line-${line.type}`}>
@@ -256,7 +263,7 @@ export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, o
                 onChange={(e) => setCurrentInput(e.target.value)}
                 onKeyDown={handleInputKeyDown}
                 disabled={!isConnected || isExecuting}
-                placeholder={isExecuting ? "Executing..." : "Enter MicroPython command..."}
+                placeholder={!isConnected ? "Waiting for connection..." : isExecuting ? "Executing..." : "Enter MicroPython command..."}
               />
               {isExecuting && <div className="repl-spinner"></div>}
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { DeviceFileManagerSidebar } from "@nexus-tools/esp32-uploader";
+import { DeviceFileManagerSidebar, type DeviceFileManagerSidebarHandle } from "@nexus-tools/esp32-uploader";
 import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
 import dynamic from "next/dynamic";
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -33,6 +33,7 @@ export default function Home() {
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
   const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
   const outputPanelRef = useRef<{ connectToDevice?: () => void; resetConnection?: () => void }>(null);
+  const fileManagerRef = useRef<DeviceFileManagerSidebarHandle>(null);
 
   const { copyTextToClipboard, downloadPythonFile } = useEditorHandlers();
 
@@ -102,6 +103,8 @@ export default function Home() {
         if (saveFileToDeviceRef.current) {
           await saveFileToDeviceRef.current(filename, content);
           showNotification(`Saved ${filename} to device`);
+          // Refresh file manager after save
+          fileManagerRef.current?.refreshFiles();
         } else {
           showNotification("Device not connected");
         }
@@ -164,6 +167,7 @@ export default function Home() {
       )}
 
       <DeviceFileManagerSidebar
+        ref={fileManagerRef}
         serialPort={serialPort}
         isConnected={serialPort !== null}
         activeFileName={activeEditorFileName}

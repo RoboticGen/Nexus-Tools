@@ -35,7 +35,7 @@ export function CodePanel({
     if (!code.trim()) {
       return;
     }
-    onSaveToDevice?.("main.py", code);
+    onSaveToDevice?.("test.py", code);
   };
 
   return (

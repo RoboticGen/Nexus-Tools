@@ -40,7 +40,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
     ref
   ) => {
     const [tabs, setTabs] = useState<CodeTab[]>([
-      { id: "main", name: "main.py", code: code || "" },
+      { id: "main", name: "test.py", code: code || "" },
     ]);
     const [activeTabId, setActiveTabId] = useState("main");
     const [renamingTabId, setRenamingTabId] = useState<string | null>(null);

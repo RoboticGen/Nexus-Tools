@@ -86,7 +86,7 @@ export function SharedCodePanel({
       return;
     }
     // Get the active tab name from the code editor
-    const filename = codeEditorRef?.current?.getActiveTabName() || "main.py";
+    const filename = codeEditorRef?.current?.getActiveTabName() || "test.py";
     console.log("Saving to device with filename:", filename);
     onSaveToDevice?.(filename, code);
   };

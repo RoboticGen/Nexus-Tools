@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { Inter } from "next/font/google";
+import { Providers } from "./providers";
 
 import "antd/dist/reset.css";
 import "@nexus-tools/esp32-uploader/styles";
@@ -52,7 +53,11 @@ export default function RootLayout({
         <link rel="preload" as="image" href="/obo_blocks.webp" />
         <link rel="prefetch" as="image" href="/editing.gif" />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }

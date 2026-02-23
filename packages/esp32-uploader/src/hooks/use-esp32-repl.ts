@@ -1,9 +1,10 @@
-/**
+ /**
  * ESP32 REPL Hook
  * Handles MicroPython REPL communication
  */
 
 import { useState, useCallback, useRef } from "react";
+import { serialStreamManager } from "../utils/serial-stream-manager";
 
 interface REPLResult {
   output: string;
@@ -12,9 +13,8 @@ interface REPLResult {
 
 export function useESP32REPL(serialPort: any) {
   const [isConnected, setIsConnected] = useState(false);
-  const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
-  const writerRef = useRef<WritableStreamDefaultWriter | null>(null);
   const outputBufferRef = useRef<string>("");
+  const outputListenerRef = useRef<(() => void) | null>(null);
 
   /**
    * Connect to REPL mode
@@ -25,52 +25,34 @@ export function useESP32REPL(serialPort: any) {
     }
 
     try {
-      // Get reader and writer
-      const reader = serialPort.readable?.getReader();
-      const writer = serialPort.writable?.getWriter();
-
-      if (!reader || !writer) {
-        throw new Error("Unable to get serial port streams");
+      // Initialize shared stream manager 
+      if (!serialStreamManager.isReady()) {
+        await serialStreamManager.initialize(serialPort);
       }
 
-      readerRef.current = reader;
-      writerRef.current = writer;
+      // Execute REPL setup with exclusive access
+      await serialStreamManager.executeOperation(async (writer) => {
+        // Enter raw REPL mode (Ctrl+A)
+        await writer.write(new TextEncoder().encode('\x01'));
+        await delay(100);
 
-      // Enter raw REPL mode (Ctrl+A)
-      await writer.write(new TextEncoder().encode('\x01'));
-      await delay(100);
+        // Exit raw REPL mode back to normal REPL (Ctrl+B)
+        await writer.write(new TextEncoder().encode('\x02'));
+        await delay(200);
 
-      // Exit raw REPL mode back to normal REPL (Ctrl+B)
-      await writer.write(new TextEncoder().encode('\x02'));
-      await delay(200);
-
-      // Send Ctrl+C twice to stop any running code and get clean prompt
-      await writer.write(new TextEncoder().encode('\x03\x03'));
-      await delay(200);
+        // Send Ctrl+C twice to stop any running code and get clean prompt
+        await writer.write(new TextEncoder().encode('\x03\x03'));
+        await delay(200);
+      });
 
       setIsConnected(true);
       
-      // Start reading output in the background
+      // Start listening to output
       startReading();
 
     } catch (error) {
       // Clean up on error
-      if (readerRef.current) {
-        try {
-          readerRef.current.releaseLock();
-        } catch (e) {
-          // Already released
-        }
-        readerRef.current = null;
-      }
-      if (writerRef.current) {
-        try {
-          writerRef.current.releaseLock();
-        } catch (e) {
-          // Already released
-        }
-        writerRef.current = null;
-      }
+      setIsConnected(false);
       throw error;
     }
   }, [serialPort]);
@@ -79,27 +61,25 @@ export function useESP32REPL(serialPort: any) {
    * Start reading output from the device
    */
   const startReading = useCallback(async () => {
-    const reader = readerRef.current;
-    if (!reader) return;
+    if (!serialStreamManager.isReady()) return;
 
-    try {
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const text = new TextDecoder().decode(value);
-        outputBufferRef.current += text;
-      }
-    } catch (error) {
-      console.warn("REPL reading stopped:", error);
+    // Clear any existing listener
+    if (outputListenerRef.current) {
+      outputListenerRef.current();
+      outputListenerRef.current = null;
     }
+
+    // Add listener for REPL output
+    outputListenerRef.current = serialStreamManager.addListener((data) => {
+      outputBufferRef.current += data;
+    });
   }, []);
 
   /**
    * Execute a command in the REPL
    */
   const executeCommand = useCallback(async (command: string): Promise<REPLResult> => {
-    if (!isConnected || !writerRef.current) {
+    if (!isConnected || !serialStreamManager.isReady()) {
       throw new Error("REPL not connected");
     }
 
@@ -107,9 +87,12 @@ export function useESP32REPL(serialPort: any) {
       // Clear output buffer
       outputBufferRef.current = "";
 
-      // Send the command
-      const encoder = new TextEncoder();
-      await writerRef.current.write(encoder.encode(command + '\r\n'));
+      // Execute command using shared stream manager
+      await serialStreamManager.executeOperation(async (writer) => {
+        // Send the command
+        const encoder = new TextEncoder();
+        await writer.write(encoder.encode(command + '\r\n'));
+      });
 
       // Wait for output
       await delay(500);
@@ -145,10 +128,12 @@ export function useESP32REPL(serialPort: any) {
    * Send Ctrl+C (KeyboardInterrupt)
    */
   const sendCtrlC = useCallback(async () => {
-    if (!writerRef.current) return;
+    if (!serialStreamManager.isReady()) return;
     
     try {
-      await writerRef.current.write(new TextEncoder().encode('\x03'));
+      await serialStreamManager.executeOperation(async (writer) => {
+        await writer.write(new TextEncoder().encode('\x03'));
+      });
     } catch (error) {
       console.warn("Failed to send Ctrl+C:", error);
     }
@@ -158,10 +143,12 @@ export function useESP32REPL(serialPort: any) {
    * Send Ctrl+D (Soft reset)
    */
   const sendCtrlD = useCallback(async () => {
-    if (!writerRef.current) return;
+    if (!serialStreamManager.isReady()) return;
     
     try {
-      await writerRef.current.write(new TextEncoder().encode('\x04'));
+      await serialStreamManager.executeOperation(async (writer) => {
+        await writer.write(new TextEncoder().encode('\x04'));
+      });
     } catch (error) {
       console.warn("Failed to send Ctrl+D:", error);
     }
@@ -172,46 +159,29 @@ export function useESP32REPL(serialPort: any) {
    */
   const disconnect = useCallback(async () => {
     try {
-      // Exit REPL mode by sending Ctrl+D (soft reset)
-      if (writerRef.current && serialPort) {
+      // Clean up listener
+      if (outputListenerRef.current) {
+        outputListenerRef.current();
+        outputListenerRef.current = null;
+      }
+
+      // Exit REPL mode by sending Ctrl+D (soft reset) if still connected
+      if (serialStreamManager.isReady() && serialPort) {
         try {
-          await writerRef.current.write(new TextEncoder().encode('\x04'));
+          await serialStreamManager.executeOperation(async (writer) => {
+            await writer.write(new TextEncoder().encode('\x04'));
+          });
           await delay(100);
         } catch (e) {
           // Port may already be closed
         }
       }
 
-      // Release streams
-      if (readerRef.current) {
-        try {
-          readerRef.current.releaseLock();
-        } catch (e) {
-          // Already released or stream closed
-        }
-        readerRef.current = null;
-      }
-      if (writerRef.current) {
-        try {
-          writerRef.current.releaseLock();
-        } catch (e) {
-          // Already released or stream closed
-        }
-        writerRef.current = null;
-      }
-
-      // Close the underlying serial port
-      if (serialPort) {
-        try {
-          await serialPort.close();
-        } catch (e) {
-          console.warn("Error closing serial port:", e);
-        }
-      }
-
       setIsConnected(false);
+      outputBufferRef.current = "";
     } catch (error) {
       console.warn("Error disconnecting REPL:", error);
+      setIsConnected(false);
     }
   }, [serialPort]);
 

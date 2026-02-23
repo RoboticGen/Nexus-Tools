@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 
 import type { Metadata, Viewport } from "next";
+import { Providers } from "./providers";
 
 import "@/styles/globals.css";
 import "antd/dist/reset.css";
@@ -105,7 +106,11 @@ export default function RootLayout({
           }
         `}} />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }

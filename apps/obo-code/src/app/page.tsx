@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
 import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
 
-import { DeviceFileManagerSidebar } from "@nexus-tools/esp32-uploader";
+import { DeviceFileManagerSidebar, type DeviceFileManagerSidebarHandle } from "@nexus-tools/esp32-uploader";
 import { ESP32OutputPanel } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
 import { Notification } from "@/components/notification";
@@ -36,6 +36,7 @@ export default function Home() {
   const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
   const outputPanelRef = useRef<{ connectToDevice?: () => void; resetConnection?: () => void }>(null);
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
+  const fileManagerRef = useRef<DeviceFileManagerSidebarHandle>(null);
 
   // Set the document title explicitly to ensure it shows correct app name
   useEffect(() => {
@@ -135,6 +136,8 @@ export default function Home() {
         if (saveFileToDeviceRef.current) {
           await saveFileToDeviceRef.current(filename, content);
           showNotification(`Saved ${filename} to device`);
+          // Refresh file manager after save
+          fileManagerRef.current?.refreshFiles();
         } else {
           showNotification("Device not connected");
         }
@@ -220,6 +223,7 @@ export default function Home() {
       </div>
 
       <DeviceFileManagerSidebar
+        ref={fileManagerRef}
         serialPort={serialPort}
         isConnected={serialPort !== null}
         activeFileName={activeEditorFileName}
