@@ -33,11 +33,13 @@ interface BlocklyEditorProps {
   onCodeChange: (code: string) => void;
   onEditToggle?: (isEditing: boolean) => void;
   showNotification: (message: string) => void;
+  onRegisterImporter?: (importer: (jsonString: string) => boolean) => void;
 }
 
 export function BlocklyEditor({
   onCodeChange,
   showNotification,
+  onRegisterImporter,
 }: BlocklyEditorProps) {
   const blocklyDivRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.Workspace | null>(null);
@@ -122,8 +124,28 @@ export function BlocklyEditor({
     });
 
     workspaceRef.current = workspace;
+
+    // Register the string-based importer for external callers (e.g. chat)
+    if (onRegisterImporter) {
+      onRegisterImporter((jsonString: string) => {
+        try {
+          const json = JSON.parse(jsonString);
+          const imported = importJson(workspace, json);
+          if (imported) {
+            pythonGenerator.definitions_ = {};
+            const code = pythonGenerator.workspaceToCode(workspace);
+            onCodeChange(code);
+            return true;
+          }
+          return false;
+        } catch {
+          return false;
+        }
+      });
+    }
+
     return workspace;
-  }, [onCodeChange]);
+  }, [onCodeChange, onRegisterImporter]);
 
   // Initialize Blockly and define blocks
   useEffect(() => {
