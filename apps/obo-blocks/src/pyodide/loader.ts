@@ -15,7 +15,7 @@ function getTerminalElement(): HTMLTextAreaElement | null {
 function appendToTerminal(text: string) {
     const terminal = getTerminalElement();
     if (terminal) {
-        terminal.value += text + '\n>>> ';
+        terminal.value += text + '\n';
         terminal.scrollTop = terminal.scrollHeight;
     }
 }
@@ -32,12 +32,12 @@ function startWorker() {
 
     worker.onmessage = function (event: MessageEvent) {
         console.log("Worker message received:", event.data);
-        let responce = event.data.responce
+        const responce = event.data.responce
         if (responce === 'result') {
             console.log("Result:", event.data.result);
             appendToTerminal(event.data.result || "");
         } else if (responce === 'request') {
-            let input = prompt('Enter the input');
+            const input = prompt('Enter the input');
             if (worker && input) {
                 worker.postMessage({ command: 'input', code: input });
             }

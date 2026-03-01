@@ -12,9 +12,11 @@ import {
   save,
   exportJson,
   importJson,
+  getActiveWorkspace,
 } from "@/blockly/serialization";
 import { theme } from "@/blockly/themes";
 import { toolbox } from "@/blockly/toolbox";
+import { useEditorHandlers } from "@/hooks/use-editor-handlers";
 import {
   createPinButtonCallback,
   createADCButtonCallback,
@@ -41,6 +43,7 @@ export function BlocklyEditor({
 }: BlocklyEditorProps) {
   const blocklyDivRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.Workspace | null>(null);
+  const { downloadJsonFile } = useEditorHandlers();
 
   const initBlockly = useCallback(() => {
     if (!blocklyDivRef.current) return;
@@ -66,8 +69,8 @@ export function BlocklyEditor({
       },
       move: {
         scrollbars: {
-          horizontal: isMobile,
-          vertical: false,
+          horizontal: true,
+          vertical: true,
         },
         drag: true,
         wheel: true,
@@ -76,6 +79,14 @@ export function BlocklyEditor({
     };
 
     const workspace = Blockly.inject(blocklyDivRef.current, options);
+
+    // Force workspace metrics initialization.
+    // Without this, viewport calculations are stale until first user
+    // interaction (zoom/click), which breaks import positioning.
+    Blockly.svgResize(workspace);
+    const initScale = workspace.scale;
+    workspace.setScale(initScale * 1.01);
+    workspace.setScale(initScale);
 
     // Register flyout callbacks
     workspace.registerToolboxCategoryCallback("PIN", pinCategoryFlyout);
@@ -193,23 +204,23 @@ export function BlocklyEditor({
       reader.onload = (e) => {
         try {
           const json = JSON.parse(e.target?.result as string);
-          if (workspaceRef.current) {
-            const imported = importJson(workspaceRef.current, json);
-            if (imported) {
-              showNotification("Workspace imported");
-              // Clear definitions before generating code
-              pythonGenerator.definitions_ = {};
-              const code = pythonGenerator.workspaceToCode(
-                workspaceRef.current
-              );
-              onCodeChange(code);
-            } else {
-              showNotification("Error importing JSON");
-            }
+          const imported = importJson(json);
+          if (imported) {
+            showNotification("Workspace imported successfully");
+            const workspace = getActiveWorkspace();
+            
+            // Initialize generator before generating code
+            pythonGenerator.init(workspace);
+            pythonGenerator.definitions_ = {};
+            
+            const code = pythonGenerator.workspaceToCode(workspace);
+            onCodeChange(code);
+          } else {
+            showNotification("Error importing workspace");
           }
         } catch (err) {
           console.error("Error importing JSON:", err);
-          showNotification("Error importing JSON");
+          showNotification("Error importing workspace");
         }
       };
       reader.readAsText(file);
@@ -218,12 +229,14 @@ export function BlocklyEditor({
   );
 
   const handleExportJson = useCallback(() => {
-    if (workspaceRef.current) {
-      const json = exportJson(workspaceRef.current);
-      downloadJsonFile(JSON.stringify(json), "workspace.json");
-      showNotification("Workspace exported as workspace.json");
+    const json = exportJson();
+    if (!json || Object.keys(json).length === 0) {
+      showNotification("No blocks to export");
+      return;
     }
-  }, [showNotification]);
+    downloadJsonFile(JSON.stringify(json, null, 2), "workspace.json");
+    showNotification("Workspace exported as workspace.json");
+  }, [showNotification, downloadJsonFile]);
 
   const handleImportClick = useCallback(() => {
     const inputElement = document.createElement("input");
@@ -260,18 +273,4 @@ export function BlocklyEditor({
       <div className="editor" ref={blocklyDivRef} />
     </div>
   );
-}
-
-// Utility function to download JSON
-function downloadJsonFile(content: string, filename: string) {
-  const element = document.createElement("a");
-  element.setAttribute(
-    "href",
-    "data:application/json;charset=utf-8," + encodeURIComponent(content)
-  );
-  element.setAttribute("download", filename);
-  element.style.display = "none";
-  document.body.appendChild(element);
-  element.click();
-  document.body.removeChild(element);
 }
