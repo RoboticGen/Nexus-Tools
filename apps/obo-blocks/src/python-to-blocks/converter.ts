@@ -557,15 +557,14 @@ def python_to_blockly_json(code):
  */
 export function convertPythonToBlocks(pythonCode: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    // Build the Python script that will run inside Pyodide
-    const escapedCode = pythonCode
-      .replace(/\\/g, "\\\\")
-      .replace(/"""/g, '\\"\\"\\"');
+    // Safely encode the user code as a JSON string so it survives any
+    // special characters (quotes, backslashes, newlines, etc.)
+    const jsonEncoded = JSON.stringify(pythonCode);
 
     const runScript = `
 ${PARSER_SOURCE}
 
-_user_code = \"\"\"${escapedCode}\"\"\"
+_user_code = json.loads(${JSON.stringify(jsonEncoded)})
 _result = python_to_blockly_json(_user_code)
 _result
 `;

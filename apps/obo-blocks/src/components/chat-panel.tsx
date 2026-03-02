@@ -404,13 +404,13 @@ export function ChatPanel({ onImportJson, onConvertPython }: ChatPanelProps) {
             <i className="fa fa-code" />
           )}
         </button>
-        <input
-          type="text"
+        <textarea
           className="chat-input"
-          placeholder="Type a message, paste JSON, or Python code..."
+          placeholder="Type a message, paste JSON, or Python code... (Shift+Enter for new line)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          rows={1}
         />
         <button
           className="chat-send-btn"

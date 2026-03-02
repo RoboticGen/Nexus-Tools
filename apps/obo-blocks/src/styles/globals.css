@@ -999,7 +999,7 @@ body {
 
 .chat-input-area {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   padding: 0.5rem;
   border-top: 1px solid var(--panel-border);
   background-color: var(--panel-bg);
@@ -1018,6 +1018,12 @@ body {
   outline: none;
   transition: border-color 0.2s ease;
   background-color: #f8fafc;
+  resize: none;
+  min-height: 2.2rem;
+  max-height: 6rem;
+  overflow-y: auto;
+  line-height: 1.4;
+  field-sizing: content;
 }
 
 .chat-input:focus {
