@@ -213,11 +213,17 @@ export function usePythonRunner(options: UsePythonRunnerOptions = {}) {
         $B.run_script(scriptEl, wrappedCode, moduleName, url, true);
 
         onSuccess?.();
+        
+        // Brython runs asynchronously, so don't immediately clear isRunning.
+        // Start a timeout to mark execution as done after a reasonable delay.
+        // If user calls stopCode, it will clear the flag immediately.
+        const timeoutId = window.setTimeout(() => {
+          setIsRunning(false);
+        }, 10000); // 10 second max execution time
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         onError?.(errorMsg);
         setOutput((prev) => prev + `\nError: ${errorMsg}\n>>> `);
-      } finally {
         setIsRunning(false);
       }
     },

@@ -536,7 +536,7 @@ forBlock["deint_i2c"] = function (block: any, generator: any) {
     block.getFieldValue("i2c"),
 
   );
-  const code = `${variable_i2c}.deint()\n`;
+  const code = `${variable_i2c}.deinit()\n`;
   return code;
 };
 

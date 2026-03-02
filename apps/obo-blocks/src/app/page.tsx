@@ -28,8 +28,14 @@ export default function Home() {
 
   const showNotification = useCallback((message: string) => {
     setNotification(message);
-    setTimeout(() => setNotification(null), 1500);
   }, []);
+
+  // Auto-clear notification after a delay with cleanup on unmount/change.
+  useEffect(() => {
+    if (notification == null) return;
+    const id = window.setTimeout(() => setNotification(null), 1500);
+    return () => clearTimeout(id);
+  }, [notification]);
 
   const {
     handleEditToggle,

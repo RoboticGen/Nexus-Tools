@@ -33,8 +33,14 @@ export default function Home() {
 
   const showNotification = useCallback((message: string) => {
     setNotification(message);
-    setTimeout(() => setNotification(null), 1500);
   }, []);
+
+  // Auto-clear notification after a delay with cleanup on unmount/change.
+  useEffect(() => {
+    if (notification == null) return;
+    const id = window.setTimeout(() => setNotification(null), 1500);
+    return () => clearTimeout(id);
+  }, [notification]);
 
   const { runCode, stopCode, isRunning, isLoading, output, clearOutput } = usePythonRunner({
     onError: (error) => showNotification(error),
@@ -95,10 +101,6 @@ export default function Home() {
   }, [code, showNotification]);
 
   const handleClear = useCallback(() => {
-    if (isRunning) {
-      showNotification("Stop the code execution first");
-      return;
-    }
     clearOutput();
     // Clear turtle workspace (Brython turtle uses SVG)
     const turtleCanvas = document.getElementById("turtle-canvas");
@@ -115,7 +117,7 @@ export default function Home() {
       }
     }
     showNotification("Terminal cleared");
-  }, [isRunning, clearOutput, showNotification]);
+  }, [clearOutput, showNotification]);
 
   return (
     <div className="app-container">
