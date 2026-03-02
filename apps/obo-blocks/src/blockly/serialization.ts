@@ -52,27 +52,32 @@ export const exportJson = function(): any {
 export const importJson = function(json: any): boolean {
   try {
     const workspace = getActiveWorkspace() as any;
-    
+
+    // Step 1: sync SVG element size with its CSS container.
+    Blockly.svgResize(workspace);
+
+    // Step 2: load the blocks.
     workspace.clear();
     Blockly.serialization.workspaces.load(json, workspace, { recordUndo: false });
-    
-    workspace.render();
-    
-    // Dispatch resize + defer centering so the browser finishes layout first
-    window.dispatchEvent(new Event('resize'));
-    
-    setTimeout(() => {
-      Blockly.svgResize(workspace);
-      const scale = workspace.scale;
-      workspace.setScale(scale * 1.01);
-      workspace.setScale(scale);
-      
+
+    // Step 3: resize() recalculates toolbox width, scrollbar range, and
+    //   re-applies the canvas translate — same work triggered by a window resize.
+    workspace.resize();
+
+    // Step 4: AFTER resize the SVG bounding rect is final, so NOW we can
+    //   recompute the inverse screen CTM (screen ↔ workspace coordinate matrix).
+    //   Blockly normally only does this on the first mouse event, which is
+    //   exactly why clicking once "fixed" the import before this change.
+    workspace.updateInverseScreenCTM();
+
+    // Step 5: one rAF lets the browser commit the paint, then centre the view.
+    requestAnimationFrame(() => {
       const blocks = workspace.getAllBlocks(false);
       if (blocks.length > 0) {
         workspace.centerOnBlock(blocks[0].id);
       }
-    }, 100);
-    
+    });
+
     return true;
   } catch (err) {
     console.error('Error importing workspace:', err);

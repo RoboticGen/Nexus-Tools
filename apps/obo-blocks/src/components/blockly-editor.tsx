@@ -45,9 +45,7 @@ export function BlocklyEditor({
   const workspaceRef = useRef<Blockly.Workspace | null>(null);
   const { downloadJsonFile } = useEditorHandlers();
 
-  const initBlockly = useCallback(() => {
-    if (!blocklyDivRef.current) return;
-
+  const initBlockly = useCallback((div: HTMLDivElement) => {
     const isMobile = window.innerWidth <= 768;
     
     const options = {
@@ -78,15 +76,13 @@ export function BlocklyEditor({
       renderer: "zelos",
     };
 
-    const workspace = Blockly.inject(blocklyDivRef.current, options);
+    const workspace = Blockly.inject(div, options);
 
-    // Force workspace metrics initialization.
-    // Without this, viewport calculations are stale until first user
-    // interaction (zoom/click), which breaks import positioning.
+    // The div already has real dimensions (guaranteed by the ResizeObserver
+    // caller), so we can measure synchronously right after inject.
     Blockly.svgResize(workspace);
-    const initScale = workspace.scale;
-    workspace.setScale(initScale * 1.01);
-    workspace.setScale(initScale);
+    (workspace as any).resize();
+    (workspace as any).updateInverseScreenCTM();
 
     // Register flyout callbacks
     workspace.registerToolboxCategoryCallback("PIN", pinCategoryFlyout);
@@ -167,10 +163,30 @@ export function BlocklyEditor({
         true
       );
 
-      initBlockly();
+      // Use a ResizeObserver to delay inject until the container div has
+      // real non-zero pixel dimensions.  A plain rAF or useEffect isn't
+      // enough here because Next.js dynamic imports + CSS flex/grid
+      // percentage heights can take multiple layout passes to resolve.
+      // The observer fires as soon as the element gets its first real size,
+      // at which point Blockly can measure the correct viewport immediately.
+      const div = blocklyDivRef.current;
+      if (!div) return;
+
+      let initialized = false;
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0 && !initialized) {
+          initialized = true;
+          observer.disconnect();
+          initBlockly(div);
+        }
+      });
+      observer.observe(div);
 
       return () => {
-        // Workspace persists for component lifecycle
+        observer.disconnect();
       };
     } catch (error) {
       console.error("Error initializing Blockly:", error);
