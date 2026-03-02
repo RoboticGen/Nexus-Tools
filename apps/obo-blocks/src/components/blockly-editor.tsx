@@ -137,7 +137,7 @@ export function BlocklyEditor({
       onRegisterImporter((jsonString: string) => {
         try {
           const json = JSON.parse(jsonString);
-          const imported = importJson(workspace, json);
+          const imported = importJson(json);
           if (imported) {
             pythonGenerator.definitions_ = {};
             const code = pythonGenerator.workspaceToCode(workspace);

@@ -27,6 +27,7 @@ class VarTracker:
         self.pwm_vars = set()
         self.i2c_vars = set()
         self.func_defs = {}
+        self.func_names = set()
 
     def add_var(self, name, var_type=""):
         if name not in self.vars:
@@ -41,6 +42,8 @@ class VarTracker:
     def get_variables_json(self):
         result = []
         for name, info in self.vars.items():
+            if name in self.func_names:
+                continue
             result.append({"name": name, "id": info["id"], "type": info["type"]})
         return result
 
@@ -174,9 +177,8 @@ def convert_call_expr(node):
     if func_name and func_name in tracker.func_defs:
         info = tracker.func_defs[func_name]
         if info.get("has_return"):
-            var_id = tracker.get_var_id(func_name)
             block = {"type": "procedures_callreturn", "id": _uid(),
-                     "fields": {"NAME": {"id": var_id, "name": func_name, "type": ""}}, "inputs": {}}
+                     "extraState": {"name": func_name}, "inputs": {}}
             for i, a in enumerate(node.args):
                 ab = convert_expr(a)
                 if ab: block["inputs"]["ARG" + str(i)] = {"block": ab}
@@ -315,10 +317,24 @@ def convert_call_stmt(node):
                 v = convert_expr(node.args[0])
                 if v: block["inputs"]["value"] = {"block": v}
                 return block
+        # Handle append/remove on non-variable expressions (e.g. list literals)
+        if method == "append" and len(node.args) == 1:
+            block = {"type": "list_append_block", "id": _uid(), "inputs": {}}
+            list_expr = convert_expr(var_node)
+            if list_expr: block["inputs"]["list"] = {"block": list_expr}
+            v = convert_expr(node.args[0])
+            if v: block["inputs"]["value"] = {"block": v}
+            return block
+        if method == "remove" and len(node.args) == 1:
+            block = {"type": "list_remove_block", "id": _uid(), "inputs": {}}
+            list_expr = convert_expr(var_node)
+            if list_expr: block["inputs"]["list"] = {"block": list_expr}
+            v = convert_expr(node.args[0])
+            if v: block["inputs"]["value"] = {"block": v}
+            return block
     if func_name and func_name in tracker.func_defs:
-        vi = tracker.get_var_id(func_name)
         block = {"type": "procedures_callnoreturn", "id": _uid(),
-                 "fields": {"NAME": {"id": vi, "name": func_name, "type": ""}}, "inputs": {}}
+                 "extraState": {"name": func_name}, "inputs": {}}
         for i, a in enumerate(node.args):
             ab = convert_expr(a)
             if ab: block["inputs"]["ARG" + str(i)] = {"block": ab}
@@ -326,9 +342,8 @@ def convert_call_stmt(node):
     if isinstance(node.func, ast.Name):
         fn = node.func.id
         if fn not in ("print", "input", "range", "str", "int", "float"):
-            vi = tracker.get_var_id(fn)
             block = {"type": "procedures_callnoreturn", "id": _uid(),
-                     "fields": {"NAME": {"id": vi, "name": fn, "type": ""}}, "inputs": {}}
+                     "extraState": {"name": fn}, "inputs": {}}
             for i, a in enumerate(node.args):
                 ab = convert_expr(a)
                 if ab: block["inputs"]["ARG" + str(i)] = {"block": ab}
@@ -485,7 +500,7 @@ def convert_funcdef(node):
     args = [a.arg for a in node.args.args]
     has_ret = _has_return(node.body)
     tracker.func_defs[fn] = {"args": args, "has_return": has_ret}
-    tracker.get_var_id(fn)
+    tracker.func_names.add(fn)
     for a in args: tracker.get_var_id(a)
     bt = "procedures_defreturn" if has_ret else "procedures_defnoreturn"
     block = {"type": bt, "id": _uid(), "fields": {"NAME": fn}, "inputs": {}}
@@ -524,14 +539,28 @@ def python_to_blockly_json(code):
     for stmt in tree.body:
         block = convert_stmt(stmt)
         if block: top_blocks.append(block)
+    # Procedure types that must always be separate top-level blocks
+    _standalone_types = ("procedures_defnoreturn", "procedures_defreturn")
+    _non_stmt_types = ("variables_get", "number_block", "string_block", "true_block", "false_block")
+
     positioned = []
     chain_start = None
     chain_tail = None
     y_offset = 50
     for b in top_blocks:
         btype = b.get("type", "")
-        is_stmt = btype not in ("variables_get", "number_block", "string_block", "true_block", "false_block")
-        if is_stmt and chain_start is not None:
+        is_standalone = btype in _standalone_types
+        is_stmt = btype not in _non_stmt_types
+        # Standalone blocks (function defs) always start a new top-level entry
+        if is_standalone:
+            b["x"] = 50
+            b["y"] = y_offset
+            y_offset += 200
+            positioned.append(b)
+            # Reset chain so the next statement starts a new chain
+            chain_start = None
+            chain_tail = None
+        elif is_stmt and chain_start is not None:
             chain_tail["next"] = {"block": b}
             chain_tail = b
         else:
