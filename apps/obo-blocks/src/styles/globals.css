@@ -951,13 +951,23 @@ body {
 
 .output .ant-tabs-content-holder {
   flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.output .ant-tabs-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
 .output .ant-tabs-tabpane {
   display: flex !important;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -970,7 +980,7 @@ body {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .output .ant-tabs-tab-btn {

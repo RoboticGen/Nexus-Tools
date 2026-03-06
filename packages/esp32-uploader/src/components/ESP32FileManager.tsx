@@ -6,8 +6,8 @@
 "use client";
 
 import { useEffect, useCallback, useState } from "react";
-import { Button, Space } from "antd";
-import { SyncOutlined, EyeOutlined, DownloadOutlined, CloseOutlined, DeleteOutlined } from "@ant-design/icons";
+import { Button, Space, Modal } from "antd";
+import { SyncOutlined, EyeOutlined, DownloadOutlined, CloseOutlined, DeleteOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import { useESP32FileManager } from "../hooks/use-esp32-file-manager";
 
 interface ESP32FileManagerProps {
@@ -66,7 +66,7 @@ export function ESP32FileManager({
       try {
         setDownloadingFile(filename);
         await downloadFile(filename);
-        onError?.(null as any); // Clear any previous errors on success
+        // Success - file downloaded via browser download mechanism
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         onError?.(msg);
@@ -90,8 +90,6 @@ export function ESP32FileManager({
           onOpenFileInEditor(filename, content);
           setViewingFile(null); // Close local viewer when opening in editor
         }
-        
-        onError?.(null as any);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         onError?.(msg);
@@ -105,21 +103,26 @@ export function ESP32FileManager({
   // Handle file deletion
   const handleDeleteFile = useCallback(
     async (filename: string) => {
-      // Confirm deletion
-      if (!confirm(`Are you sure you want to delete "${filename}"? This action cannot be undone.`)) {
-        return;
-      }
-
-      try {
-        setDeletingFile(filename);
-        await deleteFile(filename);
-        onError?.(`File "${filename}" deleted successfully`);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        onError?.(msg);
-      } finally {
-        setDeletingFile(null);
-      }
+      Modal.confirm({
+        title: 'Delete File',
+        icon: <ExclamationCircleOutlined />,
+        content: `Are you sure you want to delete "${filename}"? This action cannot be undone.`,
+        okText: 'Delete',
+        okType: 'danger',
+        cancelText: 'Cancel',
+        onOk: async () => {
+          try {
+            setDeletingFile(filename);
+            await deleteFile(filename);
+            // Success - file list will auto-refresh from hook
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            onError?.(msg);
+          } finally {
+            setDeletingFile(null);
+          }
+        },
+      });
     },
     [deleteFile, onError]
   );
@@ -150,6 +153,7 @@ export function ESP32FileManager({
               onClick={refreshFiles}
               disabled={isLoading}
               title="Refresh file list"
+              aria-label="Refresh file list from device"
               style={{ backgroundColor: "var(--btn-run)", color: "#fff", border: "none" }}
             >
               {isLoading ? "Refreshing..." : "Refresh"}
@@ -213,6 +217,7 @@ export function ESP32FileManager({
                         onClick={() => handleViewFile(file.name)}
                         loading={loadingViewFile === file.name}
                         title="View file content"
+                        aria-label={`View ${file.name}`}
                         style={{ backgroundColor: "var(--btn-run)", color: "#fff", border: "none" }}
                       />
                       <Button
@@ -221,6 +226,7 @@ export function ESP32FileManager({
                         onClick={() => handleDownloadFile(file.name)}
                         loading={downloadingFile === file.name}
                         title="Download file"
+                        aria-label={`Download ${file.name}`}
                         style={{ backgroundColor: "var(--btn-copy)", color: "#fff", border: "none" }}
                       />
                       <Button
@@ -229,6 +235,7 @@ export function ESP32FileManager({
                         onClick={() => handleDeleteFile(file.name)}
                         loading={deletingFile === file.name}
                         title="Delete file"
+                        aria-label={`Delete ${file.name}`}
                         danger
                         style={{ backgroundColor: "var(--btn-stop)", color: "#fff", border: "none" }}
                       />

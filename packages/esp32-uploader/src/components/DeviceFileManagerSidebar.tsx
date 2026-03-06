@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { useESP32FileManager } from "../hooks/use-esp32-file-manager";
-import { Button } from "antd";
+import { Button, Modal } from "antd";
 import {
   FileTextOutlined,
   SyncOutlined,
@@ -19,6 +19,9 @@ import {
   UploadOutlined,
   LinkOutlined,
   DisconnectOutlined,
+  ExclamationCircleOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from "@ant-design/icons";
 
 function normalizeName(name: string): string {
@@ -103,7 +106,6 @@ function DeviceFileManagerSidebarComponent({
           setLoadingAction(filename);
           const content = await viewFile(filename);
           onOpenFileInEditor(filename, content);
-          onError?.(null as any);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           onError?.(msg);
@@ -120,7 +122,7 @@ function DeviceFileManagerSidebarComponent({
       try {
         setLoadingAction(filename);
         await downloadFile(filename);
-        onError?.(null as any);
+        // Success - file downloaded via browser
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         onError?.(msg);
@@ -133,17 +135,26 @@ function DeviceFileManagerSidebarComponent({
 
   const handleDelete = useCallback(
     async (filename: string) => {
-      if (!confirm(`Delete "${filename}"? This cannot be undone.`)) return;
-      try {
-        setLoadingAction(filename);
-        await deleteFile(filename);
-        onError?.(`Deleted ${filename}`);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        onError?.(msg);
-      } finally {
-        setLoadingAction(null);
-      }
+      Modal.confirm({
+        title: 'Delete File',
+        icon: <ExclamationCircleOutlined />,
+        content: `Delete "${filename}"? This cannot be undone.`,
+        okText: 'Delete',
+        okType: 'danger',
+        cancelText: 'Cancel',
+        onOk: async () => {
+          try {
+            setLoadingAction(filename);
+            await deleteFile(filename);
+            // Success - file list auto-refreshes
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            onError?.(msg);
+          } finally {
+            setLoadingAction(null);
+          }
+        },
+      });
     },
     [deleteFile, onError]
   );
@@ -158,27 +169,40 @@ function DeviceFileManagerSidebarComponent({
 
   return (
     <aside className={rootClass}>
-      <header 
-        className="device-fm__header"
-        onClick={handleToggle}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleToggle(); }}
-      >
-        {!expanded && (
-          <span className="device-fm__label-vertical" aria-hidden>File Manager</span>
-        )}
-        {expanded && (
-          <div className="device-fm__title-wrap">
-            <span className="device-fm__title">Device Files</span>
-            {activeFileName && isConnected && (
-              <div className="device-fm__badge" title={`Open in editor: ${activeFileName}`}>
-                <FileTextOutlined />
-                <span className="device-fm__badge-name">{activeFileName}</span>
-              </div>
-            )}
-          </div>
-        )}
+      <header className="device-fm__header">
+        <div 
+          className="device-fm__header-content"
+          onClick={handleToggle}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleToggle(); }}
+        >
+          {!expanded && (
+            <span className="device-fm__label-vertical" aria-hidden>File Manager</span>
+          )}
+          {expanded && (
+            <div className="device-fm__title-wrap">
+              <span className="device-fm__title">Device Files</span>
+              {activeFileName && isConnected && (
+                <div className="device-fm__badge" title={`Open in editor: ${activeFileName}`}>
+                  <FileTextOutlined />
+                  <span className="device-fm__badge-name">{activeFileName}</span>
+                </div>
+              )}
+            </div>
+          )}
+          <Button
+            type="text"
+            icon={expanded ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggle();
+            }}
+            title={expanded ? "Minimize sidebar" : "Expand sidebar"}
+            className="device-fm__toggle-btn"
+            aria-label={expanded ? "Minimize sidebar" : "Expand sidebar"}
+          />
+        </div>
         <div className="device-fm__header-actions">
           {isConnected ? (
             <Button

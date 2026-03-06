@@ -13,6 +13,7 @@ import { useESP32Uploader } from "../hooks/use-esp32-uploader";
 import { translateErrorMessage } from "../utils/error-messages";
 import { ESP32REPL } from "./ESP32REPL";
 import { ESP32FileManager } from "./ESP32FileManager";
+import { UI_CONSTANTS } from "../constants/ui";
 
 interface ESP32UploaderSidebarProps {
   code: string;
@@ -35,7 +36,7 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
       setAutoDetecting(true);
       
       onStatusUpdate?.("Initializing REPL...");
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, UI_CONSTANTS.AUTO_DETECTION_DELAY_MS));
       setReplReady(true);
       
       onStatusUpdate?.("ESP32 ready! Files and REPL are now available.");
