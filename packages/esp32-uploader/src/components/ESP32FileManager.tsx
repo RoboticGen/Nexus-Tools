@@ -154,7 +154,7 @@ export function ESP32FileManager({
               disabled={isLoading}
               title="Refresh file list"
               aria-label="Refresh file list from device"
-              style={{ backgroundColor: "var(--btn-run)", color: "#fff", border: "none" }}
+              style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }}
             >
               {isLoading ? "Refreshing..." : "Refresh"}
             </Button>
@@ -218,7 +218,7 @@ export function ESP32FileManager({
                         loading={loadingViewFile === file.name}
                         title="View file content"
                         aria-label={`View ${file.name}`}
-                        style={{ backgroundColor: "var(--btn-run)", color: "#fff", border: "none" }}
+                        style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }}
                       />
                       <Button
                         size="small"
@@ -227,7 +227,7 @@ export function ESP32FileManager({
                         loading={downloadingFile === file.name}
                         title="Download file"
                         aria-label={`Download ${file.name}`}
-                        style={{ backgroundColor: "var(--btn-copy)", color: "#fff", border: "none" }}
+                        style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }}
                       />
                       <Button
                         size="small"
@@ -237,7 +237,7 @@ export function ESP32FileManager({
                         title="Delete file"
                         aria-label={`Delete ${file.name}`}
                         danger
-                        style={{ backgroundColor: "var(--btn-stop)", color: "#fff", border: "none" }}
+                        style={{ backgroundColor: "#ef476f", color: "#fff", border: "none" }}
                       />
                     </Space>
                   )}

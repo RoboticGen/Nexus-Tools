@@ -183,25 +183,10 @@ function DeviceFileManagerSidebarComponent({
           {expanded && (
             <div className="device-fm__title-wrap">
               <span className="device-fm__title">Device Files</span>
-              {activeFileName && isConnected && (
-                <div className="device-fm__badge" title={`Open in editor: ${activeFileName}`}>
-                  <FileTextOutlined />
-                  <span className="device-fm__badge-name">{activeFileName}</span>
-                </div>
-              )}
+              
             </div>
           )}
-          <Button
-            type="text"
-            icon={expanded ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggle();
-            }}
-            title={expanded ? "Minimize sidebar" : "Expand sidebar"}
-            className="device-fm__toggle-btn"
-            aria-label={expanded ? "Minimize sidebar" : "Expand sidebar"}
-          />
+
         </div>
         <div className="device-fm__header-actions">
           {isConnected ? (
@@ -229,17 +214,7 @@ function DeviceFileManagerSidebarComponent({
               style={{ color: "#059669" }}
             />
           )}
-          <Button
-            type="text"
-            icon={<UploadOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              onUpload?.();
-            }}
-            title="Upload firmware"
-            className="device-fm__upload-btn"
-            disabled={!isConnected}
-          />
+          
         </div>
       </header>
 

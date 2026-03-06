@@ -174,7 +174,6 @@ export default function Home() {
         onError={showNotification}
         onOpenFileInEditor={handleOpenFileInEditor}
         onExpandChange={setFileManagerExpanded}
-        onUpload={handleUpload}
         onConnect={handleConnect}
         onDisconnect={handleDisconnect}
       />

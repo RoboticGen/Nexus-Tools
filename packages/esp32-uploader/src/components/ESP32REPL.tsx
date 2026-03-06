@@ -71,7 +71,7 @@ export function ESP32REPL({
 
   useEffect(() => {
     if (serialPort && parentConnected && !connected) doConnect();
-  }, [serialPort, parentConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [serialPort, parentConnected, connected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!parentConnected && connected) {
@@ -120,9 +120,9 @@ export function ESP32REPL({
         </span>
         {connected && (
           <span className="repl__actions">
-            <Button size="small" icon={<DeleteOutlined />} onClick={() => setLines([])}>Clear</Button>
-            <Button size="small" icon={<StopOutlined />} onClick={() => { sendCtrlC(); push("output", "^C"); }}>Ctrl+C</Button>
-            <Button size="small" icon={<ReloadOutlined />} onClick={() => { sendCtrlD(); push("output", "^D"); }}>Reset</Button>
+            <Button size="small" style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }} icon={<DeleteOutlined />} onClick={() => setLines([])}>Clear</Button>
+            <Button size="small" style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }} icon={<StopOutlined />} onClick={() => { sendCtrlC(); push("output", "^C"); }}>Ctrl+C</Button>
+            <Button size="small" style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }} icon={<ReloadOutlined />} onClick={() => { sendCtrlD(); push("output", "^D"); }}>Reset</Button>
           </span>
         )}
       </div>
