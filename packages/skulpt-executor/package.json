@@ -1,0 +1,24 @@
+{
+  "name": "@nexus-tools/skulpt-executor",
+  "version": "1.0.0",
+  "description": "Skulpt-based Python execution for browser environments",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "require": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nexus-tools/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@nexus-tools/typescript-config": "workspace:*",
+    "typescript": "^5.3.0"
+  }
+}
