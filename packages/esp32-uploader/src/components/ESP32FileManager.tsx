@@ -237,7 +237,7 @@ export function ESP32FileManager({
                         title="Delete file"
                         aria-label={`Delete ${file.name}`}
                         danger
-                        style={{ backgroundColor: "#ef476f", color: "#fff", border: "none" }}
+                        style={{ backgroundColor: "transparent", color: "#ef476f", border: "none" }}
                       />
                     </Space>
                   )}

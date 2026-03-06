@@ -38,15 +38,17 @@
 /* Danger buttons */
 .esp32-file-manager .ant-btn-dangerous,
 .device-fm .ant-btn-dangerous {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: transparent;
   border: none;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+  color: #ef476f;
+  box-shadow: none;
 }
 
 .esp32-file-manager .ant-btn-dangerous:hover:not(:disabled),
 .device-fm .ant-btn-dangerous:hover:not(:disabled) {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+  background: rgba(239, 71, 111, 0.1);
+  color: #dc2626;
+  box-shadow: none;
   transform: translateY(-1px);
 }
 

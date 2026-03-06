@@ -37,6 +37,7 @@ export function ESP32REPL({
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const connectingRef = useRef(false);
 
   const { connectToREPL, executeCommand, sendCtrlC, sendCtrlD, disconnect } =
     useESP32REPL(serialPort);
@@ -55,7 +56,8 @@ export function ESP32REPL({
 
   // auto-connect
   const doConnect = useCallback(async () => {
-    if (!serialPort) return;
+    if (!serialPort || connectingRef.current) return;
+    connectingRef.current = true;
     try {
       push("output", "Connecting to REPL…");
       await connectToREPL();
@@ -66,6 +68,8 @@ export function ESP32REPL({
     } catch (err) {
       push("error", `Connection failed: ${err instanceof Error ? err.message : String(err)}`);
       setConnected(false);
+    } finally {
+      connectingRef.current = false;
     }
   }, [serialPort, connectToREPL, push]);
 
@@ -77,6 +81,7 @@ export function ESP32REPL({
     if (!parentConnected && connected) {
       setConnected(false);
       setLines([]);
+      connectingRef.current = false;
       disconnect();
     }
   }, [parentConnected, connected, disconnect]);

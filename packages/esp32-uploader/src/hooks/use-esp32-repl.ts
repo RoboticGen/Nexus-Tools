@@ -41,6 +41,10 @@ export function useESP32REPL(serialPort: any) {
       outputBufferRef.current += data;
     });
 
+    // Clear any residual output from connection sequence
+    await delay(200);
+    outputBufferRef.current = "";
+
     setIsConnected(true);
   }, [serialPort]);
 
@@ -60,20 +64,35 @@ export function useESP32REPL(serialPort: any) {
       const raw = outputBufferRef.current;
       outputBufferRef.current = "";
 
-      // Separate output from errors (simple heuristic)
+      // Parse output and errors
       const lines = raw.split("\n");
       const outputLines: string[] = [];
       const errorLines: string[] = [];
+      let inError = false;
 
       for (const line of lines) {
-        if (
-          line.includes("Traceback") ||
-          line.includes("Error:") ||
-          line.includes("Exception:")
-        ) {
+        // Skip prompt lines
+        if (line.trim().startsWith(">>>") || line.trim().startsWith("...")) {
+          inError = false;
+          continue;
+        }
+        
+        // Detect error start
+        if (line.includes("Traceback")) {
+          inError = true;
           errorLines.push(line);
-        } else if (line.trim() && !line.startsWith(">>>") && !line.startsWith("...")) {
-          outputLines.push(line);
+        } else if (inError) {
+          // Continue capturing error lines until we hit a blank line or prompt
+          if (line.trim()) {
+            errorLines.push(line);
+          } else {
+            inError = false;
+          }
+        } else if (line.trim()) {
+          // Regular output (skip the echo of the command itself)
+          if (line.trim() !== command.trim()) {
+            outputLines.push(line);
+          }
         }
       }
 
