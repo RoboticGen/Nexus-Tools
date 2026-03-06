@@ -31,7 +31,6 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
   const [espSupported, setEspSupported] = useState<boolean | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const connectedPortRef = useRef<any>(null);
-  const espToolRef = useRef<any>(null);
 
   const {
     checkSerialSupport,
@@ -42,25 +41,7 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
     closePort,
   } = useESP32Serial({ baudRate: selectedDevice.baudRate });
 
-  /**
-   * Initialize ESP Web Tools (dynamic import for SSR)
-   */
-  const initializeEspWebTools = useCallback(async () => {
-    try {
-      // @ts-ignore - esp-web-tools is loaded via CDN in HTML
-      await import('esp-web-tools');
-      
-      if (espToolRef.current) {
-        espToolRef.current = null;
-      }
-      
-      setEspSupported(true);
-    } catch (error) {
-      console.error('Failed to load ESP Web Tools:', error);
-      setEspSupported(false);
-      onError?.('Failed to load ESP Web Tools');
-    }
-  }, [onError]);
+
 
   /**
    * Upload code to ESP32 as main.py
@@ -232,7 +213,6 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
     setSerialPort(null);
     setConnectionError(null);
     setFlashProgress(0);
-    espToolRef.current = null;
     onStatusUpdate?.("Connection cleared");
   }, [onStatusUpdate, closePort]);
 
@@ -294,13 +274,8 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
   // Initialize on mount
   useEffect(() => {
     setIsMounted(true);
-    const isSupported = checkSerialSupport();
-    setEspSupported(isSupported);
-    
-    if (isSupported) {
-      initializeEspWebTools();
-    }
-  }, [checkSerialSupport, initializeEspWebTools]);
+    setEspSupported(checkSerialSupport());
+  }, [checkSerialSupport]);
 
   // Cleanup on unmount
   useEffect(() => {

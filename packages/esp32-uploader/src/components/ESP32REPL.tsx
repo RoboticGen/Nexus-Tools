@@ -7,9 +7,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button, Space } from "antd";
-import { LinkOutlined, DeleteOutlined, StopOutlined, ReloadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, StopOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useESP32REPL } from "../hooks/use-esp32-repl";
-import { translateErrorMessage } from "../utils/error-messages";
 
 interface ESP32REPLProps {
   serialPort: any;
@@ -23,7 +22,7 @@ interface REPLLine {
   timestamp: Date;
 }
 
-export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, onError }: ESP32REPLProps) {
+export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true }: ESP32REPLProps) {
   const [lines, setLines] = useState<REPLLine[]>([
     { type: "output", content: "ESP32 REPL", timestamp: new Date() }
   ]);
@@ -94,26 +93,13 @@ export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, o
       addLine("output", "Type commands below. Use Ctrl+C to interrupt, Ctrl+D to soft reset.");
       addLine("output", ">>> ");
     } catch (error) {
-      const userFriendlyMsg = translateErrorMessage(error);
       console.error("REPL Connection error:", error);
-      // Only call onError on first connection attempt, not on retries
-      // addLine will show the error in the terminal
-      addLine("output", ">>> ");
+      addLine("error", `Connection failed: ${error instanceof Error ? error.message : String(error)}`);
       setIsConnected(false);
     } finally {
       setIsConnecting(false);
     }
   }, [connectToREPL, serialPort, addLine]);
-
-  const handleDisconnect = useCallback(async () => {
-    try {
-      await disconnect();
-      setIsConnected(false);
-      addLine("output", "=== REPL Disconnected ===");
-    } catch (error) {
-      console.warn("Error disconnecting REPL:", error);
-    }
-  }, [disconnect, addLine]);
 
   const handleExecuteCommand = useCallback(async (command: string) => {
     if (!isConnected || !command.trim()) return;
@@ -161,22 +147,17 @@ export function ESP32REPL({ serialPort, isConnected: parentIsConnected = true, o
     }
   }, [isConnected, addLine]);
 
-  // Auto-connect when serialPort and parentIsConnected are available
+  // Auto-connect when serialPort and parentIsConnected are available.
+  // Single effect with a retry timer to avoid infinite reconnection loops.
   useEffect(() => {
-    if (serialPort && parentIsConnected && !isConnected && !isConnecting) {
+    if (!serialPort || !parentIsConnected || isConnected || isConnecting) return;
+
+    // Delay the first attempt slightly so the port has time to settle
+    const retryTimer = setTimeout(() => {
       handleConnect();
-    }
-  }, [serialPort, parentIsConnected, isConnected, isConnecting, handleConnect]);
+    }, 500);
 
-  // Retry connection after failure
-  useEffect(() => {
-    if (serialPort && parentIsConnected && !isConnected && !isConnecting) {
-      const retryTimer = setTimeout(() => {
-        handleConnect();
-      }, 3000); // Retry every 3 seconds
-
-      return () => clearTimeout(retryTimer);
-    }
+    return () => clearTimeout(retryTimer);
   }, [serialPort, parentIsConnected, isConnected, isConnecting, handleConnect]);
 
   return (

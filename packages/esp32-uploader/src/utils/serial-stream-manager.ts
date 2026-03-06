@@ -1,307 +1,383 @@
 /**
- * Simple Serial Stream Manager
- * Prevents "Stream is locked" errors by sharing streams between hooks
+ * Serial Stream Manager — Single Source of Truth
+ *
+ * All serial communication MUST go through this singleton.
+ * It holds the only reader/writer pair and provides:
+ *  - Operation queue (prevents "stream is locked" errors)
+ *  - Raw REPL mode for reliable command execution
+ *  - Listener system for REPL output streaming
+ *  - Proper cleanup and error recovery
  */
+
+import { REPL_CONTROL } from "../constants/esp32";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export type PortMode = "idle" | "repl" | "busy";
+
+export interface RawREPLResult {
+  output: string;
+  error: string;
+}
+
+type QueuedOperation = {
+  execute: () => Promise<void>;
+  label: string;
+};
+
+// ─── Manager ─────────────────────────────────────────────────────────────────
 
 class SerialStreamManager {
   private port: any = null;
-  private reader: ReadableStreamDefaultReader | null = null;
-  private writer: WritableStreamDefaultWriter | null = null;
-  private isLocked = false;
-  private waitQueue: Array<{ resolve: () => void; reject: (error: Error) => void }> = [];
-  private listeners: Array<(data: string) => void> = [];
+  private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
+  private encoder = new TextEncoder();
+  private decoder = new TextDecoder();
+
+  // Background reader state
   private isReading = false;
-  private initializePromise: Promise<void> | null = null;
-  private isInitializing = false;
+  private listeners: Set<(data: string) => void> = new Set();
 
-  /**
-   * Initialize with a serial port (call once when connected)
-   */
-  async initialize(serialPort: any) {
-    // Already initialized with this port and streams are ready
-    if (this.port === serialPort && this.reader && this.writer && this.isReading) {
-      return;
-    }
+  // Operation queue
+  private operationQueue: QueuedOperation[] = [];
+  private isProcessing = false;
 
-    // If already initializing, wait for that to complete
-    if (this.isInitializing) {
-      if (this.initializePromise) {
-        return this.initializePromise;
-      }
-    }
+  // Initialization guard
+  private initPromise: Promise<void> | null = null;
 
-    this.isInitializing = true;
+  // Current mode
+  private _mode: PortMode = "idle";
 
-    // Create promise for concurrent initializations to wait on
-    this.initializePromise = (async () => {
-      try {
-        // If switching to a different port, clean up first
-        if (this.port && this.port !== serialPort) {
-          await this.cleanup();
-        }
+  // ── Public Getters ───────────────────────────────────────────────────────
 
-        this.port = serialPort;
-
-        // Check if streams can be accessed
-        if (!serialPort.readable || !serialPort.writable) {
-          throw new Error('Serial port does not have readable/writable streams');
-        }
-
-        // Try to get reader if we don't have one
-        if (!this.reader) {
-          try {
-            this.reader = serialPort.readable.getReader();
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.error('Failed to get reader:', msg);
-            throw new Error(`Failed to get reader: ${msg}`);
-          }
-        }
-
-        // Try to get writer if we don't have one
-        if (!this.writer) {
-          try {
-            this.writer = serialPort.writable.getWriter();
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.error('Failed to get writer:', msg);
-            throw new Error(`Failed to get writer: ${msg}`);
-          }
-        }
-
-        // Start background reading if not already reading
-        if (!this.isReading) {
-          this.startBackgroundReader();
-        }
-        console.log('Serial stream manager: initialized successfully');
-      } catch (error) {
-        console.error('Initialization error:', error);
-        // Don't reset reader/writer here - they might still be usable
-        throw error;
-      } finally {
-        this.isInitializing = false;
-        this.initializePromise = null;
-      }
-    })();
-
-    return this.initializePromise;
+  get mode(): PortMode {
+    return this._mode;
   }
 
-  /**
-   * Start background reader (captures all data)
-   */
-  private async startBackgroundReader() {
-    if (this.isReading || !this.reader) return;
-    
-    this.isReading = true;
-    console.log('Serial stream manager: Starting background reader loop...');
-    
-    try {
-      while (this.isReading && this.reader) {
-        const { value, done } = await this.reader.read();
-        
-        if (done) break;
-        
-        if (value) {
-          const text = new TextDecoder().decode(value);
-          console.log('Serial stream manager: Background reader received:', text.substring(0, 50));
-          
-          // Notify all listeners (REPL, file manager, etc.)
-          this.listeners.forEach(listener => {
-            try {
-              listener(text);
-            } catch (e) {
-              console.warn('Listener error:', e);
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.warn('Background reader stopped:', error);
-    } finally {
-      this.isReading = false;
-      console.log('Serial stream manager: Background reader stopped');
-    }
-  }
-
-  /**
-   * Execute operation with exclusive access (prevents conflicts)
-   */
-  async executeOperation<T>(operation: (writer: any) => Promise<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-      if (!this.isLocked && this.writer) {
-        this.isLocked = true;
-        
-        operation(this.writer)
-          .then(resolve)
-          .catch(reject)
-          .finally(() => {
-            this.isLocked = false;
-            this.processQueue();
-          });
-      } else {
-        // Add to queue
-        this.waitQueue.push({
-          resolve: () => {
-            this.isLocked = true;
-            
-            operation(this.writer!)
-              .then(resolve)
-              .catch(reject)
-              .finally(() => {
-                this.isLocked = false;
-                this.processQueue();
-              });
-          },
-          reject
-        });
-      }
-    });
-  }
-
-  /**
-   * Process queued operations
-   */
-  private processQueue() {
-    if (this.waitQueue.length > 0 && !this.isLocked) {
-      const next = this.waitQueue.shift();
-      if (next) {
-        next.resolve();
-      }
-    }
-  }
-
-  /**
-   * Add data listener (for REPL output, etc.)
-   */
-  addListener(callback: (data: string) => void): () => void {
-    this.listeners.push(callback);
-    
-    // Return unsubscribe function
-    return () => {
-      const index = this.listeners.indexOf(callback);
-      if (index > -1) {
-        this.listeners.splice(index, 1);
-      }
-    };
-  }
-
-  /**
-   * Execute a simple REPL command and get the response
-   * This is simpler and more reliable than raw REPL mode
-   */
-  async executeREPLCommand(command: string, timeout: number = 3000): Promise<string> {
-    return new Promise((resolve, reject) => {
-      if (!this.writer) {
-        reject(new Error("Writer not available"));
-        return;
-      }
-
-      let response = "";
-      let hasExited = false;
-      const encoder = new TextEncoder();
-      const timeoutHandle = setTimeout(() => {
-        unsubscribe();
-        if (!hasExited) {
-          hasExited = true;
-          // Return what we got even if timed out
-          resolve(response);
-        }
-      }, timeout);
-
-      const unsubscribe = this.addListener((data) => {
-        response += data;
-      });
-
-      // Send the command with line ending
-      this.executeOperation(async (writer) => {
-        try {
-          const cmdWithNewline = command.trim() + '\r\n';
-          await writer.write(encoder.encode(cmdWithNewline));
-          
-          // Wait a bit for execution
-          await delay(200);
-          
-          // Close the operation - listener will continue collecting
-          // Give time for response before resolving
-          await delay(300);
-          
-          if (!hasExited) {
-            hasExited = true;
-            clearTimeout(timeoutHandle);
-            unsubscribe();
-            resolve(response);
-          }
-        } catch (error) {
-          if (!hasExited) {
-            hasExited = true;
-            clearTimeout(timeoutHandle);
-            unsubscribe();
-            reject(error);
-          }
-        }
-      }).catch((error) => {
-        if (!hasExited) {
-          hasExited = true;
-          clearTimeout(timeoutHandle);
-          unsubscribe();
-          reject(error);
-        }
-      });
-    });
-  }
-
-  /**
-   * Check if initialized and ready
-   */
   isReady(): boolean {
     return this.port !== null && this.reader !== null && this.writer !== null;
   }
 
-  /**
-   * Get the underlying port
-   */
-  getPort() {
+  getPort(): any {
     return this.port;
   }
 
-  /**
-   * Clean up resources
-   */
-  async cleanup() {
-    this.isReading = false;
-    this.isLocked = false;
-    this.listeners = [];
-    this.waitQueue = [];
+  // ── Initialization ───────────────────────────────────────────────────────
 
-    if (this.reader) {
-      try {
-        await this.reader.cancel();
-      } catch (e) {
-        // Already released
+  /**
+   * Initialize with a serial port. Safe to call multiple times — only runs
+   * once per port. If a different port is provided, cleans up the old one
+   * first.
+   */
+  async initialize(serialPort: any): Promise<void> {
+    // Already initialized with this exact port
+    if (this.port === serialPort && this.isReady()) {
+      return;
+    }
+
+    // Deduplicate concurrent calls
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    this.initPromise = this._initialize(serialPort);
+    try {
+      await this.initPromise;
+    } finally {
+      this.initPromise = null;
+    }
+  }
+
+  private async _initialize(serialPort: any): Promise<void> {
+    // Switching ports — tear down old one
+    if (this.port && this.port !== serialPort) {
+      await this.cleanup();
+    }
+
+    if (!serialPort?.readable || !serialPort?.writable) {
+      throw new Error("Serial port does not have readable/writable streams");
+    }
+
+    this.port = serialPort;
+
+    try {
+      this.reader = serialPort.readable.getReader();
+      this.writer = serialPort.writable.getWriter();
+    } catch (err) {
+      // Clean up partial locks
+      this.releaseLocks();
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Failed to acquire stream locks: ${msg}`);
+    }
+
+    this._mode = "idle";
+    this.startBackgroundReader();
+  }
+
+  // ── Background Reader ────────────────────────────────────────────────────
+
+  /**
+   * Continuously reads from the serial port and broadcasts to listeners.
+   * This is the ONLY place `reader.read()` is called during normal
+   * operation.
+   */
+  private async startBackgroundReader(): Promise<void> {
+    if (this.isReading) return;
+    this.isReading = true;
+
+    try {
+      while (this.isReading && this.reader) {
+        const { value, done } = await this.reader.read();
+        if (done) break;
+
+        if (value) {
+          const text = this.decoder.decode(value, { stream: true });
+          // Broadcast to all registered listeners
+          for (const listener of this.listeners) {
+            try {
+              listener(text);
+            } catch {
+              // Never let a bad listener crash the read loop
+            }
+          }
+        }
       }
+    } catch {
+      // Reader was cancelled or port disconnected — expected during cleanup
+    } finally {
+      this.isReading = false;
+    }
+  }
+
+  // ── Listener Management ──────────────────────────────────────────────────
+
+  /**
+   * Register a listener that receives every chunk of data from the device.
+   * Returns an unsubscribe function. Always call it when done.
+   */
+  addListener(callback: (data: string) => void): () => void {
+    this.listeners.add(callback);
+    return () => {
+      this.listeners.delete(callback);
+    };
+  }
+
+  // ── Low-level Write ──────────────────────────────────────────────────────
+
+  /**
+   * Write raw bytes. Only call this from within a queued operation.
+   */
+  private async write(data: string): Promise<void> {
+    if (!this.writer) throw new Error("Writer not available");
+    await this.writer.write(this.encoder.encode(data));
+  }
+
+  // ── Queued Operation Execution ───────────────────────────────────────────
+
+  /**
+   * Schedule an operation. Operations run sequentially — no two operations
+   * can overlap, which prevents all "stream is locked" errors.
+   */
+  enqueue<T>(label: string, operation: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      this.operationQueue.push({
+        label,
+        execute: async () => {
+          try {
+            const result = await operation();
+            resolve(result);
+          } catch (err) {
+            reject(err);
+          }
+        },
+      });
+      this.processQueue();
+    });
+  }
+
+  private async processQueue(): Promise<void> {
+    if (this.isProcessing) return;
+    this.isProcessing = true;
+
+    while (this.operationQueue.length > 0) {
+      const op = this.operationQueue.shift()!;
+      try {
+        await op.execute();
+      } catch (err) {
+        console.error(`[SerialStreamManager] Operation "${op.label}" failed:`, err);
+      }
+    }
+
+    this.isProcessing = false;
+  }
+
+  // ── Raw REPL Command Execution ───────────────────────────────────────────
+
+  /**
+   * Execute a MicroPython command using Raw REPL mode.
+   *
+   * Raw REPL protocol:
+   *   1. Ctrl-A  → Enter raw REPL (device sends "raw REPL; CTRL-B to exit\r\n>")
+   *   2. Send code (the Python source)
+   *   3. Ctrl-D  → Execute (device sends "OK" then stdout then \x04 then stderr then \x04)
+   *   4. Ctrl-B  → Back to normal REPL
+   *
+   * This is the RELIABLE way to execute commands — no echo, no prompts in output.
+   */
+  async executeRawREPL(code: string, timeout = 5000): Promise<RawREPLResult> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    return this.enqueue<RawREPLResult>(`rawREPL: ${code.substring(0, 40)}`, async () => {
+      const prevMode = this._mode;
+      this._mode = "busy";
+
+      try {
+        // Collect all data during this operation
+        let buffer = "";
+        const onData = (data: string) => {
+          buffer += data;
+        };
+        const unsub = this.addListener(onData);
+
+        try {
+          // Step 1: Interrupt anything running + enter raw REPL
+          buffer = "";
+          await this.write(REPL_CONTROL.CTRL_C);
+          await delay(50);
+          await this.write(REPL_CONTROL.CTRL_A);
+          await waitFor(() => buffer.includes(">"), 2000);
+          buffer = "";
+
+          // Step 2: Send code + Ctrl-D to execute
+          await this.write(code);
+          await this.write(REPL_CONTROL.CTRL_D);
+
+          // Step 3: Wait for the two \x04 markers that frame output and error
+          // Protocol: "OK" <stdout> \x04 <stderr> \x04
+          await waitFor(() => {
+            const okIdx = buffer.indexOf("OK");
+            if (okIdx === -1) return false;
+            const afterOK = buffer.substring(okIdx + 2);
+            // Need two \x04 markers
+            const first04 = afterOK.indexOf("\x04");
+            if (first04 === -1) return false;
+            const second04 = afterOK.indexOf("\x04", first04 + 1);
+            return second04 !== -1;
+          }, timeout);
+
+          // Step 4: Parse output
+          const result = parseRawREPLResponse(buffer);
+
+          // Step 5: Return to normal REPL
+          await this.write(REPL_CONTROL.CTRL_B);
+          await delay(50);
+
+          return result;
+        } finally {
+          unsub();
+        }
+      } finally {
+        this._mode = prevMode;
+      }
+    });
+  }
+
+  // ── Simple Write Operation (for REPL keystrokes) ─────────────────────────
+
+  /**
+   * Send data to the device without waiting for a structured response.
+   * Useful for REPL interactive input (typing commands, Ctrl-C, etc.)
+   */
+  async sendData(data: string): Promise<void> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    return this.enqueue("sendData", async () => {
+      await this.write(data);
+    });
+  }
+
+  // ── Cleanup ──────────────────────────────────────────────────────────────
+
+  private releaseLocks(): void {
+    if (this.reader) {
+      try { this.reader.releaseLock(); } catch { /* already released */ }
       this.reader = null;
     }
-
     if (this.writer) {
-      try {
-        this.writer.releaseLock();
-      } catch (e) {
-        // Already released  
-      }
+      try { this.writer.releaseLock(); } catch { /* already released */ }
       this.writer = null;
     }
+  }
 
+  /**
+   * Tear down all resources. Call when disconnecting from the device.
+   */
+  async cleanup(): Promise<void> {
+    this.isReading = false;
+    this._mode = "idle";
+    this.operationQueue = [];
+    this.isProcessing = false;
+    this.listeners.clear();
+
+    if (this.reader) {
+      try { await this.reader.cancel(); } catch { /* ignore */ }
+    }
+    this.releaseLocks();
     this.port = null;
   }
 }
 
-/**
- * Simple delay helper
- */
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Singleton instance
+/**
+ * Wait until `condition()` returns true, checking every 20 ms.
+ * Throws on timeout.
+ */
+function waitFor(condition: () => boolean, timeout: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const check = () => {
+      if (condition()) return resolve();
+      if (Date.now() - start > timeout) return reject(new Error("Timeout waiting for device response"));
+      setTimeout(check, 20);
+    };
+    check();
+  });
+}
+
+/**
+ * Parse the raw REPL response buffer.
+ *
+ * Expected format after "OK":
+ *   <stdout>\x04<stderr>\x04
+ */
+function parseRawREPLResponse(buffer: string): RawREPLResult {
+  const okIdx = buffer.indexOf("OK");
+  if (okIdx === -1) {
+    return { output: "", error: "No OK marker in raw REPL response" };
+  }
+
+  const afterOK = buffer.substring(okIdx + 2);
+  const first04 = afterOK.indexOf("\x04");
+  const second04 = afterOK.indexOf("\x04", first04 + 1);
+
+  const output = first04 >= 0 ? afterOK.substring(0, first04).trim() : "";
+  const error =
+    first04 >= 0 && second04 >= 0
+      ? afterOK.substring(first04 + 1, second04).trim()
+      : "";
+
+  return { output, error };
+}
+
+// ─── Singleton ───────────────────────────────────────────────────────────────
+
 export const serialStreamManager = new SerialStreamManager();
