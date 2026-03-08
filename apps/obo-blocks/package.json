@@ -12,6 +12,7 @@
     "clean": "rimraf .next .turbo node_modules"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@nexus-tools/monaco-editor": "workspace:*",
     "@nexus-tools/types": "workspace:*",
     "@nexus-tools/ui": "workspace:*",

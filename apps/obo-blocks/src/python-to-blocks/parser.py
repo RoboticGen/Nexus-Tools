@@ -41,6 +41,7 @@ class VarTracker:
         self.pwm_vars = set()
         self.i2c_vars = set()
         self.func_defs = {}      # func_name -> {"args": [...], "has_return": bool}
+        self.func_names = set()  # function names to exclude from variables list
 
     def add_var(self, name, var_type=""):
         if name not in self.vars:
@@ -55,11 +56,12 @@ class VarTracker:
     def get_variables_json(self):
         result = []
         for name, info in self.vars.items():
-            result.append({
-                "name": name,
-                "id": info["id"],
-                "type": info["type"]
-            })
+            if name in self.func_names:
+                continue
+            entry = {"name": name, "id": info["id"]}
+            if info["type"]:
+                entry["type"] = info["type"]
+            result.append(entry)
         return result
 
 
@@ -134,7 +136,7 @@ def convert_name(node):
     return {
         "type": "variables_get",
         "id": _uid(),
-        "fields": {"VAR": {"id": var_id, "name": node.id, "type": ""}}
+        "fields": {"VAR": {"id": var_id}}
     }
 
 
@@ -230,11 +232,10 @@ def convert_call_expr(node):
     if func_name and func_name in tracker.func_defs:
         info = tracker.func_defs[func_name]
         if info.get("has_return"):
-            var_id = tracker.get_var_id(func_name)
             block = {
                 "type": "procedures_callreturn",
                 "id": _uid(),
-                "fields": {"NAME": {"id": var_id, "name": func_name, "type": ""}},
+                "extraState": {"name": func_name, "params": info["args"]},
                 "inputs": {}
             }
             for i, arg_node in enumerate(node.args):
@@ -434,11 +435,10 @@ def convert_call_stmt(node):
     # User-defined function call (no return)
     if func_name and func_name in tracker.func_defs:
         info = tracker.func_defs[func_name]
-        var_id = tracker.get_var_id(func_name)
         block = {
             "type": "procedures_callnoreturn",
             "id": _uid(),
-            "fields": {"NAME": {"id": var_id, "name": func_name, "type": ""}},
+            "extraState": {"name": func_name, "params": info["args"]},
             "inputs": {}
         }
         for i, arg_node in enumerate(node.args):
@@ -451,11 +451,10 @@ def convert_call_stmt(node):
     if isinstance(node.func, ast.Name):
         fname = node.func.id
         if fname not in ("print", "input", "range", "str", "int", "float"):
-            var_id = tracker.get_var_id(fname)
             block = {
                 "type": "procedures_callnoreturn",
                 "id": _uid(),
-                "fields": {"NAME": {"id": var_id, "name": fname, "type": ""}},
+                "extraState": {"name": fname},
                 "inputs": {}
             }
             for i, arg_node in enumerate(node.args):
@@ -610,7 +609,7 @@ def _convert_list_append(var_name, arg_node):
         "inputs": {
             "list": {"block": {
                 "type": "variables_get", "id": _uid(),
-                "fields": {"VAR": {"id": var_id, "name": var_name, "type": ""}}
+                "fields": {"VAR": {"id": var_id}}
             }}
         }
     }
@@ -627,7 +626,7 @@ def _convert_list_remove(var_name, arg_node):
         "inputs": {
             "list": {"block": {
                 "type": "variables_get", "id": _uid(),
-                "fields": {"VAR": {"id": var_id, "name": var_name, "type": ""}}
+                "fields": {"VAR": {"id": var_id}}
             }}
         }
     }
@@ -679,7 +678,7 @@ def convert_assign(node):
     var_id = tracker.get_var_id(var_name)
     block = {
         "type": "variables_set", "id": _uid(),
-        "fields": {"VAR": {"id": var_id, "name": var_name, "type": ""}},
+        "fields": {"VAR": {"id": var_id}},
         "inputs": {}
     }
     val = convert_expr(value)
@@ -764,7 +763,7 @@ def _convert_read_adc(var_name, call_node):
         "inputs": {
             "adc_value": {"block": {
                 "type": "variables_get", "id": _uid(),
-                "fields": {"VAR": {"id": var_id, "name": var_name, "type": ""}}
+                "fields": {"VAR": {"id": var_id}}
             }}
         }
     }
@@ -886,7 +885,7 @@ def convert_for(node):
     if isinstance(node.target, ast.Name):
         var_id = tracker.get_var_id(node.target.id)
         block["fields"]["variable"] = {
-            "id": var_id, "name": node.target.id, "type": ""
+            "id": var_id
         }
     iterable = convert_expr(node.iter)
     if iterable:
@@ -906,9 +905,9 @@ def convert_funcdef(node):
     # Check if function has a return statement
     has_return = _has_return(node.body)
     tracker.func_defs[func_name] = {"args": args, "has_return": has_return}
+    tracker.func_names.add(func_name)
 
     # Register function name and arg variables
-    func_var_id = tracker.get_var_id(func_name)
     for a in args:
         tracker.get_var_id(a)
 
@@ -922,6 +921,12 @@ def convert_funcdef(node):
         "fields": {"NAME": func_name},
         "inputs": {}
     }
+
+    # Add extraState with params for Blockly procedure blocks
+    params = [{"name": a, "id": tracker.get_var_id(a)} for a in args]
+    if params:
+        block["extraState"] = {"params": params}
+    block["icons"] = {"comment": {"text": "Describe this function...", "pinned": False, "height": 80, "width": 160}}
 
     # Convert function body (excluding the return statement if present)
     body_stmts = [s for s in node.body if not isinstance(s, ast.Return)]
@@ -1019,18 +1024,28 @@ def python_to_blockly_json(code):
             top_blocks.append(block)
 
     # Assign x, y positions to top-level blocks & chain consecutive statements
+    _standalone_types = ("procedures_defnoreturn", "procedures_defreturn")
     positioned = []
     chain_start = None
     chain_tail = None
 
     for b in top_blocks:
         btype = b.get("type", "")
+        is_standalone = btype in _standalone_types
         is_statement = btype not in (
             "variables_get", "number_block", "string_block",
             "true_block", "false_block"
         )
 
-        if is_statement and chain_start is not None:
+        # Standalone blocks (function defs) always start a new top-level entry
+        if is_standalone:
+            b["x"] = 50
+            b["y"] = y_offset
+            y_offset += 200
+            positioned.append(b)
+            chain_start = None
+            chain_tail = None
+        elif is_statement and chain_start is not None:
             # Continue the chain
             chain_tail["next"] = {"block": b}
             chain_tail = b

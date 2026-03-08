@@ -44,7 +44,10 @@ class VarTracker:
         for name, info in self.vars.items():
             if name in self.func_names:
                 continue
-            result.append({"name": name, "id": info["id"], "type": info["type"]})
+            entry = {"name": name, "id": info["id"]}
+            if info["type"]:
+                entry["type"] = info["type"]
+            result.append(entry)
         return result
 
 tracker = VarTracker()
@@ -107,7 +110,7 @@ def convert_constant(node):
 def convert_name(node):
     var_id = tracker.get_var_id(node.id)
     return {"type": "variables_get", "id": _uid(),
-            "fields": {"VAR": {"id": var_id, "name": node.id, "type": ""}}}
+            "fields": {"VAR": {"id": var_id}}}
 
 def _binop_type(op):
     m = {ast.Add: "add_block", ast.Sub: "subtract_block", ast.Mult: "multiply_block", ast.Pow: "power_block"}
@@ -178,7 +181,7 @@ def convert_call_expr(node):
         info = tracker.func_defs[func_name]
         if info.get("has_return"):
             block = {"type": "procedures_callreturn", "id": _uid(),
-                     "extraState": {"name": func_name}, "inputs": {}}
+                     "extraState": {"name": func_name, "params": info["args"]}, "inputs": {}}
             for i, a in enumerate(node.args):
                 ab = convert_expr(a)
                 if ab: block["inputs"]["ARG" + str(i)] = {"block": ab}
@@ -305,7 +308,7 @@ def convert_call_stmt(node):
                 vi = tracker.get_var_id(vn)
                 block = {"type": "list_append_block", "id": _uid(),
                          "inputs": {"list": {"block": {"type": "variables_get", "id": _uid(),
-                                   "fields": {"VAR": {"id": vi, "name": vn, "type": ""}}}}}}
+                                   "fields": {"VAR": {"id": vi}}}}}}
                 v = convert_expr(node.args[0])
                 if v: block["inputs"]["value"] = {"block": v}
                 return block
@@ -313,7 +316,7 @@ def convert_call_stmt(node):
                 vi = tracker.get_var_id(vn)
                 block = {"type": "list_remove_block", "id": _uid(),
                          "inputs": {"list": {"block": {"type": "variables_get", "id": _uid(),
-                                   "fields": {"VAR": {"id": vi, "name": vn, "type": ""}}}}}}
+                                   "fields": {"VAR": {"id": vi}}}}}}
                 v = convert_expr(node.args[0])
                 if v: block["inputs"]["value"] = {"block": v}
                 return block
@@ -334,7 +337,7 @@ def convert_call_stmt(node):
             return block
     if func_name and func_name in tracker.func_defs:
         block = {"type": "procedures_callnoreturn", "id": _uid(),
-                 "extraState": {"name": func_name}, "inputs": {}}
+                 "extraState": {"name": func_name, "params": tracker.func_defs[func_name]["args"]}, "inputs": {}}
         for i, a in enumerate(node.args):
             ab = convert_expr(a)
             if ab: block["inputs"]["ARG" + str(i)] = {"block": ab}
@@ -429,7 +432,7 @@ def convert_assign(node):
                 return {"type": "read_adc", "id": _uid(),
                         "fields": {"adc_variable": {"id": ai, "name": an, "type": "ADC"}},
                         "inputs": {"adc_value": {"block": {"type": "variables_get", "id": _uid(),
-                                   "fields": {"VAR": {"id": vi, "name": vn, "type": ""}}}}}}
+                                   "fields": {"VAR": {"id": vi}}}}}}
             if attr == "read_uv" and isinstance(value.func.value, ast.Name):
                 an = value.func.value.id
                 tracker.adc_vars.add(an)
@@ -440,7 +443,7 @@ def convert_assign(node):
                                    "Var": {"id": vi, "name": vn, "type": ""}}}
     vi = tracker.get_var_id(vn)
     block = {"type": "variables_set", "id": _uid(),
-             "fields": {"VAR": {"id": vi, "name": vn, "type": ""}}, "inputs": {}}
+             "fields": {"VAR": {"id": vi}}, "inputs": {}}
     v = convert_expr(value)
     if v: block["inputs"]["VALUE"] = {"block": v}
     return block
@@ -476,7 +479,7 @@ def convert_for(node):
     block = {"type": "for_block", "id": _uid(), "inputs": {}, "fields": {}}
     if isinstance(node.target, ast.Name):
         vi = tracker.get_var_id(node.target.id)
-        block["fields"]["variable"] = {"id": vi, "name": node.target.id, "type": ""}
+        block["fields"]["variable"] = {"id": vi}
     it = convert_expr(node.iter)
     if it: block["inputs"]["value"] = {"block": it}
     b = _chain(node.body)
@@ -504,6 +507,10 @@ def convert_funcdef(node):
     for a in args: tracker.get_var_id(a)
     bt = "procedures_defreturn" if has_ret else "procedures_defnoreturn"
     block = {"type": bt, "id": _uid(), "fields": {"NAME": fn}, "inputs": {}}
+    params = [{"name": a, "id": tracker.get_var_id(a)} for a in args]
+    if params:
+        block["extraState"] = {"params": params}
+    block["icons"] = {"comment": {"text": "Describe this function...", "pinned": False, "height": 80, "width": 160}}
     body_stmts = [s for s in node.body if not isinstance(s, ast.Return)]
     b = _chain(body_stmts)
     if b: block["inputs"]["STACK"] = {"block": b}

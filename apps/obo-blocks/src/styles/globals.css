@@ -977,6 +977,13 @@ body {
   word-break: break-word;
 }
 
+.chat-bubble p {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  tab-size: 4;
+}
+
 .chat-message-user .chat-bubble {
   background-color: var(--navbar-bg);
   color: #ffffff;
