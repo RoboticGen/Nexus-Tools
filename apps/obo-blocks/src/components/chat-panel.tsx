@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import type { ConversationMessage } from "@/agent/types";
 
 interface ChatMessage {
@@ -33,6 +34,9 @@ export function ChatPanel({ onImportJson, onConvertPython }: ChatPanelProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: -1, y: -1 });
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [size, setSize] = useState({ width: 350, height: 460 });
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
   const chatRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -87,6 +91,47 @@ export function ChatPanel({ onImportJson, onConvertPython }: ChatPanelProps) {
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging, dragOffset]);
+
+  // ── Resize handlers ────────────────────────────────────────────────────────
+  const MIN_W = 280;
+  const MIN_H = 300;
+  const MAX_W = 700;
+  const MAX_H = 800;
+
+  const handleResizeMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsResizing(true);
+      resizeStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        width: size.width,
+        height: size.height,
+      };
+    },
+    [size]
+  );
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const { x, y, width, height } = resizeStartRef.current;
+      const newW = Math.max(MIN_W, Math.min(MAX_W, width + (e.clientX - x)));
+      const newH = Math.max(MIN_H, Math.min(MAX_H, height + (e.clientY - y)));
+      setSize({ width: newW, height: newH });
+    };
+
+    const handleMouseUp = () => setIsResizing(false);
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
 
   // Touch drag handlers
   const handleTouchStart = useCallback(
@@ -426,6 +471,8 @@ export function ChatPanel({ onImportJson, onConvertPython }: ChatPanelProps) {
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
         cursor: isDragging ? "grabbing" : "default",
       }}
     >
@@ -458,7 +505,13 @@ export function ChatPanel({ onImportJson, onConvertPython }: ChatPanelProps) {
             className={`chat-message ${msg.sender === "user" ? "chat-message-user" : "chat-message-bot"}`}
           >
             <div className="chat-bubble">
-              <p style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
+              {msg.sender === "bot" ? (
+                <div className="chat-markdown">
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                </div>
+              ) : (
+                <p style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
+              )}
               <span className="chat-time">
                 {msg.timestamp.toLocaleTimeString([], {
                   hour: "2-digit",
@@ -557,6 +610,12 @@ export function ChatPanel({ onImportJson, onConvertPython }: ChatPanelProps) {
           )}
         </button>
       </div>
+
+      {/* Resize handle (bottom-right corner) */}
+      <div
+        className="chat-resize-handle"
+        onMouseDown={handleResizeMouseDown}
+      />
     </div>
   );
 }
