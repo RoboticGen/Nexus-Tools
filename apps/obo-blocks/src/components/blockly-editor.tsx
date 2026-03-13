@@ -1,35 +1,32 @@
 "use client";
 
-import * as Blockly from "blockly";
-import "blockly/blocks";
-
-import { useEffect, useRef, useCallback } from "react";
-
-import { blocks } from "@/blockly/blocks";
-import { OboCategory } from "@/blockly/categories";
-import { forBlock } from "@/blockly/generator";
 import {
+  blocks,
+  theme,
+  toolbox,
+  OboCategory,
+  forBlock,
   save,
   exportJson,
   importJson,
   getActiveWorkspace,
-} from "@/blockly/serialization";
-import { theme } from "@/blockly/themes";
-import { toolbox } from "@/blockly/toolbox";
-import { useEditorHandlers } from "@/hooks/use-editor-handlers";
+} from "@nexus-tools/blockly-python-generator";
 import {
   createPinButtonCallback,
   createADCButtonCallback,
   createPWMButtonCallback,
   createI2CButtonCallback,
-} from "@/micropython/callback";
-import {
   pinCategoryFlyout,
   adcCategoryFlyout,
   pwmCategoryFlyout,
   i2cCategoryFlyout,
-} from "@/micropython/flyouts";
-import { pythonGenerator } from "@/micropython/setup";
+  pythonGenerator,
+} from "@nexus-tools/micropython-esp32";
+import * as Blockly from "blockly";
+import "blockly/blocks";
+import { useEffect, useRef, useCallback } from "react";
+
+import { useEditorHandlers } from "@/hooks/use-editor-handlers";
 
 interface BlocklyEditorProps {
   onCodeChange: (code: string) => void;

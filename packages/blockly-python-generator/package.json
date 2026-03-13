@@ -1,0 +1,26 @@
+{
+  "name": "@nexus-tools/blockly-python-generator",
+  "version": "1.0.0",
+  "description": "Blockly-based Python code generator with custom blocks and themes",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "require": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nexus-tools/types": "workspace:*",
+    "@nexus-tools/utils": "workspace:*",
+    "blockly": "^12.3.1"
+  },
+  "devDependencies": {
+    "@nexus-tools/typescript-config": "workspace:*",
+    "typescript": "^5.3.0"
+  }
+}

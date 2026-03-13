@@ -1,76 +1,43 @@
 /**
- * Pyodide Loader
- * Initialize and manage Python execution environment
+ * Pyodide Loader for obo-blocks
+ * Uses @nexus-tools/pyodide-executor package
  */
 
-let worker: Worker | null = null;
+import { createTerminalLoader } from '@nexus-tools/pyodide-executor';
 
-function getTerminalElement(): HTMLTextAreaElement | null {
-    if (typeof window !== 'undefined') {
-        return document.getElementById('terminal-output') as HTMLTextAreaElement;
-    }
-    return null;
-}
+let loaderInstance: ReturnType<typeof createTerminalLoader> | null = null;
 
-function appendToTerminal(text: string) {
-    const terminal = getTerminalElement();
-    if (terminal) {
-        terminal.value += text + '\n';
-        terminal.scrollTop = terminal.scrollHeight;
-    }
-}
-
-function startWorker() {
-    worker = new Worker(new URL('../../public/worker.js', import.meta.url), {
-        type: 'module'
-    })
-    
-    worker.onerror = function (event: ErrorEvent) {
-        console.error("Worker error:", event.message);
-        appendToTerminal("Error: " + event.message);
-    };
-
-    worker.onmessage = function (event: MessageEvent) {
-        console.log("Worker message received:", event.data);
-        const responce = event.data.responce
-        if (responce === 'result') {
-            console.log("Result:", event.data.result);
-            appendToTerminal(event.data.result || "");
-        } else if (responce === 'request') {
-            const input = prompt('Enter the input');
-            if (worker && input) {
-                worker.postMessage({ command: 'input', code: input });
-            }
-        }
-        else if (responce === 'error') {
-            console.log("Error:", event.data.error);
-            appendToTerminal("Error: " + (event.data.error || event.data));
-        }
-        else {
-            console.log("Unknown response:", event.data)
-        }
-    };
+function getLoader() {
+  if (!loaderInstance && typeof window !== 'undefined') {
+    loaderInstance = createTerminalLoader('terminal-output');
+    // Use string path for classic worker (importScripts requires classic worker)
+    loaderInstance.initializeWorker('/worker.js');
+  }
+  return loaderInstance;
 }
 
 export function stopWorker(): void {
-    if (confirm('Do you want to stop the code ?')) {
-        if (worker) {
-            worker.terminate();
-        }
-        const terminal = getTerminalElement();
-        if (terminal) {
-            terminal.value = 'Python 3.10 \n>>> ';
-        }
-        startWorker();
+  const loader = getLoader();
+  if (!loader) return;
+
+  if (confirm('Do you want to stop the code ?')) {
+    loader.stopAndRestart('/worker.js');
+    
+    const terminal = document.getElementById('terminal-output') as HTMLTextAreaElement;
+    if (terminal) {
+      terminal.value = 'Python 3.10 \n>>> ';
     }
+  }
 }
 
 export function getWorker(): Worker | null {
-    if (!worker && typeof window !== 'undefined') {
-        startWorker();
-    }
-    return worker;
+  const loader = getLoader();
+  return loader?.getWorker() || null;
 }
 
 export function getTerminal(): HTMLTextAreaElement | null {
-    return getTerminalElement();}
+  if (typeof window !== 'undefined') {
+    return document.getElementById('terminal-output') as HTMLTextAreaElement;
+  }
+  return null;
+}

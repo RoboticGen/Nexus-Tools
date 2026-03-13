@@ -35,9 +35,18 @@ importers:
 
   apps/obo-blocks:
     dependencies:
+      '@nexus-tools/blockly-python-generator':
+        specifier: workspace:*
+        version: link:../../packages/blockly-python-generator
+      '@nexus-tools/micropython-esp32':
+        specifier: workspace:*
+        version: link:../../packages/micropython-esp32
       '@nexus-tools/monaco-editor':
         specifier: workspace:*
         version: link:../../packages/monaco-editor
+      '@nexus-tools/pyodide-executor':
+        specifier: workspace:*
+        version: link:../../packages/pyodide-executor
       '@nexus-tools/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -96,6 +105,9 @@ importers:
       '@nexus-tools/monaco-editor':
         specifier: workspace:*
         version: link:../../packages/monaco-editor
+      '@nexus-tools/skulpt-executor':
+        specifier: workspace:*
+        version: link:../../packages/skulpt-executor
       '@nexus-tools/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -201,6 +213,25 @@ importers:
         specifier: ^5.3.0
         version: 5.9.3
 
+  packages/blockly-python-generator:
+    dependencies:
+      '@nexus-tools/types':
+        specifier: workspace:*
+        version: link:../types
+      '@nexus-tools/utils':
+        specifier: workspace:*
+        version: link:../utils
+      blockly:
+        specifier: ^12.3.1
+        version: 12.3.1
+    devDependencies:
+      '@nexus-tools/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+
   packages/eslint-config:
     dependencies:
       '@typescript-eslint/eslint-plugin':
@@ -232,6 +263,25 @@ importers:
         specifier: ^5.3.0
         version: 5.9.3
 
+  packages/micropython-esp32:
+    dependencies:
+      '@nexus-tools/blockly-python-generator':
+        specifier: workspace:*
+        version: link:../blockly-python-generator
+      '@nexus-tools/types':
+        specifier: workspace:*
+        version: link:../types
+      blockly:
+        specifier: ^12.3.1
+        version: 12.3.1
+    devDependencies:
+      '@nexus-tools/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+
   packages/monaco-editor:
     dependencies:
       '@monaco-editor/react':
@@ -259,6 +309,32 @@ importers:
       rimraf:
         specifier: ^5.0.5
         version: 5.0.10
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+
+  packages/pyodide-executor:
+    dependencies:
+      '@nexus-tools/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@nexus-tools/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+
+  packages/skulpt-executor:
+    dependencies:
+      '@nexus-tools/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@nexus-tools/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
