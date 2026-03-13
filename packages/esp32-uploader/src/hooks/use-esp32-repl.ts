@@ -56,13 +56,7 @@ export function useESP32REPL(serialPort: any) {
         throw new Error("REPL not connected");
       }
 
-      // Clear buffer, send command, wait for output
-      outputBufferRef.current = "";
-      await serialStreamManager.sendData(command + "\r\n");
-      await delay(500);
-
-      const raw = outputBufferRef.current;
-      outputBufferRef.current = "";
+      const raw = await serialStreamManager.executeREPLCommand(command, 5000);
 
       // Parse output and errors
       const lines = raw.split("\n");

@@ -10,18 +10,14 @@ import { useCallback, useEffect, useState, forwardRef, useImperativeHandle } fro
 import { useESP32FileManager } from "../hooks/use-esp32-file-manager";
 import { Button, Modal } from "antd";
 import {
-  FileTextOutlined,
   SyncOutlined,
   DownloadOutlined,
   DeleteOutlined,
   FolderOutlined,
   FileOutlined,
-  UploadOutlined,
   LinkOutlined,
   DisconnectOutlined,
   ExclamationCircleOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
 } from "@ant-design/icons";
 
 function normalizeName(name: string): string {
@@ -68,7 +64,6 @@ function DeviceFileManagerSidebarComponent({
   onError,
   onOpenFileInEditor,
   onExpandChange,
-  onUpload,
   onConnect,
   onDisconnect,
   defaultExpanded = true,

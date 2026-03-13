@@ -300,6 +300,47 @@ class SerialStreamManager {
     });
   }
 
+  // ── Interactive REPL Command Execution ──────────────────────────────────
+
+  /**
+   * Execute a command in normal REPL and wait until the next prompt appears.
+   *
+   * Keeping the full command lifecycle inside one queued operation prevents
+   * file-manager raw REPL operations from interleaving mid-command.
+   */
+  async executeREPLCommand(command: string, timeout = 4000): Promise<string> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    return this.enqueue<string>(`repl: ${command.substring(0, 40)}`, async () => {
+      const prevMode = this._mode;
+      this._mode = "repl";
+
+      let buffer = "";
+      const onData = (data: string) => {
+        buffer += data;
+      };
+      const unsub = this.addListener(onData);
+
+      try {
+        // Interrupt a potentially running statement before issuing a new one.
+        await this.write(REPL_CONTROL.CTRL_C);
+        await delay(50);
+
+        // Ignore cleanup noise and capture only this command's response.
+        buffer = "";
+        await this.write(command + "\r\n");
+
+        await waitFor(() => hasReplPrompt(buffer), timeout);
+        return buffer;
+      } finally {
+        unsub();
+        this._mode = prevMode;
+      }
+    });
+  }
+
   // ── Cleanup ──────────────────────────────────────────────────────────────
 
   private releaseLocks(): void {
@@ -376,6 +417,11 @@ function parseRawREPLResponse(buffer: string): RawREPLResult {
       : "";
 
   return { output, error };
+}
+
+function hasReplPrompt(buffer: string): boolean {
+  const normalized = buffer.replace(/\r/g, "");
+  return normalized.includes("\n>>> ") || normalized.startsWith(">>> ");
 }
 
 // ─── Singleton ───────────────────────────────────────────────────────────────
