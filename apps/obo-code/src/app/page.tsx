@@ -1,32 +1,51 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
-import { CodeEditor } from "@/components/code-editor";
+import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
+import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
+
+import { DeviceFileManagerSidebar, type DeviceFileManagerSidebarHandle } from "@nexus-tools/esp32-uploader";
+import { ESP32OutputPanel } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
 import { Notification } from "@/components/notification";
-import { OutputTerminal } from "@/components/output-terminal";
 import { TurtleWorkspace } from "@/components/turtle-workspace";
 import { usePythonRunner } from "@/hooks/use-python-runner";
+import "@/styles/sidebar.css";
 
 const DEFAULT_CODE = `import turtle
+
 colors = ['red', 'purple', 'blue', 'green', 'orange', 'yellow']
 t = turtle.Turtle()
+
 for x in range(360):
-    t.pencolor(colors[x%6])
-    t.width(x//100 + 1)
-    t.forward(x)
-    t.left(59)
+  t.pencolor(colors[x % 6])
+  t.width(x // 100 + 1)
+  t.forward(x)
+  t.left(59)
 `;
 
 export default function Home() {
   const [code, setCode] = useState(DEFAULT_CODE);
   const [notification, setNotification] = useState<string | null>(null);
   const [background, setBackground] = useState<string>("No-Background");
+  const [isDeviceConnected, setIsDeviceConnected] = useState(false);
+  const [serialPort, setSerialPort] = useState<SerialPort | null>(null);
+  const [activeEditorFileName, setActiveEditorFileName] = useState<string | null>(null);
+  const [fileManagerExpanded, setFileManagerExpanded] = useState(true);
+  const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
+  const outputPanelRef = useRef<{ connectToDevice?: () => void; resetConnection?: () => void }>(null);
+  const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
+  const fileManagerRef = useRef<DeviceFileManagerSidebarHandle>(null);
 
   // Set the document title explicitly to ensure it shows correct app name
   useEffect(() => {
     document.title = "Obo Code";
+    // Mark app as ready to show buttons
+    document.documentElement.classList.add('app-ready');
+    return () => {
+      document.documentElement.classList.remove('app-ready');
+    };
   }, []);
 
   const showNotification = useCallback((message: string) => {
@@ -34,12 +53,35 @@ export default function Home() {
     setTimeout(() => setNotification(null), 1500);
   }, []);
 
-  const { runCode, stopCode, isRunning, output, clearOutput } = usePythonRunner({
+  // Callback to open file in code editor (from file manager)
+  const handleOpenFileInEditor = useCallback((filename: string, content: string) => {
+    codeEditorRef.current?.openFileInTab(filename, content);
+    setActiveEditorFileName(filename);
+    showNotification(`Opened ${filename}`);
+  }, [showNotification]);
+
+  const handleUpload = useCallback(() => {
+    showNotification("File uploaded successfully!");
+  }, [showNotification]);
+
+  const handleConnect = useCallback(() => {
+    outputPanelRef.current?.connectToDevice?.();
+  }, []);
+
+  const handleDisconnect = useCallback(() => {
+    outputPanelRef.current?.resetConnection?.();
+  }, []);
+
+  const { runCode, stopCode, isRunning, isLoading, output, clearOutput } = usePythonRunner({
     onError: (error) => showNotification(error),
     onSuccess: () => {},
   });
 
   const handleRun = useCallback(() => {
+    if (isLoading) {
+      showNotification("Python engine is loading, please wait...");
+      return;
+    }
     if (!code.trim()) {
       showNotification("No code to run");
       return;
@@ -49,7 +91,7 @@ export default function Home() {
       return;
     }
     runCode(code);
-  }, [code, isRunning, runCode, showNotification]);
+  }, [code, isLoading, isRunning, runCode, showNotification]);
 
   const handleStop = useCallback(() => {
     if (!isRunning) {
@@ -88,21 +130,43 @@ export default function Home() {
     showNotification("Code exported as script.py");
   }, [code, showNotification]);
 
+  const handleSaveToDevice = useCallback(
+    async (filename: string, content: string) => {
+      try {
+        if (saveFileToDeviceRef.current) {
+          await saveFileToDeviceRef.current(filename, content);
+          showNotification(`Saved ${filename} to device`);
+          // Refresh file manager after save
+          fileManagerRef.current?.refreshFiles();
+        } else {
+          showNotification("Device not connected");
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : "Failed to save file";
+        showNotification(errorMsg);
+      }
+    },
+    [showNotification]
+  );
+
   const handleClear = useCallback(() => {
     if (isRunning) {
       showNotification("Stop the code execution first");
       return;
     }
     clearOutput();
-    // Clear canvas
-    const canvasElements = document.getElementsByTagName("canvas");
-    for (let i = 0; i < canvasElements.length; i++) {
-      const context = canvasElements[i].getContext("2d");
-      if (context) {
-        context.save();
-        context.setTransform(1, 0, 0, 1, 0, 0);
-        context.clearRect(0, 0, canvasElements[i].width, canvasElements[i].height);
-        context.restore();
+    // Clear turtle workspace (Brython turtle uses SVG)
+    const turtleCanvas = document.getElementById("turtle-canvas");
+    if (turtleCanvas) {
+      // Remove SVG elements created by Brython turtle
+      const svgElements = turtleCanvas.getElementsByTagName("svg");
+      while (svgElements.length > 0) {
+        svgElements[0].remove();
+      }
+      // Also clear any canvas elements just in case
+      const canvasElements = turtleCanvas.getElementsByTagName("canvas");
+      while (canvasElements.length > 0) {
+        canvasElements[0].remove();
       }
     }
     showNotification("Terminal cleared");
@@ -113,20 +177,40 @@ export default function Home() {
       <Notification message={notification} />
       <Navbar />
 
-      <div className="main-content">
+      <div
+        className={`main-content main-content-with-file-manager${!fileManagerExpanded ? " file-manager-collapsed" : ""}`}
+      >
         <div className="left-panel">
-          <CodeEditor
+          <SharedCodePanel
             code={code}
-            onChange={setCode}
+            isEditing={true}
+            onCodeChange={setCode}
+            onActiveTabChange={setActiveEditorFileName}
             onRun={handleRun}
             onCopy={handleCopy}
             onExport={handleExport}
+            onSaveToDevice={handleSaveToDevice}
+            isConnected={serialPort !== null}
+            codeEditorRef={codeEditorRef}
+            showEditButton={false}
+            className="code-panel"
           />
-          <OutputTerminal
+          <ESP32OutputPanel
+            ref={outputPanelRef}
             output={output}
             onClear={handleClear}
             onStop={handleStop}
             isRunning={isRunning}
+            code={code}
+            onStatusUpdate={showNotification}
+            onError={showNotification}
+            onOpenFileInEditor={handleOpenFileInEditor}
+            onSaveFileToDevice={(saveFunc) => {
+              saveFileToDeviceRef.current = saveFunc;
+            }}
+            onConnectionStatusChange={setIsDeviceConnected}
+            onSerialPortChange={setSerialPort}
+            className="output-panel"
           />
         </div>
 
@@ -137,6 +221,18 @@ export default function Home() {
           />
         </div>
       </div>
+
+      <DeviceFileManagerSidebar
+        ref={fileManagerRef}
+        serialPort={serialPort}
+        isConnected={serialPort !== null}
+        activeFileName={activeEditorFileName}
+        onError={showNotification}
+        onOpenFileInEditor={handleOpenFileInEditor}
+        onExpandChange={setFileManagerExpanded}
+        onConnect={handleConnect}
+        onDisconnect={handleDisconnect}
+      />
     </div>
   );
 }
