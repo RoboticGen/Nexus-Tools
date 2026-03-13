@@ -1,33 +1,32 @@
 "use client";
 
-import * as Blockly from "blockly";
-import "blockly/blocks";
-
-import { useEffect, useRef, useCallback } from "react";
-
-import { blocks } from "@/blockly/blocks";
-import { OboCategory } from "@/blockly/categories";
-import { forBlock } from "@/blockly/generator";
 import {
+  blocks,
+  theme,
+  toolbox,
+  OboCategory,
+  forBlock,
   save,
   exportJson,
   importJson,
-} from "@/blockly/serialization";
-import { theme } from "@/blockly/themes";
-import { toolbox } from "@/blockly/toolbox";
+  getActiveWorkspace,
+} from "@nexus-tools/blockly-python-generator";
 import {
   createPinButtonCallback,
   createADCButtonCallback,
   createPWMButtonCallback,
   createI2CButtonCallback,
-} from "@/micropython/callback";
-import {
   pinCategoryFlyout,
   adcCategoryFlyout,
   pwmCategoryFlyout,
   i2cCategoryFlyout,
-} from "@/micropython/flyouts";
-import { pythonGenerator } from "@/micropython/setup";
+  pythonGenerator,
+} from "@nexus-tools/micropython-esp32";
+import * as Blockly from "blockly";
+import "blockly/blocks";
+import { useEffect, useRef, useCallback } from "react";
+
+import { useEditorHandlers } from "@/hooks/use-editor-handlers";
 
 interface BlocklyEditorProps {
   onCodeChange: (code: string) => void;
@@ -41,10 +40,9 @@ export function BlocklyEditor({
 }: BlocklyEditorProps) {
   const blocklyDivRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.Workspace | null>(null);
+  const { downloadJsonFile } = useEditorHandlers();
 
-  const initBlockly = useCallback(() => {
-    if (!blocklyDivRef.current) return;
-
+  const initBlockly = useCallback((div: HTMLDivElement) => {
     const isMobile = window.innerWidth <= 768;
     
     const options = {
@@ -66,8 +64,8 @@ export function BlocklyEditor({
       },
       move: {
         scrollbars: {
-          horizontal: isMobile,
-          vertical: false,
+          horizontal: true,
+          vertical: true,
         },
         drag: true,
         wheel: true,
@@ -75,7 +73,13 @@ export function BlocklyEditor({
       renderer: "zelos",
     };
 
-    const workspace = Blockly.inject(blocklyDivRef.current, options);
+    const workspace = Blockly.inject(div, options);
+
+    // The div already has real dimensions (guaranteed by the ResizeObserver
+    // caller), so we can measure synchronously right after inject.
+    Blockly.svgResize(workspace);
+    (workspace as any).resize();
+    (workspace as any).updateInverseScreenCTM();
 
     // Register flyout callbacks
     workspace.registerToolboxCategoryCallback("PIN", pinCategoryFlyout);
@@ -115,7 +119,7 @@ export function BlocklyEditor({
       save(workspace);
       
      
-      pythonGenerator.definitions_ = {};
+      (pythonGenerator as any).definitions_ = {};
       
       const code = pythonGenerator.workspaceToCode(workspace);
       onCodeChange(code);
@@ -137,7 +141,6 @@ export function BlocklyEditor({
       Object.assign(pythonGenerator.forBlock, merged);
 
       // Override the finish method to properly handle function definitions
-      const originalFinish = pythonGenerator.finish.bind(pythonGenerator);
       pythonGenerator.finish = function(code: string) {
         // Get all definitions (functions)
         const definitions = Object.values(this.definitions_ || {}).join('\n');
@@ -156,10 +159,30 @@ export function BlocklyEditor({
         true
       );
 
-      initBlockly();
+      // Use a ResizeObserver to delay inject until the container div has
+      // real non-zero pixel dimensions.  A plain rAF or useEffect isn't
+      // enough here because Next.js dynamic imports + CSS flex/grid
+      // percentage heights can take multiple layout passes to resolve.
+      // The observer fires as soon as the element gets its first real size,
+      // at which point Blockly can measure the correct viewport immediately.
+      const div = blocklyDivRef.current;
+      if (!div) return;
+
+      let initialized = false;
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0 && !initialized) {
+          initialized = true;
+          observer.disconnect();
+          initBlockly(div);
+        }
+      });
+      observer.observe(div);
 
       return () => {
-        // Workspace persists for component lifecycle
+        observer.disconnect();
       };
     } catch (error) {
       console.error("Error initializing Blockly:", error);
@@ -193,23 +216,23 @@ export function BlocklyEditor({
       reader.onload = (e) => {
         try {
           const json = JSON.parse(e.target?.result as string);
-          if (workspaceRef.current) {
-            const imported = importJson(workspaceRef.current, json);
-            if (imported) {
-              showNotification("Workspace imported");
-              // Clear definitions before generating code
-              pythonGenerator.definitions_ = {};
-              const code = pythonGenerator.workspaceToCode(
-                workspaceRef.current
-              );
-              onCodeChange(code);
-            } else {
-              showNotification("Error importing JSON");
-            }
+          const imported = importJson(json);
+          if (imported) {
+            showNotification("Workspace imported successfully");
+            const workspace = getActiveWorkspace();
+            
+            // Initialize generator before generating code
+            pythonGenerator.init(workspace);
+            (pythonGenerator as any).definitions_ = {};
+            
+            const code = pythonGenerator.workspaceToCode(workspace);
+            onCodeChange(code);
+          } else {
+            showNotification("Error importing workspace");
           }
         } catch (err) {
           console.error("Error importing JSON:", err);
-          showNotification("Error importing JSON");
+          showNotification("Error importing workspace");
         }
       };
       reader.readAsText(file);
@@ -218,12 +241,14 @@ export function BlocklyEditor({
   );
 
   const handleExportJson = useCallback(() => {
-    if (workspaceRef.current) {
-      const json = exportJson(workspaceRef.current);
-      downloadJsonFile(JSON.stringify(json), "workspace.json");
-      showNotification("Workspace exported as workspace.json");
+    const json = exportJson();
+    if (!json || Object.keys(json).length === 0) {
+      showNotification("No blocks to export");
+      return;
     }
-  }, [showNotification]);
+    downloadJsonFile(JSON.stringify(json, null, 2), "workspace.json");
+    showNotification("Workspace exported as workspace.json");
+  }, [showNotification, downloadJsonFile]);
 
   const handleImportClick = useCallback(() => {
     const inputElement = document.createElement("input");
@@ -260,18 +285,4 @@ export function BlocklyEditor({
       <div className="editor" ref={blocklyDivRef} />
     </div>
   );
-}
-
-// Utility function to download JSON
-function downloadJsonFile(content: string, filename: string) {
-  const element = document.createElement("a");
-  element.setAttribute(
-    "href",
-    "data:application/json;charset=utf-8," + encodeURIComponent(content)
-  );
-  element.setAttribute("download", filename);
-  element.style.display = "none";
-  document.body.appendChild(element);
-  element.click();
-  document.body.removeChild(element);
 }

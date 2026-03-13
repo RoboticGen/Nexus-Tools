@@ -13,6 +13,9 @@
   },
   "dependencies": {
     "@nexus-tools/esp32-uploader": "workspace:*",
+    "@nexus-tools/blockly-python-generator": "workspace:*",
+    "@nexus-tools/micropython-esp32": "workspace:*",
+    "@nexus-tools/pyodide-executor": "workspace:*",
     "@nexus-tools/monaco-editor": "workspace:*",
     "@nexus-tools/types": "workspace:*",
     "@nexus-tools/ui": "workspace:*",

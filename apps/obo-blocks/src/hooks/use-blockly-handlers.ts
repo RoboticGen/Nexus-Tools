@@ -39,6 +39,7 @@ export function useBlocklyHandlers(
     }
     if (typeof window !== "undefined") {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const workerModule = require("@/pyodide/loader");
         const workerInstance = workerModule.getWorker();
         if (workerInstance) {
@@ -67,6 +68,7 @@ export function useBlocklyHandlers(
   const handleStopCode = useCallback(() => {
     if (typeof window !== "undefined") {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const workerModule = require("@/pyodide/loader");
         if (
           workerModule.stopWorker &&

@@ -14,6 +14,7 @@
   "dependencies": {
     "@nexus-tools/esp32-uploader": "workspace:*",
     "@nexus-tools/monaco-editor": "workspace:*",
+    "@nexus-tools/skulpt-executor": "workspace:*",
     "@nexus-tools/types": "workspace:*",
     "@nexus-tools/ui": "workspace:*",
     "@nexus-tools/utils": "workspace:*",

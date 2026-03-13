@@ -1,11 +1,12 @@
 /**
  * Pyodide WebWorker for Python Execution
+ * This file should be copied to the app's public directory as worker.js
  */
 
 // Worker state
 let isready = false;
-let pyodide = null;
-let buffer = [];
+let pyodide: any = null;
+let buffer: number[] = [];
 
 // Import Pyodide in worker context
 // @ts-ignore
@@ -14,8 +15,8 @@ importScripts('https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js');
 async function initPyodide() {
   // @ts-ignore
   pyodide = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/' });
-  pyodide.setStdout({ batched: (x) => stdoutHandler(x) });
-  pyodide.setStderr({ batched: (x) => stderrHandler(x) });
+  pyodide.setStdout({ batched: (x: string) => stdoutHandler(x) });
+  pyodide.setStderr({ batched: (x: string) => stderrHandler(x) });
   pyodide.setStdin({ error: true });
 }
 
@@ -24,7 +25,7 @@ initPyodide().then(() => {
   self.postMessage({ responce: "result", result: 'Python 3.10' });
 });
 
-function getSyntaxError(message) {
+function getSyntaxError(message: string): string {
   const syntaxErrorIndex = message.indexOf('Error');
   if (syntaxErrorIndex !== -1) {
     return message.substring(syntaxErrorIndex);
@@ -33,23 +34,23 @@ function getSyntaxError(message) {
   }
 }
 
-function stdoutHandler(x) {
+function stdoutHandler(x: string) {
   self.postMessage({ responce: "result", result: x });
 }
 
-function stderrHandler(x) {
+function stderrHandler(x: string) {
   self.postMessage({ responce: "error", error: x });
   console.log(x);
 }
 
-function codeRunner(code) {
+function codeRunner(code: string) {
   if (!isready) {
     initPyodide();
     isready = true;
   }
   try {
     pyodide.runPython(code);
-  } catch (err) {
+  } catch (err: any) {
     console.log(err.message);
     const error = getSyntaxError(err.message);
     console.log(error);
@@ -57,7 +58,7 @@ function codeRunner(code) {
   }
 }
 
-self.onmessage = async function (event) {
+self.onmessage = async function (event: MessageEvent) {
   if (!isready) {
     await initPyodide();
     isready = true;
@@ -68,7 +69,7 @@ self.onmessage = async function (event) {
     try {
       codeRunner(code);
       return;
-    } catch (err) {
+    } catch (err: any) {
       self.postMessage({ responce: "error", error: err.message });
     }
   } else if (command === 'input') {
@@ -82,5 +83,5 @@ self.onmessage = async function (event) {
 };
 
 self.onerror = function (event) {
-  console.error(event.message);
+  console.error(event.message || event);
 };

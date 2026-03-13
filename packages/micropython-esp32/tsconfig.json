@@ -1,0 +1,10 @@
+{
+  "extends": "@nexus-tools/typescript-config/base.json",
+  "compilerOptions": {
+    "lib": ["ES2020", "DOM"],
+    "outDir": "./dist",
+    "declaration": true
+  },
+  "include": ["src"],
+  "exclude": ["dist"]
+}

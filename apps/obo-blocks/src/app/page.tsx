@@ -56,6 +56,7 @@ export default function Home() {
     setIsClient(true);
     if (typeof window !== "undefined") {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const workerModule = require("@/pyodide/loader");
         workerModule.getWorker();
       } catch (err) {
