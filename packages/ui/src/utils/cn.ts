@@ -1,9 +1,7 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-
 /**
- * Combines class names with tailwind-merge for better Tailwind CSS support
+ * Utility function to concatenate class names
+ * Provides backward compatibility for className merging
  */
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+export function cn(...classes: (string | undefined | false | null)[]) {
+  return classes.filter(Boolean).join(" ");
 }

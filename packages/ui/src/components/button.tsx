@@ -1,51 +1,67 @@
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { Button as AntButton, type ButtonProps as AntButtonProps } from "antd";
 
-import { cn } from "../utils/cn";
-
-const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  }
-);
-
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  asChild?: boolean;
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  size?: "default" | "sm" | "lg" | "icon";
+  loading?: boolean;
+  icon?: React.ReactNode;
+  shape?: "circle" | "round" | "default";
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
+  ({ variant = "default", size = "default", ...props }, ref) => {
+    // Map variant to Ant Design props
+    const getButtonType = (v: string): AntButtonProps["type"] => {
+      switch (v) {
+        case "default":
+          return "primary";
+        case "destructive":
+          return "default";
+        case "outline":
+          return "dashed";
+        case "secondary":
+          return "default";
+        case "ghost":
+          return "text";
+        case "link":
+          return "link";
+        default:
+          return "primary";
+      }
+    };
+
+    const getDanger = (v: string): boolean => v === "destructive";
+
+    // Map size to Ant Design size
+    const getSizeMap = (s: string): AntButtonProps["size"] => {
+      switch (s) {
+        case "default":
+          return "middle";
+        case "sm":
+          return "small";
+        case "lg":
+          return "large";
+        case "icon":
+          return "middle";
+        default:
+          return "middle";
+      }
+    };
+
+    const { className, ...restProps } = props;
+
     return (
-      <button
-        className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
-        {...props}
+      <AntButton
+        ref={ref as any}
+        type={getButtonType(variant)}
+        danger={getDanger(variant)}
+        size={getSizeMap(size)}
+        {...(restProps as any)}
       />
     );
   }
 );
 Button.displayName = "Button";
 
-export { Button, buttonVariants };
+export { Button };
