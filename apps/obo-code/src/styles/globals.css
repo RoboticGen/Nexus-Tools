@@ -875,34 +875,36 @@ textarea.iPadShowKeyboard {
   }
   
   .app-container {
-    height: auto;
+    height: 100vh;
     min-height: 100vh;
-    overflow: visible;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
   }
   
   body {
-    height: auto;
-    overflow: auto;
+    height: 100vh;
+    overflow: hidden;
   }
   
   .navbar {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 1001;
     width: 100%;
   }
   
   .main-content {
-    touch-action: pan-x pan-y;
-    scroll-behavior: smooth;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: auto;
+    margin-top: 55px;
+    touch-action: pan-y;
+    overscroll-behavior-y: auto;
     position: relative;
-    padding: 0.25rem;
-    gap: 0.25rem;
-    width: 100%;
-    max-width: 100vw;
+    height: calc(100vh - 55px);
+    overflow: auto;
   }
   
   .code-editor-wrapper {
@@ -1059,6 +1061,65 @@ textarea.iPadShowKeyboard {
     max-width: 100vw;
     height: calc(100vh - 60px);
     overflow: hidden;
+    display: grid;
+  }
+
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    overflow: hidden;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+  }
+
+  .right-panel {
+    order: -1;
+    height: auto;
+    max-height: 35vh;
+    overflow: auto;
+    width: 100%;
+    min-height: 200px;
+  }
+
+  .code-panel {
+    flex: 1;
+    min-height: 250px;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .output-panel {
+    flex: 1;
+    min-height: 200px;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .turtle-canvas {
+    min-height: 200px;
+    max-height: 35vh;
+    width: 100%;
+  }
+
+  .action-btn {
+    padding: 0.35rem 0.7rem;
+    min-width: 3.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media screen and (min-width: 1025px) {
+  .main-content {
+    grid-template-columns: 1fr 350px;
+    grid-template-rows: 1fr;
+    padding: 0.4rem;
+    gap: 0.4rem;
+    width: 100%;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+    display: grid;
   }
 
   .left-panel {
@@ -1072,34 +1133,29 @@ textarea.iPadShowKeyboard {
 
   .code-panel {
     flex: 1;
-    min-height: 250px;
-    max-height: none;
+    min-height: 200px;
     overflow: hidden;
+    width: 100%;
   }
 
   .output-panel {
     flex: 1;
     min-height: 200px;
-    max-height: none;
     overflow: hidden;
+    width: 100%;
   }
 
   .right-panel {
-    order: -1;
-    height: auto;
-    max-height: 35vh;
+    height: 100%;
+    width: 350px;
     overflow: auto;
+    min-width: 250px;
+    max-width: 500px;
   }
 
   .turtle-canvas {
-    min-height: 200px;
-    max-height: 35vh;
-  }
-
-  .action-btn {
-    padding: 0.35rem 0.7rem;
-    min-width: 3.5rem;
-    font-size: 0.8rem;
+    height: 100%;
+    width: 100%;
   }
 }
 

@@ -1,6 +1,24 @@
 /**
- * Web Serial Port Adapter
- * Provides the interface expected by FileSystemManager
+ * @deprecated DO NOT USE. This class is dead code and a potential landmine.
+ * 
+ * @internal
+ * 
+ * SerialStreamManager holds the exclusive reader/writer lock on the port from 
+ * initialize() onwards. Calling startTransaction() on the same port after 
+ * SerialStreamManager is initialized will throw "stream is locked".
+ * 
+ * All serial communication MUST use the serialStreamManager singleton instead:
+ * 
+ * @example
+ * ```ts
+ * import { serialStreamManager } from "@nexus-tools/esp32-uploader";
+ * 
+ * await serialStreamManager.initialize(port);
+ * const result = await serialStreamManager.executeRawREPL(code, timeout);
+ * ```
+ * 
+ * This class is retained for reference only. It was designed for an older 
+ * FileSystemManager interface that no longer exists in the codebase.
  */
 
 export class WebSerialPortAdapter {

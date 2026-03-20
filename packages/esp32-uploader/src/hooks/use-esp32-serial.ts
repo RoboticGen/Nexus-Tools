@@ -21,16 +21,15 @@ type SerialPortType = any;
 export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
   /**
    * Check if Web Serial API is supported in this browser
+   *
+   * Note: window.isSecureContext already returns true for localhost,
+   * 127.0.0.1, and HTTPS in all modern browsers. No need for extra checks.
    */
   const checkSerialSupport = useCallback((): boolean => {
     if (typeof window === "undefined") return false;
 
     const hasSerial = "serial" in navigator;
-    const isSecureContext =
-      window.isSecureContext ||
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1" ||
-      window.location.protocol === "https:";
+    const isSecureContext = window.isSecureContext;
 
     return hasSerial && isSecureContext;
   }, []);
@@ -117,10 +116,15 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
   }, []);
 
   /**
-   * Close serial port safely. Also tears down the stream manager.
+   * Close serial port safely. Only tears down the stream manager if the
+   * port being closed is the one managed by the singleton.
    */
   const closePort = useCallback(async (port: SerialPortType | null): Promise<void> => {
-    await serialStreamManager.cleanup();
+    // Only cleanup if this is the actual managed port
+    const managedPort = serialStreamManager.getPort();
+    if (port === managedPort) {
+      await serialStreamManager.cleanup();
+    }
 
     if (!port) return;
     try {

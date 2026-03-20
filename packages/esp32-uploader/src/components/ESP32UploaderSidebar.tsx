@@ -10,6 +10,7 @@ import { Tabs, Button, Space, Progress } from "antd";
 import { LinkOutlined, DisconnectOutlined, UploadOutlined } from "@ant-design/icons";
 
 import { useESP32Uploader } from "../hooks/use-esp32-uploader";
+import { useMobile } from "../hooks/use-mobile";
 import { translateErrorMessage } from "../utils/error-messages";
 import { ESP32REPL } from "./ESP32REPL";
 import { ESP32FileManager } from "./ESP32FileManager";
@@ -22,6 +23,7 @@ interface ESP32UploaderSidebarProps {
 }
 
 export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32UploaderSidebarProps) {
+  const isMobile = useMobile();
   const [activeView, setActiveView] = useState<"uploader" | "repl" | "files">("uploader");
   const [replReady, setReplReady] = useState(false);
   const [autoDetecting, setAutoDetecting] = useState(false);
@@ -113,9 +115,9 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
 
       {espSupported && (
         <div className="esp32-sidebar-inner">
-          {/* Tab Navigation */}
+          {/* Tab Navigation - On mobile, only show Uploader tab */}
           <Tabs
-            activeKey={activeView}
+            activeKey={isMobile && activeView !== "uploader" ? "uploader" : activeView}
             onChange={(key) => setActiveView(key as "uploader" | "repl" | "files")}
             items={[
               {
@@ -227,11 +229,12 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
               </div>
                 ),
               },
-              {
-                key: "repl",
-                label: "REPL",
-                disabled: !canShowAdvancedFeatures,
-                children: (
+              ...(!isMobile ? [
+                {
+                  key: "repl",
+                  label: "REPL",
+                  disabled: !canShowAdvancedFeatures,
+                  children: (
                   <>
                     {!canShowAdvancedFeatures && (
                       <div className="esp32-feature-notice">
@@ -300,6 +303,7 @@ export function ESP32UploaderSidebar({ code, onStatusUpdate, onError }: ESP32Upl
                   </>
                 ),
               },
+            ] : []),
             ]}
           />
         </div>

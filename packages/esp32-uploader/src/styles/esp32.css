@@ -795,6 +795,21 @@
   color: #000;
   outline: none;
 }
+
+/* Mobile: Increase input height for touch */
+@media (max-width: 768px) {
+  .repl__input {
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+  }
+
+  .repl__field {
+    height: 40px;
+    font-size: 0.9rem;
+    padding: 0 12px;
+  }
+}
 .repl__field:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
@@ -1005,6 +1020,17 @@
   background: rgba(157, 157, 157, 0.5);
 }
 
+/* Mobile: Larger scrollbar for touch targets */
+@media (max-width: 768px) {
+  .file-list::-webkit-scrollbar {
+    width: 14px;
+  }
+
+  .file-list::-webkit-scrollbar-thumb {
+    background: rgba(157, 157, 157, 0.5);
+  }
+}
+
 .file-item {
   display: flex;
   align-items: center;
@@ -1019,6 +1045,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   position: relative;
   overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .file-item::before {
@@ -1038,6 +1065,11 @@
   border-color: #9d9d9d;
   box-shadow: 0 8px 24px rgba(157, 157, 157, 0.15);
   transform: translateY(-2px);
+}
+
+.file-item:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(157, 157, 157, 0.1);
 }
 
 .file-item:hover::before {
@@ -1318,6 +1350,7 @@
   flex-direction: column;
   border-right: 1px solid var(--panel-border);
   overflow: hidden;
+  min-width: 0;
 }
 
 /* File Viewer Panel - Side Panel */
@@ -1327,6 +1360,8 @@
   flex-direction: column;
   background: var(--panel-bg);
   overflow: scroll;
+  min-width: 0;
+  width: 100%;
 }
 
 .file-viewer-header {
@@ -1407,7 +1442,7 @@
   flex-direction: column;
   overflow: hidden;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
-  z-index: 50;
+  z-index: 500;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
 }
 
@@ -1701,6 +1736,17 @@
   background: rgba(59, 130, 246, 0.5);
 }
 
+/* Mobile touch scrollbar improvements */
+@media (hover: none) and (pointer: coarse) {
+  .device-fm__list::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  .device-fm__list::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.5);
+  }
+}
+
 .device-fm__item {
   display: flex;
   align-items: center;
@@ -1800,4 +1846,617 @@
 
 .device-fm__btn--delete {
   color: #ef476f !important;
+}
+
+/* =====================
+   ACCESSIBILITY
+   ===================== */
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Detect touch capability and adjust hover behavior */
+@media (hover: none) and (pointer: coarse) {
+  .file-item:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .file-item:active {
+    background: linear-gradient(135deg, #f0f0f0 0%, #e5e5e5 100%);
+    border-color: #9d9d9d;
+  }
+
+  button:hover {
+    transform: none;
+  }
+
+  button:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Show file manager on desktop screens 1025px and above */
+@media (min-width: 1025px) {
+  .device-fm {
+    display: flex !important;
+    visibility: visible !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 70px !important;
+    width: 300px !important;
+    min-width: auto !important;
+    height: calc(100vh - 70px) !important;
+    max-height: calc(100vh - 70px) !important;
+    z-index: 500 !important;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .device-fm--expanded {
+    width: 300px !important;
+  }
+
+  .device-fm--collapsed {
+    width: 52px !important;
+  }
+
+  /* Smooth transitions for header elements when expanding/collapsing */
+  .device-fm__header {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .device-fm__title-wrap {
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .device-fm__body {
+    transition: opacity 0.2s ease !important;
+  }
+}
+
+/* =====================
+   MOBILE RESPONSIVENESS
+   ===================== */
+
+/* Hide file manager completely below 1025px */
+@media (max-width: 1024px) {
+  .device-fm {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    position: static !important;
+  }
+
+  .device-fm--expanded,
+  .device-fm--collapsed {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+  }
+}
+
+/* Tablet (600px - 768px) - More room, show some details */
+@media (max-width: 768px) and (min-width: 601px) {
+  /* Ensure sidebar takes proper space and doesn't overflow */
+  .esp32-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+  }
+
+  .esp32-sidebar-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* If file manager is shown, it takes 50% and uploader takes 50% */
+  .file-manager-layout {
+    flex: 0 0 45%;
+    overflow: hidden;
+  }
+
+  .esp32-tools {
+    flex: 0 0 55%;
+    padding: 0.75rem;
+    gap: 0.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    font-size: 0.85rem;
+  }
+
+  .esp32-tools h4 {
+    font-size: 0.75rem;
+    margin: 0.375rem 0;
+  }
+
+  .esp32-tools button {
+    min-height: 40px;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .connection-section,
+  .upload-section,
+  .instructions-section {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .file-item {
+    padding: 0.625rem 0.875rem;
+  }
+
+  .file-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .repl__output {
+    font-size: 0.75rem;
+  }
+
+  .repl__field {
+    font-size: 0.8rem;
+    height: 36px;
+  }
+}
+
+/* Mobile - Hide tabs header and show only uploader content */
+@media (max-width: 768px) {
+  /* Hide REPL and Files tabs on tablet - only show Uploader */
+  .esp32-sidebar-inner .ant-tabs-nav {
+    display: none !important;
+  }
+
+  /* Full-height content on mobile */
+  .esp32-sidebar-inner .ant-tabs-content-holder {
+    border: none;
+    width: 100%;
+  }
+
+  .esp32-sidebar-inner .ant-tabs-tabpane {
+    height: 100%;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  /* Main uploader container - prevent overflow */
+  .esp32-tools {
+    flex: 1;
+    padding: 0.75rem;
+    gap: 0.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-width: 100%;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .esp32-tools h4 {
+    font-size: 0.8rem;
+    margin: 0.375rem 0;
+    font-weight: 600;
+  }
+
+  /* Touch-friendly buttons - scaled for mobile */
+  .esp32-tools button {
+    min-height: 40px;
+    font-size: 0.85rem;
+    padding: 0.625rem 0.875rem;
+    width: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .esp32-tools button:active {
+    background-color: rgba(0, 0, 0, 0.05);
+    transform: scale(0.98);
+  }
+
+  /* Sections compress on tablet */
+  .connection-section,
+  .upload-section,
+  .instructions-section {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+    width: 100%;
+  }
+
+  /* Connection status - stack vertically */
+  .connection-status {
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .connection-actions {
+    display: flex;
+    width: 100%;
+    gap: 0.375rem;
+    flex-direction: column;
+  }
+
+  .connection-actions button {
+    width: 100%;
+    min-height: 40px;
+    font-size: 0.85rem;
+  }
+
+  .status-indicator {
+    font-size: 0.75rem;
+  }
+
+  /* Upload section - compact */
+  .upload-progress {
+    margin-bottom: 0.75rem;
+  }
+
+  .upload-hint {
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Instructions - smaller text */
+  .instructions-section ol {
+    padding-left: 1rem;
+    font-size: 0.8rem;
+    margin: 0;
+  }
+
+  .instructions-section li {
+    margin-bottom: 0.375rem;
+    line-height: 1.3;
+  }
+
+  /* Tablet: Show file manager in responsive single-column layout */
+  .file-manager-layout {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 100%;
+    gap: 0;
+    flex: 0 0 auto;
+  }
+
+  .file-manager-sidebar {
+    flex: 0 0 auto;
+    display: flex !important;
+    flex-direction: column;
+    border-right: none;
+    border-bottom: 1px solid var(--panel-border);
+    height: 35vh;
+    max-height: 35vh;
+    overflow: auto;
+    width: 100% !important;
+    min-width: 100% !important;
+    min-height: 0;
+  }
+
+  .file-viewer-panel {
+    display: none !important;
+    flex: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* File manager is already hidden at this breakpoint by 1024px media query */
+
+  /* Prevent horizontal scroll */
+  * {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Better overall mobile spacing */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .esp32-upload-trigger {
+    bottom: 0.75rem;
+    right: 0.75rem;
+    z-index: 50;
+  }
+
+  .esp32-upload-trigger button {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.8rem;
+    gap: 0.3rem;
+    white-space: nowrap;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .esp32-modal {
+    max-width: calc(100vw - 1rem);
+    margin: 0.5rem;
+    border-radius: 0.375rem;
+    max-height: calc(100vh - 1rem);
+  }
+
+  .esp32-modal-content {
+    padding: 1rem;
+    max-height: calc(100vh - 100px);
+  }
+
+  .esp32-tools {
+    flex: 1;
+    padding: 0.625rem;
+    gap: 0.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    min-height: 0;
+  }
+
+  .esp32-tools h4 {
+    font-size: 0.8rem;
+    margin: 0.375rem 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  /* Sections - with better touch spacing */
+  .connection-section,
+  .upload-section,
+  .instructions-section {
+    padding: 0.625rem;
+    margin-bottom: 0.5rem;
+    border-radius: 3px;
+  }
+
+  /* Instructions - ultra small text */
+  .instructions-section ol {
+    font-size: 0.75rem;
+    padding-left: 0.875rem;
+    margin: 0;
+  }
+
+  .instructions-section li {
+    margin-bottom: 0.3rem;
+    line-height: 1.25;
+  }
+
+  /* Buttons - full width, better touch targets */
+  .esp32-tools button {
+    min-height: 42px;
+    font-size: 0.875rem;
+    padding: 0.625rem 0.875rem;
+    width: 100%;
+    margin: 0;
+  }
+
+  .ant-btn {
+    font-size: 0.8rem !important;
+    min-height: 40px !important;
+  }
+
+  /* File items - better spacing on mobile */
+  .file-item {
+    padding: 0.625rem 0.875rem;
+    margin-bottom: 0.375rem;
+    gap: 0.625rem;
+  }
+
+  .file-item:active {
+    background: linear-gradient(135deg, #f0f0f0 0%, #e5e5e5 100%);
+  }
+
+  .file-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .file-name {
+    font-size: 0.85rem;
+  }
+
+  /* REPL improvements on mobile */
+  .repl {
+    font-size: 0.7rem;
+  }
+
+  .repl__output {
+    padding: 6px 8px;
+    font-size: 0.7rem;
+  }
+
+  .repl__line {
+    padding: 1px 0;
+  }
+
+  .repl__toolbar {
+    padding: 0 8px;
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .repl__status {
+    font-size: 0.7rem;
+  }
+
+  .repl__input {
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .repl__field {
+    height: 38px;
+    font-size: 0.8rem;
+  }
+
+  /* Status indicators - condensed */
+  .status-indicator {
+    font-size: 0.75rem;
+    padding: 0.375rem;
+  }
+
+  .connection-status {
+    gap: 0.375rem;
+  }
+
+  /* Upload progress */
+  .upload-progress {
+    margin-bottom: 0.5rem;
+  }
+
+  /* Instructions - ultra small text */
+  .instructions-section ol {
+    font-size: 0.75rem;
+    padding-left: 1rem;
+    margin: 0;
+  }
+
+  .instructions-section li {
+    margin-bottom: 0.375rem;
+    line-height: 1.3;
+  }
+
+  /* Upload hint - tiny */
+  .upload-hint {
+    font-size: 0.7rem;
+    margin-top: 0.5rem;
+    padding: 0.375rem;
+  }
+
+  /* Connection actions - stack properly */
+  .connection-actions {
+    display: flex;
+    gap: 0.375rem;
+    flex-direction: column;
+  }
+
+  .connection-actions button {
+    width: 100%;
+  }
+
+  /* Prevent any horizontal scrolling */
+  body,
+  html {
+    overflow-x: hidden;
+  }
+
+  .esp32-sidebar {
+    overflow-x: hidden;
+    width: 100vw;
+    padding: 0;
+    margin: 0;
+  }
+
+  .esp32-sidebar-inner {
+    overflow-x: hidden;
+    width: 100vw;
+    padding: 0;
+    margin: 0;
+  }
+
+  .esp32-tools {
+    overflow-x: hidden;
+    width: 100vw;
+    padding: 0.5rem;
+  }
+
+  /* Hide file manager sidebar and expand uploader to full width */
+  .file-manager-sidebar {
+    display: none !important;
+    width: 0 !important;
+    flex: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .file-manager-layout {
+    display: block !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: none !important;
+  }
+
+  .file-viewer-panel {
+    display: none !important;
+    width: 0 !important;
+    flex: 0 !important;
+    min-width: 0 !important;
+  }
+
+  /* File manager fully hidden on mobile screens */
+  .device-fm {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+  }
+
+
+  /* Ensure sidebars don't reserve space */
+  .esp32-sidebar {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+}
+
+/* Extra small phones (< 360px) */
+@media (max-width: 360px) {
+  .esp32-tools {
+    padding: 0.375rem;
+  }
+
+  .esp32-tools h4 {
+    font-size: 0.75rem;
+  }
+
+  .esp32-tools button {
+    min-height: 36px;
+    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  .connection-section,
+  .upload-section,
+  .instructions-section {
+    padding: 0.375rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .instructions-section ol {
+    font-size: 0.7rem;
+    padding-left: 0.875rem;
+  }
+
+  .instructions-section li {
+    margin-bottom: 0.25rem;
+  }
+
+  /* Mobile: Stack file manager vertically with better spacing */
+  .file-manager-sidebar {
+    flex: 0 0 100%;
+    max-height: 35vh;
+    border-bottom: 2px solid var(--panel-border);
+  }
+
+  .file-viewer-panel {
+    flex: 1;
+    max-height: 65vh;
+  }
+
+  /* Mobile: Hide device file manager */
+  .device-fm {
+    display: none !important;
+    width: 0 !important;
+  }
 }
