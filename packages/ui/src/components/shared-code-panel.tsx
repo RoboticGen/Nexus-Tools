@@ -1,6 +1,6 @@
 "use client";
 
-import { CopyOutlined, ExportOutlined, PlayCircleOutlined, EditOutlined, SaveOutlined } from "@ant-design/icons";
+import { CopyOutlined, ExportOutlined, PlayCircleOutlined, EditOutlined, SaveOutlined, ThunderboltOutlined } from "@ant-design/icons";
 
 
 import { Button } from "./button";
@@ -20,6 +20,8 @@ interface SharedCodePanelProps {
   onEditToggle?: (editing: boolean) => void;
   /** Callback when run button is clicked */
   onRun?: () => void;
+  /** Callback when run-on-device button is clicked (soft reset / run main.py) */
+  onRunInESP32?: () => void;
   /** Callback when copy button is clicked */
   onCopy?: () => void;
   /** Callback when export button is clicked */
@@ -46,6 +48,8 @@ interface SharedCodePanelProps {
   showEditButton?: boolean;
   /** Show run button (default: true) */
   showRunButton?: boolean;
+  /** Show "Run in ESP32" button (default: true) */
+  showRunInESP32Button?: boolean;
   /** Show copy button (default: true) */
   showCopyButton?: boolean;
   /** Show export button (default: true) */
@@ -64,6 +68,7 @@ export function SharedCodePanel({
   onCodeChange,
   onEditToggle,
   onRun,
+  onRunInESP32,
   onCopy,
   onExport,
   onSaveToDevice,
@@ -77,6 +82,7 @@ export function SharedCodePanel({
   className = "code",
   showEditButton = true,
   showRunButton = true,
+  showRunInESP32Button = true,
   showCopyButton = true,
   showExportButton = true,
   showSaveDeviceButton = true,
@@ -114,6 +120,17 @@ export function SharedCodePanel({
               title="Run Python Code"
             >
               Run
+            </Button>
+          )}
+          {showRunInESP32Button && onRunInESP32 && (
+            <Button
+              variant="default"
+              icon={<ThunderboltOutlined />}
+              onClick={onRunInESP32}
+              title={isConnected ? "Restart ESP32 to run main.py" : "Connect device first"}
+              disabled={!isConnected}
+            >
+              Run in ESP32
             </Button>
           )}
           {showCopyButton && onCopy && (

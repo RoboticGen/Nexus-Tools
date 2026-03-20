@@ -752,6 +752,7 @@ textarea.iPadShowKeyboard {
 .turtle-canvas {
   flex: 1;
   min-height: 400px;
+  margin-top: 10rem;
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -1169,7 +1170,7 @@ textarea.iPadShowKeyboard {
 
 @media screen and (min-width: 1025px) {
   .main-content {
-    grid-template-columns: 1fr 350px;
+    grid-template-columns: 1fr 2fr;
     grid-template-rows: 1fr;
     padding: 0.4rem;
     gap: 0.4rem;
@@ -1211,10 +1212,9 @@ textarea.iPadShowKeyboard {
 
   .right-panel {
     height: 100%;
-    width: 350px;
+    width: 100%;
     overflow: auto;
-    min-width: 250px;
-    max-width: 500px;
+    min-width: 0;
     box-sizing: border-box;
   }
 

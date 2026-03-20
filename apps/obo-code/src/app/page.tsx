@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
 import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
 
-import { DeviceFileManagerSidebar, type DeviceFileManagerSidebarHandle } from "@nexus-tools/esp32-uploader";
+import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle } from "@nexus-tools/esp32-uploader";
 import { ESP32OutputPanel } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
 import { Notification } from "@/components/notification";
@@ -71,6 +71,23 @@ export default function Home() {
   const handleDisconnect = useCallback(() => {
     outputPanelRef.current?.resetConnection?.();
   }, []);
+
+  const handleRunInESP32 = useCallback(async () => {
+    if (!serialPort) {
+      showNotification("Connect device first");
+      return;
+    }
+
+    try {
+      await serialStreamManager.initialize(serialPort);
+      // Ctrl-C (interrupt) + Ctrl-D (soft reset) => runs boot.py then main.py
+      await serialStreamManager.sendData("\x03\x04");
+      showNotification("ESP32 restarting to run main.py...");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      showNotification(`Failed to run on ESP32: ${msg}`);
+    }
+  }, [serialPort, showNotification]);
 
   const { runCode, stopCode, isRunning, isLoading, output, clearOutput } = usePythonRunner({
     onError: (error) => showNotification(error),
@@ -187,6 +204,7 @@ export default function Home() {
             onCodeChange={setCode}
             onActiveTabChange={setActiveEditorFileName}
             onRun={handleRun}
+            onRunInESP32={handleRunInESP32}
             onCopy={handleCopy}
             onExport={handleExport}
             onSaveToDevice={handleSaveToDevice}

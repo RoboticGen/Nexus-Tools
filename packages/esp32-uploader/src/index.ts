@@ -9,6 +9,7 @@ import './styles';
 // Components
 export { ESP32Uploader, ESP32UploaderSidebar, ESP32REPL, ESP32FileManager, DeviceFileManagerSidebar } from "./components";
 export type { ESP32UploaderProps } from "./components";
+export type { DeviceFileManagerSidebarProps, DeviceFileManagerSidebarHandle } from "./components";
 
 // Context
 export { ESP32Provider, useESP32Context } from "./contexts/ESP32Context";

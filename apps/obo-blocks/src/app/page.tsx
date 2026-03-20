@@ -1,6 +1,6 @@
 "use client";
 
-import { DeviceFileManagerSidebar, type DeviceFileManagerSidebarHandle } from "@nexus-tools/esp32-uploader";
+import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle } from "@nexus-tools/esp32-uploader";
 import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
 import dynamic from "next/dynamic";
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -98,6 +98,23 @@ export default function Home() {
     outputPanelRef.current?.resetConnection?.();
   }, []);
 
+  const handleRunInESP32 = useCallback(async () => {
+    if (!serialPort) {
+      showNotification("Connect device first");
+      return;
+    }
+
+    try {
+      await serialStreamManager.initialize(serialPort);
+      // Ctrl-C (interrupt) + Ctrl-D (soft reset) => runs boot.py then main.py
+      await serialStreamManager.sendData("\x03\x04");
+      showNotification("ESP32 restarting to run main.py...");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      showNotification(`Failed to run on ESP32: ${msg}`);
+    }
+  }, [serialPort, showNotification]);
+
   const handleSaveToDevice = useCallback(
     async (filename: string, content: string) => {
       try {
@@ -142,6 +159,7 @@ export default function Home() {
               onActiveTabChange={setActiveEditorFileName}
               onEditToggle={handleEditToggleWrapper}
               onRun={handleRunCode}
+              onRunInESP32={handleRunInESP32}
               onCopy={handleCopy}
               onExport={handleExport}
               onSaveToDevice={handleSaveToDevice}
