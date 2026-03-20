@@ -558,25 +558,34 @@
 
 /* Adjust main content when file manager sidebar is present */
 .main-content-with-file-manager {
-  margin-left: 300px;
-  width: calc(100% - 300px) !important;
+  padding-left: 300px;
+  width: 100%;
   min-height: calc(100vh - 3.5rem);
-  transition: margin-left 0.25s cubic-bezier(0.33, 1, 0.68, 1), width 0.25s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: padding-left 0.25s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .main-content-with-file-manager.file-manager-collapsed {
-  margin-left: 52px;
-  width: calc(100% - 52px) !important;
+  padding-left: 52px;
+  width: 100%;
 }
 
 /* Responsive: Hide sidebar on small screens */
 @media (max-width: 1024px) {
-  .device-fm--expanded {
-    width: 250px;
+  .device-fm {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
   }
-  
+
   .main-content-with-file-manager {
-    margin-left: 250px;
+    padding-left: 0;
+    width: 100%;
+  }
+
+  .main-content-with-file-manager.file-manager-collapsed {
+    padding-left: 0;
+    width: 100%;
   }
 }
 
@@ -586,6 +595,6 @@
   }
   
   .main-content-with-file-manager {
-    margin-left: 0;
+    padding-left: 0;
   }
 }

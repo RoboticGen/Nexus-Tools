@@ -1431,15 +1431,15 @@ body {
 /* Adjust main content when file manager sidebar is present - DESKTOP ONLY */
 @media (min-width: 1025px) {
   .main-content-with-file-manager {
-    margin-left: 300px;
-    width: calc(100% - 300px) !important;
+    padding-left: 300px;
+    width: 100% !important;
     min-height: calc(100vh - 3.5rem);
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .main-content-with-file-manager.file-manager-collapsed {
-    margin-left: 52px;
-    width: calc(100% - 52px) !important;
+    padding-left: 52px;
+    width: 100% !important;
   }
 }
 
@@ -1461,12 +1461,12 @@ body {
   }
 
   .main-content-with-file-manager {
-    margin-left: 0 !important;
+    padding-left: 0 !important;
     width: 100% !important;
   }
 
   .main-content-with-file-manager.file-manager-collapsed {
-    margin-left: 0 !important;
+    padding-left: 0 !important;
     width: 100% !important;
   }
 }
@@ -1476,8 +1476,6 @@ body {
   .device-fm {
     display: flex !important;
     visibility: visible !important;
-    width: 300px !important;
-    min-width: 300px !important;
   }
 
   .file-manager-sidebar {
@@ -1488,13 +1486,13 @@ body {
   }
 
   .main-content-with-file-manager {
-    margin-left: 300px !important;
-    width: calc(100% - 300px) !important;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    padding-left: 300px !important;
+    width: 100% !important;
+    transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
 
   .main-content-with-file-manager.file-manager-collapsed {
-    margin-left: 52px !important;
-    width: calc(100% - 52px) !important;
+    padding-left: 52px !important;
+    width: 100% !important;
   }
 }
