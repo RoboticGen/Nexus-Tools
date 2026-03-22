@@ -19,6 +19,7 @@ Classify the user's message into EXACTLY ONE of these three categories:
 
 1. "code_generation" — The user is asking you to:
    - Generate, write, create, 'Give me the code' or build Python/MicroPython code from scratch
+   - 'Can you write some code that does <task>?', 'I want to make <task>, can you give me the code?'
    - Create a new program, script, or routine
    - Show a working example (with actual code)
    - Build something with blocks (e.g. "make an LED blink", "create a loop that reads a sensor")
@@ -27,6 +28,7 @@ Classify the user's message into EXACTLY ONE of these three categories:
    - Complete, extend, or finish their existing code
    - Add a specific feature or part to what they already have
    - Fix, modify, or improve their current code
+   - 'Can you fix this code?', 'what's wrong with this code?', 'how to complete this?', 'Can you help me finish this code?'
    - Continue building on their work (e.g. "complete this", "add error handling", "finish the rest", "how to complete this","Can you fix this code?", "what's wrong with this code?")
    - Any request that implies they already have partial code and want it extended
 
