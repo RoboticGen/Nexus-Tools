@@ -1,0 +1,33 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "list_remove_block",
+        "id": "/,zFnlVg}/sbE5L+]yfe",
+        "x": -106,
+        "y": -58,
+        "inputs": {
+          "value": {
+            "block": {
+              "type": "number_block",
+              "id": "cQZn!UI5sug(0:i48**e",
+              "fields": {
+                "input": 1
+              }
+            }
+          },
+          "list": {
+            "block": {
+              "type": "list_block",
+              "id": "*R6BabW5PQ#1Wp@9/H+u",
+              "fields": {
+                "input": "1,2,3"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

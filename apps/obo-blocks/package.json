@@ -12,6 +12,7 @@
     "clean": "rimraf .next .turbo node_modules"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@nexus-tools/blockly-python-generator": "workspace:*",
     "@nexus-tools/micropython-esp32": "workspace:*",
     "@nexus-tools/pyodide-executor": "workspace:*",
@@ -22,7 +23,8 @@
     "blockly": "^12.3.1",
     "next": "14.1.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "@nexus-tools/eslint-config": "workspace:*",

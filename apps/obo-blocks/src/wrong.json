@@ -1,0 +1,97 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "procedures_defreturn",
+        "id": "415583f4",
+        "fields": {
+          "NAME": "add_numbers"
+        },
+        "inputs": {
+          "STACK": {
+            "block": {
+              "type": "variables_set",
+              "id": "e9a62b20",
+              "fields": {
+                "VAR": {
+                  "id": "c5e2b9ee",
+                  "name": "sum_result",
+                  "type": ""
+                }
+              },
+              "inputs": {
+                "VALUE": {
+                  "block": {
+                    "type": "add_block",
+                    "id": "850b3868",
+                    "inputs": {
+                      "left": {
+                        "block": {
+                          "type": "variables_get",
+                          "id": "e80070ce",
+                          "fields": {
+                            "VAR": {
+                              "id": "2df11d12",
+                              "name": "number1",
+                              "type": ""
+                            }
+                          }
+                        }
+                      },
+                      "right": {
+                        "block": {
+                          "type": "variables_get",
+                          "id": "f4020fef",
+                          "fields": {
+                            "VAR": {
+                              "id": "73b4384a",
+                              "name": "number2",
+                              "type": ""
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "RETURN": {
+            "block": {
+              "type": "variables_get",
+              "id": "5b1bcc2f",
+              "fields": {
+                "VAR": {
+                  "id": "c5e2b9ee",
+                  "name": "sum_result",
+                  "type": ""
+                }
+              }
+            }
+          }
+        },
+        "x": 50,
+        "y": 50
+      }
+    ]
+  },
+  "variables": [
+    {
+      "name": "number1",
+      "id": "2df11d12",
+      "type": ""
+    },
+    {
+      "name": "number2",
+      "id": "73b4384a",
+      "type": ""
+    },
+    {
+      "name": "sum_result",
+      "id": "c5e2b9ee",
+      "type": ""
+    }
+  ]
+}
