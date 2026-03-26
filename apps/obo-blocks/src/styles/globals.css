@@ -619,6 +619,17 @@ body {
     font-size: 0.9rem;
     margin: 0.6rem;
   }
+
+  /* Hide ESP32-specific buttons on tablet */
+  .btn-run-esp32,
+  .btn-save-device {
+    display: none !important;
+  }
+
+  /* Hide REPL tab on tablet */
+  .output .ant-tabs-tab[data-node-key="repl"] {
+    display: none !important;
+  }
 }
 
 @media screen and (max-width: 600px) {
@@ -690,6 +701,17 @@ body {
 
   .blockly-section {
     padding: 0.15rem;
+  }
+
+  /* Hide ESP32-specific buttons on mobile */
+  .btn-run-esp32,
+  .btn-save-device {
+    display: none !important;
+  }
+
+  /* Hide REPL tab on mobile */
+  .output .ant-tabs-tab[data-node-key="repl"] {
+    display: none !important;
   }
 }
 
@@ -862,6 +884,17 @@ body {
     z-index: 1000;
     opacity: 1;
     pointer-events: none;
+  }
+
+  /* Hide ESP32-specific buttons on very small screens */
+  .btn-run-esp32,
+  .btn-save-device {
+    display: none !important;
+  }
+
+  /* Hide REPL tab on very small screens */
+  .output .ant-tabs-tab[data-node-key="repl"] {
+    display: none !important;
   }
 }
 

@@ -129,6 +129,7 @@ export function SharedCodePanel({
               onClick={onRunInESP32}
               title={isConnected ? "Restart ESP32 to run main.py" : "Connect device first"}
               disabled={!isConnected}
+              className="btn-run-esp32"
             >
               Run in ESP32
             </Button>
@@ -157,6 +158,7 @@ export function SharedCodePanel({
               onClick={handleSaveToDevice}
               title={isConnected ? "Save to ESP32 Device" : "Connect device first"}
               disabled={!isConnected}
+              className="btn-save-device"
             >
               Save Device
             </Button>

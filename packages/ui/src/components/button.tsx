@@ -57,6 +57,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         type={getButtonType(variant)}
         danger={getDanger(variant)}
         size={getSizeMap(size)}
+        className={className}
         {...(restProps as any)}
       />
     );
