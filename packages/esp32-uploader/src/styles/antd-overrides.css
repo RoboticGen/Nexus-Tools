@@ -1,0 +1,219 @@
+/* ESP32 Uploader - Ant Design Component Overrides */
+
+/* ===========================
+   Ant Design Button Overrides
+   =========================== */
+
+/* Primary buttons with modern gradient */
+.esp32-file-manager .ant-btn-primary,
+.esp32-repl .ant-btn-primary,
+.device-fm .ant-btn-primary {
+  background: linear-gradient(135deg, #9d9d9d 0%, #8a8a8a 100%);
+  border: none;
+  box-shadow: 0 2px 8px rgba(157, 157, 157, 0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.esp32-file-manager .ant-btn-primary:hover:not(:disabled),
+.esp32-repl .ant-btn-primary:hover:not(:disabled),
+.device-fm .ant-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #8a8a8a 0%, #6b6b6b 100%);
+  box-shadow: 0 4px 16px rgba(157, 157, 157, 0.35);
+  transform: translateY(-2px);
+}
+
+/* Small buttons */
+.esp32-file-manager .ant-btn-sm,
+.device-fm .ant-btn-sm {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.esp32-file-manager .ant-btn-sm:hover:not(:disabled),
+.device-fm .ant-btn-sm:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Danger buttons */
+.esp32-file-manager .ant-btn-dangerous,
+.device-fm .ant-btn-dangerous {
+  background: transparent;
+  border: none;
+  color: #ef476f;
+  box-shadow: none;
+}
+
+.esp32-file-manager .ant-btn-dangerous:hover:not(:disabled),
+.device-fm .ant-btn-dangerous:hover:not(:disabled) {
+  background: rgba(239, 71, 111, 0.1);
+  color: #dc2626;
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+/* ===========================
+   Ant Design Tabs Overrides
+   =========================== */
+
+.esp32-sidebar-inner .ant-tabs {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.esp32-sidebar-inner .ant-tabs-nav {
+  margin: 0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-bottom: 2px solid #e2e8f0 !important;
+  flex-shrink: 0;
+  padding: 0 0.5rem;
+}
+
+.esp32-sidebar-inner .ant-tabs-tab {
+  padding: 0.875rem 1.25rem !important;
+  transition: all 0.3s ease !important;
+  border-bottom: 3px solid transparent !important;
+  color: #64748b !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  margin: 0 0.25rem !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.esp32-sidebar-inner .ant-tabs-tab:hover {
+  color: #1e293b !important;
+  background: rgba(241, 245, 249, 0.6) !important;
+}
+
+.esp32-sidebar-inner .ant-tabs-tab-active {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  border-bottom-color: #9d9d9d !important;
+  color: #333 !important;
+  box-shadow: 0 -2px 8px rgba(157, 157, 157, 0.1);
+}
+
+.esp32-sidebar-inner .ant-tabs-ink-bar {
+  display: none !important;
+}
+
+/* ===========================
+   Ant Design Modal Overrides
+   =========================== */
+
+.ant-modal-confirm .ant-modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.ant-modal-confirm .ant-modal-body {
+  padding: 2rem;
+}
+
+.ant-modal-confirm .ant-modal-confirm-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.ant-modal-confirm .ant-modal-confirm-content {
+  color: #64748b;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.ant-modal-confirm .ant-btn {
+  border-radius: 8px;
+  padding: 0.625rem 1.5rem;
+  font-weight: 600;
+  height: auto;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ant-modal-confirm .ant-btn-primary {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: none;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.ant-modal-confirm .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  transform: translateY(-2px);
+}
+
+.ant-modal-confirm .ant-btn-default {
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.ant-modal-confirm .ant-btn-default:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  transform: translateY(-1px);
+}
+
+/* ===========================
+   Ant Design Space Component
+   =========================== */
+
+.esp32-file-manager .ant-space,
+.device-fm .ant-space {
+  gap: 0.5rem !important;
+}
+
+.esp32-file-manager .ant-space-item,
+.device-fm .ant-space-item {
+  display: flex;
+}
+
+/* ===========================
+   Loading Spinners
+   =========================== */
+
+.ant-spin-spinning {
+  color: #3b82f6;
+}
+
+.ant-spin-dot-item {
+  background-color: #3b82f6;
+}
+
+/* ===========================
+   Responsive Design
+   =========================== */
+
+@media (max-width: 768px) {
+  .device-fm--expanded {
+    width: 260px;
+  }
+  
+  .file-manager-header {
+    padding: 1rem;
+  }
+  
+  .file-item {
+    padding: 0.875rem 1rem;
+  }
+  
+  .esp32-repl-header {
+    padding: 0.875rem 1rem;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .device-fm--expanded {
+    width: 220px;
+  }
+  
+  .file-viewer-panel {
+    width: 100%;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 100;
+  }
+}
