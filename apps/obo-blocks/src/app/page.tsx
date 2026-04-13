@@ -1,14 +1,16 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
+import { ChatPanel } from "@/components/chat-panel";
 import { CodePanel } from "@/components/code-panel";
 import { Navbar } from "@/components/navbar";
 import { Notification } from "@/components/notification";
 import { OutputPanel } from "@/components/output-panel";
 import { useBlocklyHandlers } from "@/hooks/use-blockly-handlers";
 import { useEditorHandlers } from "@/hooks/use-editor-handlers";
+import { convertPythonToBlocks } from "@/python-to-blocks";
 
 const BlocklyEditor = dynamic(
   () => import("@/components/blockly-editor").then((mod) => ({ default: mod.BlocklyEditor })),
@@ -30,6 +32,41 @@ export default function Home() {
     setNotification(message);
     setTimeout(() => setNotification(null), 1500);
   }, []);
+
+  // Ref to hold the workspace JSON importer registered by BlocklyEditor
+  const importerRef = useRef<((jsonString: string) => boolean) | null>(null);
+
+  const handleRegisterImporter = useCallback(
+    (importer: (jsonString: string) => boolean) => {
+      importerRef.current = importer;
+    },
+    []
+  );
+
+  const handleChatImportJson = useCallback(
+    (jsonString: string): boolean => {
+      if (importerRef.current) {
+        const success = importerRef.current(jsonString);
+        if (success) showNotification("Workspace imported from chat");
+        return success;
+      }
+      return false;
+    },
+    [showNotification]
+  );
+
+  const handleConvertPython = useCallback(
+    async (pythonCode: string): Promise<string | null> => {
+      try {
+        const json = await convertPythonToBlocks(pythonCode);
+        return json;
+      } catch (err) {
+        console.error("Python-to-blocks conversion error:", err);
+        return null;
+      }
+    },
+    []
+  );
 
   const {
     handleEditToggle,
@@ -69,6 +106,7 @@ export default function Home() {
   return (
     <div className="app-container">
       <Notification message={notification} />
+      <ChatPanel onImportJson={handleChatImportJson} onConvertPython={handleConvertPython} currentCode={code} />
       <Navbar />
 
       {isClient && (
@@ -78,6 +116,7 @@ export default function Home() {
               onCodeChange={handleCodeChange}
               onEditToggle={handleEditToggleWrapper}
               showNotification={showNotification}
+              onRegisterImporter={handleRegisterImporter}
             />
           </div>
 
