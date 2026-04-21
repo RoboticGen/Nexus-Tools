@@ -309,7 +309,11 @@ class SerialStreamManager {
    * Keeping the full command lifecycle inside one queued operation prevents
    * file-manager raw REPL operations from interleaving mid-command.
    */
-  async executeREPLCommand(command: string, timeout = 4000): Promise<string> {
+  async executeREPLCommand(
+    command: string,
+    timeout = 4000,
+    options?: { interruptBeforeCommand?: boolean },
+  ): Promise<string> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
     }
@@ -325,9 +329,12 @@ class SerialStreamManager {
       const unsub = this.addListener(onData);
 
       try {
-        // Interrupt a potentially running statement before issuing a new one.
-        await this.write(REPL_CONTROL.CTRL_C);
-        await delay(50);
+        // Interrupt running code before a fresh command, but allow callers
+        // to skip this in continuation mode ("... " prompt).
+        if (options?.interruptBeforeCommand !== false) {
+          await this.write(REPL_CONTROL.CTRL_C);
+          await delay(50);
+        }
 
         // Ignore cleanup noise and capture only this command's response.
         buffer = "";
@@ -428,7 +435,9 @@ function parseRawREPLResponse(buffer: string): RawREPLResult {
 
 function hasReplPrompt(buffer: string): boolean {
   const normalized = buffer.replace(/\r/g, "");
-  return normalized.includes("\n>>> ") || normalized.startsWith(">>> ");
+  // Accept both primary and continuation prompts with or without a trailing
+  // space to handle device/firmware formatting differences.
+  return /(^|\n)(>>>|\.\.\.)(\s|$)/.test(normalized);
 }
 
 // ─── Singleton ───────────────────────────────────────────────────────────────

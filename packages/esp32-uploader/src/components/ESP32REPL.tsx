@@ -39,7 +39,7 @@ export function ESP32REPL({
   const inputRef = useRef<HTMLInputElement>(null);
   const connectingRef = useRef(false);
 
-  const { connectToREPL, executeCommand, sendCtrlC, sendCtrlD, disconnect } =
+  const { connectToREPL, executeCommand, sendCtrlC, sendCtrlD, disconnect, isAwaitingContinuation } =
     useESP32REPL(serialPort);
 
   const push = useCallback((type: Line["type"], text: string) => {
@@ -90,11 +90,15 @@ export function ESP32REPL({
 
   // execute command
   const run = useCallback(async () => {
-    if (!connected || !cmd.trim() || busy) return;
-    const c = cmd.trim();
+    if (!connected || busy) return;
+
+    const c = cmd;
+    const isBlank = c.trim().length === 0;
+    if (!isAwaitingContinuation && isBlank) return;
+
     setCmd("");
     setBusy(true);
-    push("input", `>>> ${c}`);
+    push("input", `${isAwaitingContinuation ? "..." : ">>>"} ${c}`);
     try {
       const r = await executeCommand(c);
       if (r.output) push("output", r.output);
@@ -104,7 +108,7 @@ export function ESP32REPL({
     } finally {
       setBusy(false);
     }
-  }, [connected, cmd, busy, executeCommand, push]);
+  }, [connected, cmd, busy, executeCommand, isAwaitingContinuation, push]);
 
   const onKey = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -216,7 +220,7 @@ export function ESP32REPL({
       {/* input bar (fixed height, always at bottom) */}
       {connected && (
         <div className="repl__input">
-          <span className="repl__prompt">{">>>"}</span>
+          <span className="repl__prompt">{isAwaitingContinuation ? "..." : ">>>"}</span>
           <input
             ref={inputRef}
             className="repl__field"
@@ -224,7 +228,13 @@ export function ESP32REPL({
             onChange={(e) => setCmd(e.target.value)}
             onKeyDown={onKey}
             disabled={busy}
-            placeholder={busy ? "Running…" : "Type command…"}
+            placeholder={
+              busy
+                ? "Running…"
+                : isAwaitingContinuation
+                  ? "Indent and press Enter; send blank line to finish block"
+                  : "Type command…"
+            }
             autoComplete="off"
             spellCheck={false}
           />

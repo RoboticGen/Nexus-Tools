@@ -21,6 +21,7 @@ interface UseESP32REPLOptions {
 
 export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
   const [isConnected, setIsConnected] = useState(false);
+  const [isAwaitingContinuation, setIsAwaitingContinuation] = useState(false);
   const outputBufferRef = useRef<string>("");
   const unsubRef = useRef<(() => void) | null>(null);
 
@@ -70,6 +71,7 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
       outputBufferRef.current = "";
 
       setIsConnected(true);
+      setIsAwaitingContinuation(false);
     } catch (error) {
       showNotification(
         "error",
@@ -94,7 +96,23 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
       }
 
       try {
-        const raw = await serialStreamManager.executeREPLCommand(command, 5000);
+        // In continuation mode users may accidentally type the visible
+        // prompt prefix ("... "). Strip it before sending to the device.
+        const preparedCommand =
+          isAwaitingContinuation && /^\s*\.\.\.\s?/.test(command)
+            ? command.replace(/^\s*\.\.\.\s?/, "")
+            : command;
+
+        const raw = await serialStreamManager.executeREPLCommand(preparedCommand, 8000, {
+          interruptBeforeCommand: !isAwaitingContinuation,
+        });
+
+        const normalized = raw
+          .replace(/\r/g, "")
+          // Strip control characters that can appear during USB glitches.
+          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+        const continuationPrompt = /(^|\n)\.\.\.(\s|$)/.test(normalized);
+        setIsAwaitingContinuation(continuationPrompt);
 
         // Check for device restart indicators
         if (raw.includes("MPY:") || raw.includes(">>") || raw.includes("firmware")) {
@@ -106,7 +124,7 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
         }
 
         // Parse output and errors
-        const lines = raw.split("\n");
+        const lines = normalized.split("\n");
         const outputLines: string[] = [];
         const errorLines: string[] = [];
         let inError = false;
@@ -130,8 +148,8 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
               inError = false;
             }
           } else if (line.trim()) {
-            // Regular output (skip the echo of the command itself)
-            if (line.trim() !== command.trim()) {
+            // Regular output (skip exact command echo)
+            if (line !== preparedCommand) {
               outputLines.push(line);
             }
           }
@@ -159,7 +177,7 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
         throw error;
       }
     },
-    [isConnected, showNotification],
+    [isConnected, isAwaitingContinuation, showNotification],
   );
 
   // ── Ctrl-C / Ctrl-D helpers ────────────────────────────────────────────
@@ -223,6 +241,7 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
     }
 
     setIsConnected(false);
+    setIsAwaitingContinuation(false);
     outputBufferRef.current = "";
   }, [showNotification]);
 
@@ -239,6 +258,7 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
 
   return {
     isConnected,
+    isAwaitingContinuation,
     connectToREPL,
     executeCommand,
     sendCtrlC,
