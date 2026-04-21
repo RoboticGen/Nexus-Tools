@@ -4,13 +4,12 @@ import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSi
 import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
 import dynamic from "next/dynamic";
 import { useState, useCallback, useEffect, useRef } from "react";
+import { notification } from "antd";
 
 import { ESP32OutputPanel } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
-import { Notification } from "@/components/notification";
 import { useBlocklyHandlers } from "@/hooks/use-blockly-handlers";
 import { useEditorHandlers } from "@/hooks/use-editor-handlers";
-
 import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
 
 const BlocklyEditor = dynamic(
@@ -23,7 +22,6 @@ const BlocklyEditor = dynamic(
 
 export default function Home() {
   const [code, setCode] = useState("");
-  const [notification, setNotification] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isDeviceConnected, setIsDeviceConnected] = useState(false);
@@ -37,9 +35,13 @@ export default function Home() {
 
   const { copyTextToClipboard, downloadPythonFile } = useEditorHandlers();
 
-  const showNotification = useCallback((message: string) => {
-    setNotification(message);
-    setTimeout(() => setNotification(null), 1500);
+  const showNotification = useCallback((message: string, type: "success" | "error" | "info" = "info") => {
+    notification[type]({
+      message: type === "success" ? "Success" : type === "error" ? "Error" : "Info",
+      description: message,
+      duration: 2,
+      placement: "topRight",
+    });
   }, []);
 
   const {
@@ -82,9 +84,8 @@ export default function Home() {
     if (codeEditorRef.current) {
       codeEditorRef.current.openFileInTab(filename, content);
       setActiveEditorFileName(filename);
-      showNotification(`Opened ${filename} in editor`);
     }
-  }, [showNotification]);
+  }, []);
 
   const handleUpload = useCallback(() => {
     showNotification("File uploaded successfully!");
@@ -136,7 +137,6 @@ export default function Home() {
 
   return (
     <div className="app-container">
-      <Notification message={notification} />
       <Navbar />
 
       {isClient && (

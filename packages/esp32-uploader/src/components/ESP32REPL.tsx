@@ -9,7 +9,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Button } from "antd";
+import { Button, notification } from "antd";
 import { DeleteOutlined, StopOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useESP32REPL } from "../hooks/use-esp32-repl";
 
@@ -108,9 +108,33 @@ export function ESP32REPL({
 
   const onKey = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); run(); }
-      else if (e.ctrlKey && e.key === "c") { e.preventDefault(); sendCtrlC(); push("output", "^C"); setCmd(""); }
-      else if (e.ctrlKey && e.key === "d") { e.preventDefault(); sendCtrlD(); push("output", "^D Soft reset"); }
+      if (e.key === "Enter" && !e.shiftKey) { 
+        e.preventDefault(); 
+        run(); 
+      }
+      else if (e.ctrlKey && e.key === "c") { 
+        e.preventDefault(); 
+        sendCtrlC(); 
+        push("output", "^C"); 
+        setCmd(""); 
+        notification.warning({
+          message: "Interrupt Sent",
+          description: "Ctrl+C sent to ESP32. Stopping current execution...",
+          duration: 2,
+          placement: "topRight",
+        });
+      }
+      else if (e.ctrlKey && e.key === "d") { 
+        e.preventDefault(); 
+        sendCtrlD(); 
+        push("output", "^D Soft reset"); 
+        notification.info({
+          message: "Soft Reset",
+          description: "Ctrl+D sent to ESP32. Device is performing a soft reset...",
+          duration: 2,
+          placement: "topRight",
+        });
+      }
     },
     [run, sendCtrlC, sendCtrlD, push],
   );
@@ -125,9 +149,56 @@ export function ESP32REPL({
         </span>
         {connected && (
           <span className="repl__actions">
-            <Button size="small" style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }} icon={<DeleteOutlined />} onClick={() => setLines([])}>Clear</Button>
-            <Button size="small" style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }} icon={<StopOutlined />} onClick={() => { sendCtrlC(); push("output", "^C"); }}>Ctrl+C</Button>
-            <Button size="small" style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }} icon={<ReloadOutlined />} onClick={() => { sendCtrlD(); push("output", "^D"); }}>Reset</Button>
+            <Button 
+              size="small" 
+              style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }} 
+              icon={<DeleteOutlined />} 
+              onClick={() => {
+                setLines([]);
+                notification.info({
+                  message: "Cleared",
+                  description: "REPL output cleared",
+                  duration: 1.5,
+                  placement: "topRight",
+                });
+              }}
+            >
+              Clear
+            </Button>
+            <Button 
+              size="small" 
+              style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }} 
+              icon={<StopOutlined />} 
+              onClick={() => { 
+                sendCtrlC(); 
+                push("output", "^C");
+                notification.warning({
+                  message: "Interrupt Sent",
+                  description: "Stopping current execution on ESP32...",
+                  duration: 2,
+                  placement: "topRight",
+                });
+              }}
+            >
+              Ctrl+C
+            </Button>
+            <Button 
+              size="small" 
+              style={{ backgroundColor: "#9d9d9d", color: "#fff", border: "none" }} 
+              icon={<ReloadOutlined />} 
+              onClick={() => { 
+                sendCtrlD(); 
+                push("output", "^D");
+                notification.info({
+                  message: "Soft Reset",
+                  description: "Rebooting ESP32 device...",
+                  duration: 2,
+                  placement: "topRight",
+                });
+              }}
+            >
+              Reset
+            </Button>
           </span>
         )}
       </div>

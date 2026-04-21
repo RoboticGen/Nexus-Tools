@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { notification } from "antd";
 
 import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
 import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
@@ -8,7 +9,6 @@ import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-c
 import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle } from "@nexus-tools/esp32-uploader";
 import { ESP32OutputPanel } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
-import { Notification } from "@/components/notification";
 import { TurtleWorkspace } from "@/components/turtle-workspace";
 import { usePythonRunner } from "@/hooks/use-python-runner";
 import "@/styles/sidebar.css";
@@ -27,7 +27,6 @@ for x in range(360):
 
 export default function Home() {
   const [code, setCode] = useState(DEFAULT_CODE);
-  const [notification, setNotification] = useState<string | null>(null);
   const [background, setBackground] = useState<string>("No-Background");
   const [isDeviceConnected, setIsDeviceConnected] = useState(false);
   const [serialPort, setSerialPort] = useState<SerialPort | null>(null);
@@ -48,17 +47,20 @@ export default function Home() {
     };
   }, []);
 
-  const showNotification = useCallback((message: string) => {
-    setNotification(message);
-    setTimeout(() => setNotification(null), 1500);
+  const showNotification = useCallback((message: string, type: "success" | "error" | "info" = "info") => {
+    notification[type]({
+      message: type === "success" ? "Success" : type === "error" ? "Error" : "Info",
+      description: message,
+      duration: 2,
+      placement: "topRight",
+    });
   }, []);
 
   // Callback to open file in code editor (from file manager)
   const handleOpenFileInEditor = useCallback((filename: string, content: string) => {
     codeEditorRef.current?.openFileInTab(filename, content);
     setActiveEditorFileName(filename);
-    showNotification(`Opened ${filename}`);
-  }, [showNotification]);
+  }, []);
 
   const handleUpload = useCallback(() => {
     showNotification("File uploaded successfully!");
@@ -191,7 +193,6 @@ export default function Home() {
 
   return (
     <div className="app-container">
-      <Notification message={notification} />
       <Navbar />
 
       <div

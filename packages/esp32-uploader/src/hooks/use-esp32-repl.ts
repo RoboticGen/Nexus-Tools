@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { notification } from "antd";
 import { serialStreamManager } from "../utils/serial-stream-manager";
 
 interface REPLResult {
@@ -14,10 +15,32 @@ interface REPLResult {
   error: string;
 }
 
-export function useESP32REPL(serialPort: any) {
+interface UseESP32REPLOptions {
+  onNotification?: (type: "success" | "warning" | "error" | "info", message: string, description: string) => void;
+}
+
+export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
   const [isConnected, setIsConnected] = useState(false);
   const outputBufferRef = useRef<string>("");
   const unsubRef = useRef<(() => void) | null>(null);
+
+  // Notification helper
+  const showNotification = useCallback((
+    type: "success" | "warning" | "error" | "info",
+    message: string,
+    description: string
+  ) => {
+    if (options?.onNotification) {
+      options.onNotification(type, message, description);
+    } else {
+      notification[type]({
+        message,
+        description,
+        duration: 2,
+        placement: "topRight",
+      });
+    }
+  }, [options]);
 
   // ── Connect to REPL ────────────────────────────────────────────────────
 
@@ -26,89 +49,160 @@ export function useESP32REPL(serialPort: any) {
       throw new Error("Serial port not available");
     }
 
-    // Ensure stream manager is initialised with this port
-    await serialStreamManager.initialize(serialPort);
+    try {
+      // Ensure stream manager is initialised with this port
+      await serialStreamManager.initialize(serialPort);
 
-    // Get to a clean normal-mode prompt: Ctrl-C × 2, then Ctrl-B
-    await serialStreamManager.sendData("\x03\x03");
-    await delay(100);
-    await serialStreamManager.sendData("\x02");
-    await delay(100);
+      // Get to a clean normal-mode prompt: Ctrl-C × 2, then Ctrl-B
+      await serialStreamManager.sendData("\x03\x03");
+      await delay(100);
+      await serialStreamManager.sendData("\x02");
+      await delay(100);
 
-    // Subscribe to output
-    if (unsubRef.current) unsubRef.current();
-    unsubRef.current = serialStreamManager.addListener((data) => {
-      outputBufferRef.current += data;
-    });
+      // Subscribe to output
+      if (unsubRef.current) unsubRef.current();
+      unsubRef.current = serialStreamManager.addListener((data) => {
+        outputBufferRef.current += data;
+      });
 
-    // Clear any residual output from connection sequence
-    await delay(200);
-    outputBufferRef.current = "";
+      // Clear any residual output from connection sequence
+      await delay(200);
+      outputBufferRef.current = "";
 
-    setIsConnected(true);
-  }, [serialPort]);
+      setIsConnected(true);
+    } catch (error) {
+      showNotification(
+        "error",
+        "Connection Failed",
+        `Could not connect to REPL: ${error instanceof Error ? error.message : String(error)}`
+      );
+      throw error;
+    }
+  }, [serialPort, showNotification]);
 
   // ── Execute Command ────────────────────────────────────────────────────
 
   const executeCommand = useCallback(
     async (command: string): Promise<REPLResult> => {
       if (!isConnected || !serialStreamManager.isReady()) {
+        showNotification(
+          "error",
+          "REPL Not Connected",
+          "Cannot execute command. REPL connection lost."
+        );
         throw new Error("REPL not connected");
       }
 
-      const raw = await serialStreamManager.executeREPLCommand(command, 5000);
+      try {
+        const raw = await serialStreamManager.executeREPLCommand(command, 5000);
 
-      // Parse output and errors
-      const lines = raw.split("\n");
-      const outputLines: string[] = [];
-      const errorLines: string[] = [];
-      let inError = false;
-
-      for (const line of lines) {
-        // Skip prompt lines
-        if (line.trim().startsWith(">>>") || line.trim().startsWith("...")) {
-          inError = false;
-          continue;
+        // Check for device restart indicators
+        if (raw.includes("MPY:") || raw.includes(">>") || raw.includes("firmware")) {
+          showNotification(
+            "info",
+            "Device Reset Detected",
+            "ESP32 has been reset. REPL session restarted."
+          );
         }
-        
-        // Detect error start
-        if (line.includes("Traceback")) {
-          inError = true;
-          errorLines.push(line);
-        } else if (inError) {
-          // Continue capturing error lines until we hit a blank line or prompt
-          if (line.trim()) {
-            errorLines.push(line);
-          } else {
+
+        // Parse output and errors
+        const lines = raw.split("\n");
+        const outputLines: string[] = [];
+        const errorLines: string[] = [];
+        let inError = false;
+
+        for (const line of lines) {
+          // Skip prompt lines
+          if (line.trim().startsWith(">>>") || line.trim().startsWith("...")) {
             inError = false;
+            continue;
           }
-        } else if (line.trim()) {
-          // Regular output (skip the echo of the command itself)
-          if (line.trim() !== command.trim()) {
-            outputLines.push(line);
+          
+          // Detect error start
+          if (line.includes("Traceback")) {
+            inError = true;
+            errorLines.push(line);
+          } else if (inError) {
+            // Continue capturing error lines until we hit a blank line or prompt
+            if (line.trim()) {
+              errorLines.push(line);
+            } else {
+              inError = false;
+            }
+          } else if (line.trim()) {
+            // Regular output (skip the echo of the command itself)
+            if (line.trim() !== command.trim()) {
+              outputLines.push(line);
+            }
           }
         }
-      }
 
-      return {
-        output: outputLines.join("\n").trim(),
-        error: errorLines.join("\n").trim(),
-      };
+        // Show error notification if there's an error
+        if (errorLines.length > 0) {
+          showNotification(
+            "error",
+            "Execution Error",
+            errorLines[0] || "An error occurred during command execution"
+          );
+        }
+
+        return {
+          output: outputLines.join("\n").trim(),
+          error: errorLines.join("\n").trim(),
+        };
+      } catch (error) {
+        showNotification(
+          "error",
+          "Command Execution Failed",
+          `Error: ${error instanceof Error ? error.message : String(error)}`
+        );
+        throw error;
+      }
     },
-    [isConnected],
+    [isConnected, showNotification],
   );
 
   // ── Ctrl-C / Ctrl-D helpers ────────────────────────────────────────────
 
   const sendCtrlC = useCallback(async () => {
-    if (!serialStreamManager.isReady()) return;
-    await serialStreamManager.sendData("\x03");
-  }, []);
+    if (!serialStreamManager.isReady()) {
+      showNotification(
+        "warning",
+        "Not Connected",
+        "Cannot send Ctrl+C. REPL is not connected."
+      );
+      return;
+    }
+    try {
+      await serialStreamManager.sendData("\x03");
+    } catch (error) {
+      showNotification(
+        "error",
+        "Send Failed",
+        `Failed to send Ctrl+C: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }, [showNotification]);
 
   const sendCtrlD = useCallback(async () => {
-    if (!serialStreamManager.isReady()) return;
-    await serialStreamManager.sendData("\x04");
-  }, []);
+    if (!serialStreamManager.isReady()) {
+      showNotification(
+        "warning",
+        "Not Connected",
+        "Cannot send Ctrl+D. REPL is not connected."
+      );
+      return;
+    }
+    try {
+      await serialStreamManager.sendData("\x04");
+    } catch (error) {
+      showNotification(
+        "error",
+        "Send Failed",
+        `Failed to send Ctrl+D: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }, [showNotification]);
 
   // ── Disconnect ─────────────────────────────────────────────────────────
 
@@ -130,7 +224,7 @@ export function useESP32REPL(serialPort: any) {
 
     setIsConnected(false);
     outputBufferRef.current = "";
-  }, []);
+  }, [showNotification]);
 
   // ── Cleanup on unmount / port change ───────────────────────────────────
 

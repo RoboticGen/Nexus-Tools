@@ -224,7 +224,7 @@ class SerialStreamManager {
    *
    * This is the RELIABLE way to execute commands — no echo, no prompts in output.
    */
-  async executeRawREPL(code: string, timeout = 5000): Promise<RawREPLResult> {
+  async executeRawREPL(code: string, timeout = 8000): Promise<RawREPLResult> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
     }
@@ -247,7 +247,8 @@ class SerialStreamManager {
           await this.write(REPL_CONTROL.CTRL_C);
           await delay(50);
           await this.write(REPL_CONTROL.CTRL_A);
-          await waitFor(() => buffer.includes(">"), 2000);
+          // Increased timeout for raw REPL entry (3 seconds) - some devices are slow
+          await waitFor(() => buffer.includes(">"), 3000);
           buffer = "";
 
           // Step 2: Send code + Ctrl-D to execute
@@ -380,14 +381,20 @@ function delay(ms: number): Promise<void> {
 
 /**
  * Wait until `condition()` returns true, checking every 20 ms.
- * Throws on timeout.
+ * Throws on timeout with detailed error message.
  */
 function waitFor(condition: () => boolean, timeout: number): Promise<void> {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const check = () => {
       if (condition()) return resolve();
-      if (Date.now() - start > timeout) return reject(new Error("Timeout waiting for device response"));
+      const elapsed = Date.now() - start;
+      if (elapsed > timeout) {
+        const seconds = (timeout / 1000).toFixed(1);
+        return reject(new Error(
+          `Device response timeout after ${seconds}s. Device may be unresponsive, disconnected, or have poor USB connection.`
+        ));
+      }
       setTimeout(check, 20);
     };
     check();

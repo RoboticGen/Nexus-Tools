@@ -4,6 +4,7 @@
  */
 
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { notification } from "antd";
 
 interface ESP32ContextValue {
   // Connection state
@@ -32,25 +33,36 @@ const ESP32Context = createContext<ESP32ContextValue | undefined>(undefined);
 export function ESP32Provider({ children }: { children: ReactNode }) {
   const [serialPort, setSerialPort] = useState<any | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [notification, setNotification] = useState<{
-    type: "error" | "success" | "status" | null;
-    message: string;
-  }>({ type: null, message: "" });
 
   const showError = useCallback((message: string) => {
-    setNotification({ type: "error", message });
+    notification.error({
+      message: "Error",
+      description: message,
+      duration: 2,
+      placement: "topRight",
+    });
   }, []);
 
   const showSuccess = useCallback((message: string) => {
-    setNotification({ type: "success", message });
+    notification.success({
+      message: "Success",
+      description: message,
+      duration: 2,
+      placement: "topRight",
+    });
   }, []);
 
   const showStatus = useCallback((message: string) => {
-    setNotification({ type: "status", message });
+    notification.info({
+      message: "Status",
+      description: message,
+      duration: 2,
+      placement: "topRight",
+    });
   }, []);
 
   const clearNotification = useCallback(() => {
-    setNotification({ type: null, message: "" });
+    // Ant Design notifications auto-dismiss, no need to clear
   }, []);
 
   return (
@@ -64,7 +76,7 @@ export function ESP32Provider({ children }: { children: ReactNode }) {
         showSuccess,
         showStatus,
         clearNotification,
-        notification,
+        notification: { type: null, message: "" },
       }}
     >
       {children}
