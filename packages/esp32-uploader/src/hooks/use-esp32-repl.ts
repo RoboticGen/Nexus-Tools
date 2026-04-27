@@ -111,8 +111,20 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
           .replace(/\r/g, "")
           // Strip control characters that can appear during USB glitches.
           .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
-        const continuationPrompt = /(^|\n)\.\.\.(\s|$)/.test(normalized);
-        setIsAwaitingContinuation(continuationPrompt);
+        
+        // Split once and reuse for both continuation detection and parsing
+        const lines = normalized.split('\n');
+        
+        // Detect continuation mode by checking the LAST actual prompt in the output
+        let lastPrompt = ">>>";  // default
+        for (let i = lines.length - 1; i >= 0; i--) {
+          const line = lines[i].trim();
+          if (line.startsWith(">>>") || line.startsWith("...")) {
+            lastPrompt = line.startsWith(">>>") ? ">>>" : "...";
+            break;
+          }
+        }
+        setIsAwaitingContinuation(lastPrompt === "...");
 
         // Check for device restart indicators
         if (raw.includes("MPY:") || raw.includes(">>") || raw.includes("firmware")) {
@@ -124,7 +136,6 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
         }
 
         // Parse output and errors
-        const lines = normalized.split("\n");
         const outputLines: string[] = [];
         const errorLines: string[] = [];
         let inError = false;

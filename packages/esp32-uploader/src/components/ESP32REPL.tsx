@@ -107,6 +107,8 @@ export function ESP32REPL({
       push("error", `${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setBusy(false);
+      // Restore focus with small delay to ensure DOM has settled
+      setTimeout(() => inputRef.current?.focus(), 10);
     }
   }, [connected, cmd, busy, executeCommand, isAwaitingContinuation, push]);
 
