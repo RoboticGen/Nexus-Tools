@@ -53,6 +53,7 @@ export function getAuthConfig(): NextAuthOptions {
           if (account) {
             token.accessToken = account.access_token;
             token.refreshToken = account.refresh_token;
+            token.idToken = account.id_token;
             token.expiresAt = (account.expires_at || Date.now() / 1000 + 3600) as number;
             token.sub = account.providerAccountId;
           }
@@ -114,6 +115,7 @@ export function getAuthConfig(): NextAuthOptions {
               image: token.picture as string | undefined,
             },
             accessToken: token.accessToken as string,
+            idToken: token.idToken as string | undefined,
             refreshToken: token.refreshToken as string,
             expiresAt: token.expiresAt as number,
             error: token.error as string | undefined,
