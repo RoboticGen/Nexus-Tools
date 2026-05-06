@@ -36,5 +36,11 @@
   "engines": {
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
+  },
+  "dependencies": {
+    "@auth/core": "^0.34.3",
+    "@auth/nextjs": "0.0.0-380f8d56",
+    "jsonwebtoken": "^9.0.3",
+    "next-auth": "^4.24.14"
   }
 }

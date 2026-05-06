@@ -12,6 +12,7 @@
     "clean": "rimraf .next .turbo node_modules"
   },
   "dependencies": {
+    "@nexus-tools/auth": "workspace:*",
     "@nexus-tools/esp32-uploader": "workspace:*",
     "@nexus-tools/monaco-editor": "workspace:*",
     "@nexus-tools/skulpt-executor": "workspace:*",
