@@ -1,7 +1,7 @@
 "use client";
 
 import { DeleteOutlined, StopOutlined, LinkOutlined, DisconnectOutlined } from "@ant-design/icons";
-import { useESP32Uploader, ESP32REPL, ESP32FileManager } from "@nexus-tools/esp32-uploader";
+import { useESP32Uploader, ESP32REPL, ESP32FileManager, ESP32Flasher } from "@nexus-tools/esp32-uploader";
 import { Button as UIButton } from "@nexus-tools/ui";
 import { Tabs, Space, Button } from "antd";
 import { useState, useMemo, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
@@ -109,7 +109,9 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
   }), [connectToDevice, resetConnection]);
 
   const canShowAdvancedFeatures = useMemo(() => {
-    return Boolean(espSupported) && Boolean(serialPort);
+    const result = Boolean(espSupported) && Boolean(serialPort);
+    console.log("[ESP32OutputPanel] canShowAdvancedFeatures:", result, "espSupported:", espSupported, "serialPort:", !!serialPort);
+    return result;
   }, [espSupported, serialPort]);
 
   useEffect(() => {
@@ -162,8 +164,88 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     <div className="tab-content-wrapper">
       {!canShowAdvancedFeatures && (
         <div style={{ padding: "1rem" }}>
+          {espSupported === false && (
+            <div style={{ 
+              fontSize: "0.9rem", 
+              marginBottom: "1rem",
+              padding: "0.75rem",
+              background: "#f8d7da",
+              border: "1px solid #f5c6cb",
+              borderRadius: "4px",
+              color: "#721c24"
+            }}>
+              <strong>Web Serial API not available</strong>
+              <br />
+              This browser doesn't support Web Serial API. Please use Chrome, Edge, or Opera on HTTPS or localhost.
+            </div>
+          )}
+          {espSupported !== false && (
+            <div style={{ fontSize: "0.9rem", marginBottom: "1rem" }}>
+              {espSupported === null ? "Checking support..." : "Connect your device first to access the REPL."}
+            </div>
+          )}
+          <Space style={{ width: "100%" }}>
+            {!isConnected ? (
+              <Button
+                type="primary"
+                icon={<LinkOutlined />}
+                onClick={connectToDevice}
+                disabled={isFlashing || espSupported === false}
+                block
+              >
+                {espSupported === null ? "Checking..." : "Connect Device"}
+              </Button>
+            ) : (
+              <Button
+                danger
+                icon={<DisconnectOutlined />}
+                onClick={resetConnection}
+                disabled={isFlashing}
+                block
+              >
+                Disconnect
+              </Button>
+            )}
+          </Space>
+          {connectionError && (
+            <div style={{ 
+              marginTop: "1rem",
+              padding: "0.75rem",
+              background: "#f8d7da",
+              border: "1px solid #f5c6cb",
+              borderRadius: "4px",
+              color: "#721c24",
+              fontSize: "0.85rem"
+            }}>
+              <strong>Error:</strong> {connectionError}
+            </div>
+          )}
+        </div>
+      )}
+
+      {canShowAdvancedFeatures && (
+        <>
+          {isFlashing && (
+            <div style={{ padding: "1rem", background: "#fff3cd", borderBottom: "1px solid #ffc107" }}>
+              REPL is disabled during code upload. Please wait for upload to complete.
+            </div>
+          )}
+          <ESP32REPL
+            serialPort={serialPort}
+            isConnected={isConnected}
+            onError={onError}
+          />
+        </>
+      )}
+    </div>
+  );
+
+  const flasherTab = (
+    <div className="tab-content-wrapper">
+      {!canShowAdvancedFeatures && (
+        <div style={{ padding: "1rem" }}>
           <div style={{ fontSize: "0.9rem", marginBottom: "1rem" }}>
-            Connect your device first to access the REPL.
+            Connect your device first to flash firmware.
           </div>
           <Space style={{ width: "100%" }}>
             {!isConnected ? (
@@ -192,18 +274,12 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
       )}
 
       {canShowAdvancedFeatures && (
-        <>
-          {isFlashing && (
-            <div style={{ padding: "1rem", background: "#fff3cd", borderBottom: "1px solid #ffc107" }}>
-              REPL is disabled during code upload. Please wait for upload to complete.
-            </div>
-          )}
-          <ESP32REPL
-            serialPort={serialPort}
-            isConnected={isConnected}
-            onError={onError}
-          />
-        </>
+        <ESP32Flasher
+          serialPort={serialPort}
+          isConnected={isConnected}
+          onStatusUpdate={onStatusUpdate}
+          onError={onError}
+        />
       )}
     </div>
   );
@@ -257,6 +333,12 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
             label: "REPL",
             disabled: !canShowAdvancedFeatures,
             children: replTab,
+          },
+          {
+            key: "flasher",
+            label: "Flasher",
+            disabled: !canShowAdvancedFeatures,
+            children: flasherTab,
           },
         ]}
       />

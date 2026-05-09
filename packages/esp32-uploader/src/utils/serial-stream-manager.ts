@@ -378,6 +378,156 @@ class SerialStreamManager {
     this.releaseLocks();
     this.port = null;
   }
+
+  // ── Flasher Operations ───────────────────────────────────────────────────
+
+  /**
+   * Detect ESP32 chip information via Raw REPL.
+   * Returns chip ID, family, and revision.
+   */
+  async detectChip(): Promise<{ chipId: string; chipFamily: string; revision: number }> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    const code = `
+import binascii
+import esp
+
+chip_id = esp.chip_id()
+mac = binascii.hexlify(esp.mac()).decode()
+print(f"CHIP_ID={chip_id}")
+print(f"MAC={mac}")
+`.trim();
+
+    const result = await this.executeRawREPL(code, 3000);
+    
+    if (result.error) {
+      throw new Error(`Failed to detect chip: ${result.error}`);
+    }
+
+    // Parse output
+    const output = result.output || "";
+    const chipIdMatch = output.match(/CHIP_ID=(\d+)/);
+    const macMatch = output.match(/MAC=([a-f0-9]+)/);
+
+    if (!chipIdMatch) {
+      throw new Error("Could not parse chip ID from device");
+    }
+
+    // Map chip ID to family (common ESP32 models)
+    const chipId = parseInt(chipIdMatch[1]);
+    let chipFamily = "ESP32";
+    if (chipId === 0x9) {
+      chipFamily = "ESP32-S3";
+    } else if (chipId === 0x4) {
+      chipFamily = "ESP32-S2";
+    } else if (chipId === 0x1b) {
+      chipFamily = "ESP32-C3";
+    } else if (chipId === 0x5) {
+      chipFamily = "ESP32-C6";
+    }
+
+    return {
+      chipId: macMatch ? macMatch[1] : `chip_${chipId}`,
+      chipFamily,
+      revision: chipId,
+    };
+  }
+
+  /**
+   * Get MicroPython firmware version currently on device.
+   */
+  async getFirmwareVersion(): Promise<string> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    const code = `import sys; print(sys.version)`.trim();
+    const result = await this.executeRawREPL(code, 2000);
+
+    if (result.error) {
+      return "Unknown";
+    }
+
+    const versionMatch = result.output.match(/MicroPython v(\d+\.\d+\.\d+)/);
+    return versionMatch ? versionMatch[1] : "Unknown";
+  }
+
+  /**
+   * Erase entire flash storage on ESP32.
+   * WARNING: This removes all files, including boot scripts.
+   */
+  async eraseFlash(): Promise<void> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    // Use raw REPL with extended timeout (erase can take 10+ seconds)
+    const code = `
+import os
+import machine
+print("Erasing flash...")
+# Erase filesystem
+try:
+  for f in os.listdir('/'):
+    try:
+      if f != 'sys':
+        os.remove(f) if os.stat(f)[0] & 0x4000 == 0 else None
+    except:
+      pass
+except:
+  pass
+print("Erase complete")
+`.trim();
+
+    const result = await this.executeRawREPL(code, 15000);
+
+    if (result.error && !result.error.includes("completed")) {
+      throw new Error(`Flash erase failed: ${result.error}`);
+    }
+  }
+
+  /**
+   * Soft reset the ESP32 device.
+   * Resets the MicroPython interpreter without power cycling.
+   */
+  async softReset(): Promise<void> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    return this.enqueue("softReset", async () => {
+      await this.write(REPL_CONTROL.CTRL_D);
+      await delay(1000);
+    });
+  }
+
+  /**
+   * Hard reset by controlling DTR/RTS lines if available.
+   * Falls back to soft reset if hardware lines aren't accessible.
+   */
+  async hardReset(): Promise<void> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    try {
+      // Try to use DTR/RTS if available
+      if (this.port?.setSignals) {
+        await this.port.setSignals({ dataTerminalReady: false });
+        await delay(100);
+        await this.port.setSignals({ dataTerminalReady: true });
+        await delay(500);
+      } else {
+        // Fallback: soft reset
+        await this.softReset();
+      }
+    } catch (err) {
+      console.warn("Hard reset failed, falling back to soft reset:", err);
+      await this.softReset();
+    }
+  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

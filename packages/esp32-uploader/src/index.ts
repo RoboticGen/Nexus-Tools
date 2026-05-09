@@ -7,7 +7,7 @@
 import './styles';
 
 // Components
-export { ESP32Uploader, ESP32UploaderSidebar, ESP32REPL, ESP32FileManager, DeviceFileManagerSidebar } from "./components";
+export { ESP32Uploader, ESP32UploaderSidebar, ESP32REPL, ESP32FileManager, ESP32Flasher, DeviceFileManagerSidebar } from "./components";
 export type { ESP32UploaderProps } from "./components";
 export type { DeviceFileManagerSidebarProps, DeviceFileManagerSidebarHandle } from "./components";
 
@@ -19,13 +19,19 @@ export { useESP32Uploader } from "./hooks/use-esp32-uploader";
 export { useESP32Serial } from "./hooks/use-esp32-serial";
 export { useESP32REPL } from "./hooks/use-esp32-repl";
 export { useESP32FileManager } from "./hooks/use-esp32-file-manager";
+export { useESP32Flasher } from "./hooks/use-esp32-flasher";
 
 // Types
 export type { 
   ESP32Device, 
   ESP32UploaderState, 
   SerialPortOptions, 
-  USBFilter 
+  USBFilter,
+  ChipInfo,
+  FirmwareImage,
+  FlashOperation,
+  FlasherState,
+  ESP32FlasherProps,
 } from "./types/esp32";
 
 // Constants
@@ -34,3 +40,13 @@ export { ESP32_DEVICES, ESP32_USB_FILTERS, DEFAULT_SERIAL_OPTIONS } from "./cons
 // Utilities
 export { convertToMicroPython, createMainPyFile } from "./utils/micropython-converter";
 export { serialStreamManager } from "./utils/serial-stream-manager";
+export {
+  getAvailableFirmwares,
+  filterFirmwaresByChip,
+  downloadFirmware,
+  verifyFirmwareChecksum,
+  translateFlasherError,
+  formatFileSize,
+  formatDuration,
+  estimateFlashTime,
+} from "./utils/flasher-helper";
