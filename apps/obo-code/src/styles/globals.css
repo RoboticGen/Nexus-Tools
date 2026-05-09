@@ -1880,6 +1880,24 @@ textarea.iPadShowKeyboard {
   background: #f9f9f9;
 }
 
+/* Tabs styling within flasher */
+.flasher .ant-tabs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.flasher .ant-tabs-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.flasher .ant-tabs-tabpane {
+  height: 100%;
+  overflow-y: auto;
+}
+
 .flasher__message {
   display: flex;
   align-items: center;
@@ -1952,6 +1970,23 @@ textarea.iPadShowKeyboard {
   font-size: 0.85rem;
 }
 
+.flasher__error code {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.1rem 0.3rem;
+  border-radius: 2px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+}
+
+.flasher__error ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.flasher__error li {
+  margin: 0.15rem 0;
+}
+
 .flasher__success {
   background: var(--status-success-bg);
   border: 1px solid var(--status-success-border);
@@ -1993,6 +2028,21 @@ textarea.iPadShowKeyboard {
   overflow: hidden;
 }
 
+/* New tab content styles */
+.flasher__log-tab-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.flasher__log-header {
+  flex-shrink: 0;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
 .flasher__log-title {
   flex-shrink: 0;
   display: flex;
@@ -2015,6 +2065,10 @@ textarea.iPadShowKeyboard {
   font-size: 0.7rem;
   line-height: 1.2;
   color: #333;
+}
+
+.flasher__log-tab-content .flasher__log {
+  height: 100%;
 }
 
 .flasher__log-empty {

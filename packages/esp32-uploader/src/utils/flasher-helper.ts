@@ -9,35 +9,50 @@ import type { FirmwareImage, ChipInfo } from "../types/esp32";
 
 /**
  * Get list of available MicroPython releases for ESP32.
- * In production, fetch from micropython.org/download or a custom server.
- * For now, return hardcoded common versions.
+ * Uses official GitHub releases and micropython.org downloads.
  */
 export function getAvailableFirmwares(): FirmwareImage[] {
   return [
     {
-      name: "MicroPython 1.24",
-      version: "1.24",
-      url: "https://micropython.org/resources/firmware/esp32-1.24.bin",
-      releaseDate: "2024-06-15",
+      name: "MicroPython 1.24 (ESP32)",
+      version: "1.24-esp32",
+      url: "https://github.com/micropython/micropython/releases/download/v1.24/esp32-20240602-v1.24.bin",
+      releaseDate: "2024-06-02",
       description: "Stable release for ESP32",
       chipFamily: "ESP32",
-      checksumSha256: undefined, // Add checksums as available
+      checksumSha256: undefined,
     },
     {
-      name: "MicroPython 1.23",
-      version: "1.23",
-      url: "https://micropython.org/resources/firmware/esp32-1.23.bin",
-      releaseDate: "2024-03-01",
-      description: "Previous stable release",
+      name: "MicroPython 1.23 (ESP32)",
+      version: "1.23-esp32",
+      url: "https://github.com/micropython/micropython/releases/download/v1.23/esp32-20240304-v1.23.bin",
+      releaseDate: "2024-03-04",
+      description: "Previous stable release for ESP32",
       chipFamily: "ESP32",
     },
     {
       name: "MicroPython 1.24 (ESP32-S3)",
-      version: "1.24",
-      url: "https://micropython.org/resources/firmware/esp32s3-1.24.bin",
-      releaseDate: "2024-06-15",
+      version: "1.24-esp32s3",
+      url: "https://github.com/micropython/micropython/releases/download/v1.24/esp32s3-20240602-v1.24.bin",
+      releaseDate: "2024-06-02",
       description: "Stable release for ESP32-S3",
       chipFamily: "ESP32-S3",
+    },
+    {
+      name: "MicroPython 1.23 (ESP32-S3)",
+      version: "1.23-esp32s3",
+      url: "https://github.com/micropython/micropython/releases/download/v1.23/esp32s3-20240304-v1.23.bin",
+      releaseDate: "2024-03-04",
+      description: "Previous stable release for ESP32-S3",
+      chipFamily: "ESP32-S3",
+    },
+    {
+      name: "MicroPython 1.24 (ESP32-C3)",
+      version: "1.24-esp32c3",
+      url: "https://github.com/micropython/micropython/releases/download/v1.24/esp32c3-20240602-v1.24.bin",
+      releaseDate: "2024-06-02",
+      description: "Stable release for ESP32-C3",
+      chipFamily: "ESP32-C3",
     },
   ];
 }
@@ -63,13 +78,25 @@ export async function downloadFirmware(
   onProgress?: (loaded: number, total: number) => void
 ): Promise<ArrayBuffer> {
   try {
-    const response = await fetch(url);
+    console.log(`[Flasher] Downloading firmware from: ${url}`);
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Accept": "application/octet-stream",
+      },
+      mode: "cors",
+      credentials: "omit",
+    });
 
     if (!response.ok) {
+      console.error(`[Flasher] HTTP error ${response.status}: ${response.statusText}`);
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
     const total = parseInt(response.headers.get("content-length") || "0");
+    console.log(`[Flasher] Firmware size: ${total} bytes`);
+    
     const reader = response.body?.getReader();
 
     if (!reader) {
@@ -98,9 +125,23 @@ export async function downloadFirmware(
       offset += chunk.length;
     }
 
+    console.log(`[Flasher] Download complete: ${totalLength} bytes`);
     return result.buffer;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    console.error(`[Flasher] Download failed: ${message}`);
+    
+    // Provide more specific error messages
+    if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
+      throw new Error("Network error: Check your internet connection and try again. The firmware URL may be unreachable.");
+    } else if (message.includes("CORS") || message.includes("cors")) {
+      throw new Error("CORS error: This URL is not allowed. Try downloading from a different source.");
+    } else if (message.includes("404")) {
+      throw new Error("Firmware not found: The firmware file may have been moved or removed.");
+    } else if (message.includes("Connection refused")) {
+      throw new Error("Connection refused: The download server is not responding.");
+    }
+    
     throw new Error(`Failed to download firmware: ${message}`);
   }
 }
@@ -142,6 +183,23 @@ export async function verifyFirmwareChecksum(
 export function translateFlasherError(error: unknown): string {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
+
+    // Download/network errors
+    if (message.includes("download")) {
+      return error.message; // Use full message as it's already detailed
+    }
+
+    if (message.includes("network error")) {
+      return error.message;
+    }
+
+    if (message.includes("cors")) {
+      return error.message;
+    }
+
+    if (message.includes("not found")) {
+      return error.message;
+    }
 
     // Detect common error patterns
     if (message.includes("timeout")) {

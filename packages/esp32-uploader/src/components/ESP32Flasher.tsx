@@ -6,7 +6,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Button, Select, Checkbox, Space, Progress } from "antd";
+import { Button, Select, Checkbox, Space, Progress, Tabs } from "antd";
 import {
   ThunderboltOutlined,
   StopOutlined,
@@ -32,6 +32,7 @@ export function ESP32Flasher({
   onError,
 }: ESP32FlasherProps) {
   const [logs, setLogs] = useState<FlashLog[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("flasher");
   const [eraseFlash, setEraseFlash] = useState(true);
   const [createBackup, setCreateBackup] = useState(true);
   const [autoReset, setAutoReset] = useState(true);
@@ -116,209 +117,236 @@ export function ESP32Flasher({
         </span>
       </div>
 
-      {/* Main Content */}
-      <div className="flasher__content">
-        {/* Not Connected */}
-        {!isConnected && (
-          <div className="flasher__message">
-            <p>Connect your ESP32 device to start flashing firmware.</p>
-          </div>
-        )}
-
-        {/* Connected but no chip */}
-        {isConnected && !state.chipInfo && (
-          <div className="flasher__message">
-            <p>Detecting device...</p>
-          </div>
-        )}
-
-        {/* Connected with chip detected */}
-        {isConnected && state.chipInfo && (
-          <>
-            {/* Chip Info Section */}
-            <div className="flasher__section">
-              <div className="flasher__section-title">Device Information</div>
-              <div className="flasher__info-box">
-                <div className="flasher__info-row">
-                  <span className="flasher__info-label">Chip Family:</span>
-                  <span className="flasher__info-value">{state.chipInfo.chipFamily}</span>
-                </div>
-                <div className="flasher__info-row">
-                  <span className="flasher__info-label">Chip ID:</span>
-                  <span className="flasher__info-value">{state.chipInfo.chipId}</span>
-                </div>
-              </div>
-              <Button
-                size="small"
-                onClick={handleDetectChip}
-                disabled={isFlashingInProgress}
-                style={{ marginTop: "4px" }}
-              >
-                Refresh
-              </Button>
-            </div>
-
-            {/* Firmware Selection Section */}
-            <div className="flasher__section">
-              <div className="flasher__section-title">Firmware Selection</div>
-              <Select
-                placeholder="Select MicroPython version..."
-                disabled={!canSelectFirmware}
-                onChange={(value) => {
-                  const fw = compatibleFirmwares.find((f) => f.version === value);
-                  if (fw) selectFirmware(fw);
-                }}
-                style={{ width: "100%" }}
-                options={compatibleFirmwares.map((fw) => ({
-                  label: `${fw.name}`,
-                  value: fw.version,
-                  description: fw.description,
-                }))}
-              />
-              {state.selectedFirmware && (
-                <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "#666" }}>
-                  Selected: <strong>{state.selectedFirmware.name}</strong>
-                </div>
-              )}
-            </div>
-
-            {/* Pre-Flash Options */}
-            <div className="flasher__section">
-              <div className="flasher__section-title">Pre-Flash Options</div>
-              <Space direction="vertical" style={{ width: "100%" }}>
-                <Checkbox
-                  checked={createBackup}
-                  onChange={(e) => setCreateBackup(e.target.checked)}
-                  disabled={isFlashingInProgress}
-                >
-                  Create backup before flashing
-                </Checkbox>
-                <Checkbox
-                  checked={eraseFlash}
-                  onChange={(e) => setEraseFlash(e.target.checked)}
-                  disabled={isFlashingInProgress}
-                >
-                  Erase flash memory (recommended)
-                </Checkbox>
-                <Checkbox
-                  checked={autoReset}
-                  onChange={(e) => setAutoReset(e.target.checked)}
-                  disabled={isFlashingInProgress}
-                >
-                  Auto reset device after flashing
-                </Checkbox>
-              </Space>
-            </div>
-
-            {/* Flash Progress Section */}
-            {isFlashingInProgress && (
-              <div className="flasher__section">
-                <div className="flasher__section-title">Flashing Progress</div>
-                <Progress
-                  type="circle"
-                  percent={state.progress}
-                  format={(percent) => `${percent}%`}
-                  style={{ textAlign: "center" }}
-                  width={80}
-                />
-                <div style={{ marginTop: "8px", textAlign: "center" }}>
-                  <div style={{ fontSize: "0.8rem", color: "#666" }}>
-                    {state.currentOperation}
+      {/* Tabbed Interface */}
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        style={{ flex: 1, display: "flex", flexDirection: "column" }}
+        tabBarStyle={{ margin: 0, paddingLeft: "8px" }}
+        items={[
+          {
+            key: "flasher",
+            label: "Flasher",
+            children: (
+              <div className="flasher__content">
+                {/* Not Connected */}
+                {!isConnected && (
+                  <div className="flasher__message">
+                    <p>Connect your ESP32 device to start flashing firmware.</p>
                   </div>
-                  {state.estimatedTimeRemaining > 0 && (
-                    <div style={{ fontSize: "0.75rem", color: "#999", marginTop: "2px" }}>
-                      ETA: {formatDuration(state.estimatedTimeRemaining)}
+                )}
+
+                {/* Connected but no chip */}
+                {isConnected && !state.chipInfo && (
+                  <div className="flasher__message">
+                    <p>Detecting device...</p>
+                  </div>
+                )}
+
+                {/* Connected with chip detected */}
+                {isConnected && state.chipInfo && (
+                  <>
+                    {/* Chip Info Section */}
+                    <div className="flasher__section">
+                      <div className="flasher__section-title">Device Information</div>
+                      <div className="flasher__info-box">
+                        <div className="flasher__info-row">
+                          <span className="flasher__info-label">Chip Family:</span>
+                          <span className="flasher__info-value">{state.chipInfo.chipFamily}</span>
+                        </div>
+                        <div className="flasher__info-row">
+                          <span className="flasher__info-label">Chip ID:</span>
+                          <span className="flasher__info-value">{state.chipInfo.chipId}</span>
+                        </div>
+                      </div>
+                      <Button
+                        size="small"
+                        onClick={handleDetectChip}
+                        disabled={isFlashingInProgress}
+                        style={{ marginTop: "4px" }}
+                      >
+                        Refresh
+                      </Button>
                     </div>
+
+                    {/* Firmware Selection Section */}
+                    <div className="flasher__section">
+                      <div className="flasher__section-title">Firmware Selection</div>
+                      <Select
+                        placeholder="Select MicroPython version..."
+                        disabled={!canSelectFirmware}
+                        onChange={(value) => {
+                          const fw = compatibleFirmwares.find((f) => f.version === value);
+                          if (fw) selectFirmware(fw);
+                        }}
+                        style={{ width: "100%" }}
+                        options={compatibleFirmwares.map((fw) => ({
+                          label: `${fw.name}`,
+                          value: fw.version,
+                          description: fw.description,
+                        }))}
+                      />
+                      {state.selectedFirmware && (
+                        <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "#666" }}>
+                          Selected: <strong>{state.selectedFirmware.name}</strong>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pre-Flash Options */}
+                    <div className="flasher__section">
+                      <div className="flasher__section-title">Pre-Flash Options</div>
+                      <Space direction="vertical" style={{ width: "100%" }}>
+                        <Checkbox
+                          checked={createBackup}
+                          onChange={(e) => setCreateBackup(e.target.checked)}
+                          disabled={isFlashingInProgress}
+                        >
+                          Create backup before flashing
+                        </Checkbox>
+                        <Checkbox
+                          checked={eraseFlash}
+                          onChange={(e) => setEraseFlash(e.target.checked)}
+                          disabled={isFlashingInProgress}
+                        >
+                          Erase flash memory (recommended)
+                        </Checkbox>
+                        <Checkbox
+                          checked={autoReset}
+                          onChange={(e) => setAutoReset(e.target.checked)}
+                          disabled={isFlashingInProgress}
+                        >
+                          Auto reset device after flashing
+                        </Checkbox>
+                      </Space>
+                    </div>
+
+                    {/* Flash Progress Section */}
+                    {isFlashingInProgress && (
+                      <div className="flasher__section">
+                        <div className="flasher__section-title">Flashing Progress</div>
+                        <Progress
+                          type="circle"
+                          percent={state.progress}
+                          format={(percent) => `${percent}%`}
+                          style={{ textAlign: "center" }}
+                          width={80}
+                        />
+                        <div style={{ marginTop: "8px", textAlign: "center" }}>
+                          <div style={{ fontSize: "0.8rem", color: "#666" }}>
+                            {state.currentOperation}
+                          </div>
+                          {state.estimatedTimeRemaining > 0 && (
+                            <div style={{ fontSize: "0.75rem", color: "#999", marginTop: "2px" }}>
+                              ETA: {formatDuration(state.estimatedTimeRemaining)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Error Display */}
+                    {state.error && (
+                      <div className="flasher__error">
+                        <strong>⚠ Error:</strong> {state.error}
+                        {state.error.includes("download") || state.error.includes("Network") ? (
+                          <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", opacity: 0.9 }}>
+                            <p>Troubleshooting:</p>
+                            <ul style={{ marginTop: "0.25rem", paddingLeft: "1.25rem" }}>
+                              <li>Check your internet connection</li>
+                              <li>Try a different MicroPython version</li>
+                              <li>Visit <code>micropython.org/download</code> to get a firmware URL</li>
+                            </ul>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+
+                    {/* Status Messages */}
+                    {state.phase === "completed" && (
+                      <div className="flasher__success">
+                        <strong>✓ Flash Successful!</strong>
+                        <p>Your ESP32 has been updated to {state.selectedFirmware?.name}</p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flasher__actions">
+                      {!isFlashingInProgress ? (
+                        <>
+                          <Button
+                            type="primary"
+                            danger
+                            icon={<ThunderboltOutlined />}
+                            onClick={() => startFlashing()}
+                            disabled={!canFlash}
+                            size="large"
+                          >
+                            Flash Firmware
+                          </Button>
+                          <Button
+                            icon={<ReloadOutlined />}
+                            onClick={() => resetDevice()}
+                            disabled={!isConnected}
+                          >
+                            Reset Device
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          danger
+                          icon={<StopOutlined />}
+                          onClick={() => cancelFlashing()}
+                          size="large"
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            ),
+          },
+          {
+            key: "log",
+            label: `Log (${logs.length})`,
+            children: (
+              <div className="flasher__log-tab-content">
+                <div className="flasher__log-header">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    onClick={() => {
+                      setLogs([]);
+                      addLog("Log cleared");
+                    }}
+                  >
+                    Clear Log
+                  </Button>
+                </div>
+                <div className="flasher__log">
+                  {logs.length === 0 ? (
+                    <div className="flasher__log-empty">No operations yet</div>
+                  ) : (
+                    logs.map((log, i) => (
+                      <div
+                        key={i}
+                        className={`flasher__log-line flasher__log-line--${log.type}`}
+                      >
+                        <span className="flasher__log-time">{log.timestamp}</span>
+                        <span className="flasher__log-message">{log.message}</span>
+                      </div>
+                    ))
                   )}
+                  <div ref={scrollRef} />
                 </div>
               </div>
-            )}
-
-            {/* Error Display */}
-            {state.error && (
-              <div className="flasher__error">
-                <strong>Error:</strong> {state.error}
-              </div>
-            )}
-
-            {/* Status Messages */}
-            {state.phase === "completed" && (
-              <div className="flasher__success">
-                <strong>✓ Flash Successful!</strong>
-                <p>Your ESP32 has been updated to {state.selectedFirmware?.name}</p>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flasher__actions">
-              {!isFlashingInProgress ? (
-                <>
-                  <Button
-                    type="primary"
-                    danger
-                    icon={<ThunderboltOutlined />}
-                    onClick={() => startFlashing()}
-                    disabled={!canFlash}
-                    size="large"
-                  >
-                    Flash Firmware
-                  </Button>
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={() => resetDevice()}
-                    disabled={!isConnected}
-                  >
-                    Reset Device
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  danger
-                  icon={<StopOutlined />}
-                  onClick={() => cancelFlashing()}
-                  size="large"
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Operation Log */}
-      <div className="flasher__log-container">
-        <div className="flasher__log-title">
-          <span>Operation Log</span>
-          <Button
-            type="text"
-            size="small"
-            icon={<DeleteOutlined />}
-            onClick={() => {
-              setLogs([]);
-              addLog("Log cleared");
-            }}
-          >
-            Clear
-          </Button>
-        </div>
-        <div className="flasher__log">
-          {logs.length === 0 ? (
-            <div className="flasher__log-empty">No operations yet</div>
-          ) : (
-            logs.map((log, i) => (
-              <div
-                key={i}
-                className={`flasher__log-line flasher__log-line--${log.type}`}
-              >
-                <span className="flasher__log-time">{log.timestamp}</span>
-                <span className="flasher__log-message">{log.message}</span>
-              </div>
-            ))
-          )}
-          <div ref={scrollRef} />
-        </div>
-      </div>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }
