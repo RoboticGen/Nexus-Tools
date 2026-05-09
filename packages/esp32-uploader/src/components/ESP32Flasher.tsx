@@ -87,13 +87,14 @@ export function ESP32Flasher({
   }, [serialPort, isConnected, detectChip, addLog]);
 
   useEffect(() => {
-    if (serialPort && isConnected && !state.chipInfo) {
+    // Only auto-detect once when connected, don't keep retrying if detection fails
+    if (serialPort && isConnected && !state.chipInfo && state.phase !== "detecting") {
       const timer = setTimeout(() => {
         handleDetectChip();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [serialPort, isConnected, state.chipInfo, handleDetectChip]);
+  }, [serialPort, isConnected]); // Removed handleDetectChip from deps to prevent infinite loop
 
   // ── UI State Helpers ───────────────────────────────────────────────────
 
@@ -151,7 +152,7 @@ export function ESP32Flasher({
                 size="small"
                 onClick={handleDetectChip}
                 disabled={isFlashingInProgress}
-                style={{ marginTop: "8px" }}
+                style={{ marginTop: "4px" }}
               >
                 Refresh
               </Button>
@@ -175,7 +176,7 @@ export function ESP32Flasher({
                 }))}
               />
               {state.selectedFirmware && (
-                <div style={{ marginTop: "8px", fontSize: "0.9rem", color: "#666" }}>
+                <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "#666" }}>
                   Selected: <strong>{state.selectedFirmware.name}</strong>
                 </div>
               )}
@@ -218,15 +219,15 @@ export function ESP32Flasher({
                   percent={state.progress}
                   format={(percent) => `${percent}%`}
                   style={{ textAlign: "center" }}
-                  width={100}
+                  width={80}
                 />
-                <div style={{ marginTop: "12px", textAlign: "center" }}>
-                  <div style={{ fontSize: "0.9rem", color: "#666" }}>
+                <div style={{ marginTop: "8px", textAlign: "center" }}>
+                  <div style={{ fontSize: "0.8rem", color: "#666" }}>
                     {state.currentOperation}
                   </div>
                   {state.estimatedTimeRemaining > 0 && (
-                    <div style={{ fontSize: "0.9rem", color: "#666" }}>
-                      Estimated time: {formatDuration(state.estimatedTimeRemaining)}
+                    <div style={{ fontSize: "0.75rem", color: "#999", marginTop: "2px" }}>
+                      ETA: {formatDuration(state.estimatedTimeRemaining)}
                     </div>
                   )}
                 </div>

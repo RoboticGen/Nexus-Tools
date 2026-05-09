@@ -392,12 +392,16 @@ class SerialStreamManager {
 
     const code = `
 import binascii
-import esp
+import os
+import machine
 
-chip_id = esp.chip_id()
-mac = binascii.hexlify(esp.mac()).decode()
-print(f"CHIP_ID={chip_id}")
-print(f"MAC={mac}")
+# Get system info and unique ID
+uinfo = os.uname()
+uid = binascii.hexlify(machine.unique_id()).decode()
+
+print(f"SYSNAME={uinfo.sysname}")
+print(f"MACHINE={uinfo.machine}")
+print(f"UID={uid}")
 `.trim();
 
     const result = await this.executeRawREPL(code, 3000);
@@ -408,30 +412,34 @@ print(f"MAC={mac}")
 
     // Parse output
     const output = result.output || "";
-    const chipIdMatch = output.match(/CHIP_ID=(\d+)/);
-    const macMatch = output.match(/MAC=([a-f0-9]+)/);
+    const sysnameMatch = output.match(/SYSNAME=(\S+)/);
+    const machineMatch = output.match(/MACHINE=(\S+)/);
+    const uidMatch = output.match(/UID=([a-f0-9]+)/);
 
-    if (!chipIdMatch) {
-      throw new Error("Could not parse chip ID from device");
+    if (!sysnameMatch) {
+      throw new Error("Could not detect ESP32 platform information");
     }
 
-    // Map chip ID to family (common ESP32 models)
-    const chipId = parseInt(chipIdMatch[1]);
+    const sysname = sysnameMatch[1];
+    const machine = machineMatch ? machineMatch[1] : "Unknown";
+    const uid = uidMatch ? uidMatch[1] : "unknown";
+
+    // Parse chip family from machine string (e.g., "ESP32 module with ESP32" or "esp32 with FeatherS3")
     let chipFamily = "ESP32";
-    if (chipId === 0x9) {
+    if (machine.includes("S3") || sysname.includes("S3")) {
       chipFamily = "ESP32-S3";
-    } else if (chipId === 0x4) {
+    } else if (machine.includes("S2") || sysname.includes("S2")) {
       chipFamily = "ESP32-S2";
-    } else if (chipId === 0x1b) {
+    } else if (machine.includes("C3") || sysname.includes("C3")) {
       chipFamily = "ESP32-C3";
-    } else if (chipId === 0x5) {
+    } else if (machine.includes("C6") || sysname.includes("C6")) {
       chipFamily = "ESP32-C6";
     }
 
     return {
-      chipId: macMatch ? macMatch[1] : `chip_${chipId}`,
+      chipId: uid,
       chipFamily,
-      revision: chipId,
+      revision: 0, // Revision not easily detectable without esp-idf
     };
   }
 
