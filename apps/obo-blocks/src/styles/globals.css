@@ -572,7 +572,7 @@ body {
   }
 
   .panels-section {
-    grid-template-rows: auto auto;
+    grid-template-rows: minmax(180px, auto) minmax(120px, auto);
     gap: 0.3rem;
   }
 
@@ -822,7 +822,7 @@ body {
   }
 
   .panels-section {
-    grid-template-rows: auto auto;
+    grid-template-rows: minmax(150px, auto) minmax(100px, auto);
     gap: 0.15rem;
   }
 
