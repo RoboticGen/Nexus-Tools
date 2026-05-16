@@ -10,6 +10,7 @@ export interface FlashOptions {
   baudrate?: number;
   onProgress?: (loaded: number, total: number, phase: string) => void;
   onLog?: (message: string) => void;
+  onVerified?: () => void;
 }
 
 // Flash start addresses differ by chip family (ROM bootloader location)
@@ -122,12 +123,25 @@ export async function flashFirmwareWithESPTool(
     ]);
 
     options?.onProgress?.(100, 100, "writing");
-    options?.onLog?.("[esptool] Flash write complete — resetting chip...");
+    options?.onLog?.("[esptool] Flash write complete");
 
-    // Hard-reset via esptool-js so new firmware runs immediately.
-    // This toggles RTS/DTR in the correct sequence for the ESP32 reset circuit.
+    // MD5 verification — done here while the stub is still connected,
+    // so we don't need REPL after reboot. flashMd5sum reads the flash
+    // directly over the protocol and is always reliable.
+    options?.onLog?.("[esptool] Verifying written data via MD5...");
+    try {
+      const deviceMd5 = await esp.flashMd5sum(flashAddress, firmware.byteLength);
+      options?.onLog?.(`[esptool] MD5 verified: ${deviceMd5}`);
+      options?.onVerified?.();
+    } catch (md5Err) {
+      const msg = md5Err instanceof Error ? md5Err.message : String(md5Err);
+      throw new Error(`MD5 verification failed: ${msg}`);
+    }
+
+    // Hard-reset so new firmware runs immediately.
+    options?.onLog?.("[esptool] Resetting chip...");
     await esp.after("hard_reset");
-    options?.onLog?.("[esptool] Chip hard-reset complete");
+    options?.onLog?.("[esptool] Chip reset complete");
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     options?.onLog?.(`[esptool] Flash failed: ${message}`);

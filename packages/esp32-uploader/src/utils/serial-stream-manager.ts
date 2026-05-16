@@ -247,8 +247,9 @@ class SerialStreamManager {
           await this.write(REPL_CONTROL.CTRL_C);
           await delay(50);
           await this.write(REPL_CONTROL.CTRL_A);
-          // Increased timeout for raw REPL entry (3 seconds) - some devices are slow
-          await waitFor(() => buffer.includes(">"), 3000);
+          // 6s timeout: a freshly-flashed device can print several seconds of boot
+          // output before the Raw REPL prompt appears.
+          await waitFor(() => buffer.includes(">"), 6000);
           buffer = "";
 
           // Step 2: Send code + Ctrl-D to execute
@@ -452,7 +453,7 @@ print(f"UID={uid}")
     }
 
     const code = `import sys; print(sys.version)`.trim();
-    const result = await this.executeRawREPL(code, 2000);
+    const result = await this.executeRawREPL(code, 6000);
 
     if (result.error) {
       return "Unknown";

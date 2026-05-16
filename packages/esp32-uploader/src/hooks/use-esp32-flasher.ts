@@ -12,7 +12,6 @@ import {
   filterFirmwaresByChip,
   downloadFirmware,
   verifyFirmwareChecksum,
-  createBackupMetadata,
   translateFlasherError,
   estimateFlashTime,
 } from "../utils/flasher-helper";
@@ -70,8 +69,8 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     operationLog: [],
   });
 
-  const backupBinaryRef = useRef<ArrayBuffer | null>(null);
   const flashStartTimeRef = useRef<number | null>(null);
+
 
   // ── Logging ────────────────────────────────────────────────────────────
 
@@ -85,14 +84,15 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
 
   // ── Status Updates ─────────────────────────────────────────────────────
 
+  // silent=true: update UI state + log only, do NOT bubble to parent (avoids notification spam during flash)
   const updateStatus = useCallback(
-    (message: string, phase?: FlasherPhase) => {
+    (message: string, phase?: FlasherPhase, silent = false) => {
       setState((prev) => ({
         ...prev,
         currentOperation: message,
         ...(phase && { phase }),
       }));
-      options?.onStatusUpdate?.(message);
+      if (!silent) options?.onStatusUpdate?.(message);
       addLog(message);
     },
     [options, addLog]
@@ -307,31 +307,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     }
   }, [serialPort, updateStatus, reportError]);
 
-  // ── Create Backup ──────────────────────────────────────────────────────
-
-  const createBackup = useCallback(async (): Promise<boolean> => {
-    if (!state.chipInfo) {
-      addLog("Skipping backup: chip not detected");
-      return true;
-    }
-
-    try {
-      updateStatus("Creating backup...", "idle");
-      const version = await serialStreamManager.getFirmwareVersion();
-      const backup = createBackupMetadata(state.chipInfo, version);
-
-      backupBinaryRef.current = new TextEncoder().encode(JSON.stringify(backup)).buffer;
-      setState((prev) => ({ ...prev, backupBinary: backupBinaryRef.current }));
-
-      addLog("Backup metadata saved");
-      return true;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      addLog(`Warning: Could not create backup: ${message}`);
-      return true; // non-fatal
-    }
-  }, [state.chipInfo, updateStatus, addLog]);
-
   // ── Flash Firmware ─────────────────────────────────────────────────────
 
   const flashFirmware = useCallback(
@@ -346,7 +321,7 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
         flashStartTimeRef.current = Date.now();
         const estimatedMs = estimateFlashTime(binary.byteLength) * 1000;
 
-        updateStatus("Releasing serial port for flasher...", "flashing");
+        updateStatus("Releasing serial port for flasher...", "flashing", true);
         addLog("Releasing serial port locks before flash");
 
         // Release serial manager's reader/writer locks so esptool-js Transport
@@ -364,7 +339,8 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
 
         updateStatus(
           `Flashing firmware to ${state.chipInfo.chipFamily} (this may take 1-5 minutes)...`,
-          "flashing"
+          "flashing",
+          true
         );
         addLog(`Starting flash: ${binary.byteLength} bytes to ${state.chipInfo.chipFamily}`);
 
@@ -383,12 +359,16 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
             options?.onProgressUpdate?.(Math.round(progress));
             updateStatus(
               `${phase === "erasing" ? "Erasing" : "Writing"} firmware... ${Math.round(progress)}% (${loaded}/${total} bytes)`,
-              "flashing"
+              "flashing",
+              true
             );
           },
           onLog: (message: string) => {
             addLog(message);
-            updateStatus(message, "flashing");
+            updateStatus(message, "flashing", true);
+          },
+          onVerified: () => {
+            addLog("MD5 verification passed — firmware on device is valid");
           },
         });
 
@@ -398,12 +378,9 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
           estimatedTimeRemaining: 0,
         }));
         options?.onProgressUpdate?.(100);
-        addLog("Firmware flash completed — chip is resetting...");
 
-        // Re-open the port and restore the serial manager so REPL works again.
-        // The chip was already hard-reset by esptool-js inside flashFirmwareWithESPTool,
-        // so we give it a moment to boot before re-opening.
-        updateStatus("Waiting for device to boot new firmware...", "flashing");
+        // Brief wait for the reset to complete before re-opening the port for REPL
+        updateStatus("Re-establishing serial connection...", "flashing", true);
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         try {
@@ -416,58 +393,18 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
           );
         }
 
-        updateStatus("Flash complete", "flashing");
+        setState((prev) => ({ ...prev, phase: "completed", isFlashing: false }));
+        updateStatus("Flash and verification complete", "completed", true);
         return true;
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         addLog(`Flash error: ${errorMsg}`);
         reportError(`Flashing failed: ${translateFlasherError(error)}`);
-
-        if (backupBinaryRef.current) {
-          updateStatus("Attempting rollback to previous firmware...", "rollback");
-          addLog("Rollback initiated");
-        }
-
         return false;
       }
     },
     [serialPort, state.chipInfo, reportError, updateStatus, options, addLog]
   );
-
-  // ── Verify Flash ───────────────────────────────────────────────────────
-
-  const verifyFlash = useCallback(async (): Promise<boolean> => {
-    if (!serialPort || !serialStreamManager.isReady()) {
-      reportError("Cannot verify: serial port not available. Reconnect the device.");
-      return false;
-    }
-
-    try {
-      updateStatus("Verifying flash...", "verifying");
-
-      const version = await serialStreamManager.getFirmwareVersion();
-
-      if (version === "Unknown") {
-        throw new Error("Could not read firmware version — device may not have booted correctly");
-      }
-
-      addLog(`Verified firmware version: ${version}`);
-      updateStatus("Verification successful!", "completed");
-
-      setState((prev) => ({ ...prev, phase: "completed", isFlashing: false }));
-      return true;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      reportError(`Verification failed: ${message}`);
-
-      if (backupBinaryRef.current) {
-        updateStatus("Verification failed. Attempting rollback...", "rollback");
-        addLog("Rollback initiated due to verification failure");
-      }
-
-      return false;
-    }
-  }, [serialPort, reportError, updateStatus, addLog]);
 
   // ── Reset Device ───────────────────────────────────────────────────────
 
@@ -494,31 +431,18 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
         return;
       }
 
-      const doBackup = opts?.createBackupFirst ?? true;
       const doErase = opts?.eraseBeforeFlash ?? true;
-      const doReset = opts?.autoResetAfter ?? true;
       const isRecoveryMode = state.isRecoveryMode;
 
       try {
         setState((prev) => ({ ...prev, operationLog: [], error: null }));
         addLog("=== Starting flash process ===");
 
-        // Step 1: Backup (REPL-dependent — skip in recovery mode)
-        if (doBackup && !isRecoveryMode) {
-          const ok = await createBackup();
-          if (!ok) {
-            reportError("Failed to create backup");
-            return;
-          }
-        } else {
-          addLog(isRecoveryMode ? "Recovery mode: skipping backup" : "Backup skipped by user");
-        }
-
-        // Step 2: Download firmware
+        // Step 1: Download firmware
         const binary = await downloadSelectedFirmware();
         if (!binary) return;
 
-        // Step 3: Erase filesystem (REPL-dependent — skip in recovery mode)
+        // Step 2: Clear user files via REPL (skip in recovery mode)
         if (doErase && !isRecoveryMode) {
           const ok = await eraseFlash();
           if (!ok) return;
@@ -526,27 +450,14 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
           addLog(
             isRecoveryMode
               ? "Recovery mode: esptool-js will erase sectors during write"
-              : "Erase skipped by user"
+              : "User file clear skipped"
           );
         }
 
-        // Step 4: Flash firmware (always)
+        // Step 3: Flash — MD5 verification happens inside esptool-js session
+        // before the chip is reset, so no REPL is needed post-flash.
         const flashSuccess = await flashFirmware(binary);
         if (!flashSuccess) return;
-
-        // Step 5: Extra reset (serial manager was re-initialized inside flashFirmware)
-        if (doReset && !isRecoveryMode) {
-          await resetDevice();
-        }
-
-        // Step 6: Verify by reading firmware version via REPL
-        if (!isRecoveryMode) {
-          const verified = await verifyFlash();
-          if (!verified) return;
-        } else {
-          setState((prev) => ({ ...prev, phase: "completed", isFlashing: false }));
-          addLog("Recovery mode: skipping verify — disconnect and reconnect to use REPL");
-        }
 
         addLog("=== Flash process completed successfully ===");
         notification.success({
@@ -562,12 +473,9 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     [
       state.selectedFirmware,
       state.isRecoveryMode,
-      createBackup,
       downloadSelectedFirmware,
       eraseFlash,
       flashFirmware,
-      resetDevice,
-      verifyFlash,
       reportError,
       addLog,
     ]
