@@ -30,12 +30,6 @@ interface UseESP32FlasherOptions {
   onProgressUpdate?: (progress: number) => void;
 }
 
-export interface FlashStartOptions {
-  eraseBeforeFlash?: boolean;
-  createBackupFirst?: boolean;
-  autoResetAfter?: boolean;
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getChipFeatures(chipFamily: string): string[] {
@@ -65,7 +59,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     selectedFirmware: null,
     customFirmwareBinary: null,
     customFirmwareName: null,
-    backupBinary: null,
     operationLog: [],
   });
 
@@ -425,13 +418,12 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
   // ── Complete Flash Workflow ────────────────────────────────────────────
 
   const startFlashing = useCallback(
-    async (opts?: FlashStartOptions): Promise<void> => {
+    async (): Promise<void> => {
       if (!state.selectedFirmware) {
         reportError("Please select a firmware first");
         return;
       }
 
-      const doErase = opts?.eraseBeforeFlash ?? true;
       const isRecoveryMode = state.isRecoveryMode;
 
       try {
@@ -442,16 +434,12 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
         const binary = await downloadSelectedFirmware();
         if (!binary) return;
 
-        // Step 2: Clear user files via REPL (skip in recovery mode)
-        if (doErase && !isRecoveryMode) {
+        // Step 2: Clear user files via REPL (skip in recovery mode — no firmware to REPL into)
+        if (!isRecoveryMode) {
           const ok = await eraseFlash();
           if (!ok) return;
         } else {
-          addLog(
-            isRecoveryMode
-              ? "Recovery mode: esptool-js will erase sectors during write"
-              : "User file clear skipped"
-          );
+          addLog("Recovery mode: esptool-js will erase sectors during write");
         }
 
         // Step 3: Flash — MD5 verification happens inside esptool-js session

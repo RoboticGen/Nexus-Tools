@@ -6,7 +6,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, ChangeEvent } from "react";
-import { Button, Select, Checkbox, Space, Progress, Tabs } from "antd";
+import { Button, Select, Progress, Tabs } from "antd";
 import {
   ThunderboltOutlined,
   StopOutlined,
@@ -14,7 +14,6 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import { useESP32Flasher } from "../hooks/use-esp32-flasher";
-import type { FlashStartOptions } from "../hooks/use-esp32-flasher";
 import { formatDuration } from "../utils/flasher-helper";
 import type { ESP32FlasherProps } from "../types/esp32";
 
@@ -34,9 +33,6 @@ export function ESP32Flasher({
 }: ESP32FlasherProps) {
   const [logs, setLogs] = useState<FlashLog[]>([]);
   const [activeTab, setActiveTab] = useState<string>("flasher");
-  const [eraseFlash, setEraseFlash] = useState(true);
-  const [createBackup, setCreateBackup] = useState(true);
-  const [autoReset, setAutoReset] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -238,34 +234,6 @@ export function ESP32Flasher({
                       </div>
                     </div>
 
-                    {/* Pre-Flash Options */}
-                    <div className="flasher__section">
-                      <div className="flasher__section-title">Pre-Flash Options</div>
-                      <Space direction="vertical" style={{ width: "100%" }}>
-                        <Checkbox
-                          checked={createBackup}
-                          onChange={(e) => setCreateBackup(e.target.checked)}
-                          disabled={isFlashingInProgress}
-                        >
-                          Create backup before flashing
-                        </Checkbox>
-                        <Checkbox
-                          checked={eraseFlash}
-                          onChange={(e) => setEraseFlash(e.target.checked)}
-                          disabled={isFlashingInProgress}
-                        >
-                          Erase flash memory (recommended)
-                        </Checkbox>
-                        <Checkbox
-                          checked={autoReset}
-                          onChange={(e) => setAutoReset(e.target.checked)}
-                          disabled={isFlashingInProgress}
-                        >
-                          Auto reset device after flashing
-                        </Checkbox>
-                      </Space>
-                    </div>
-
                     {/* Flash Progress Section */}
                     {isFlashingInProgress && (
                       <div className="flasher__section">
@@ -324,14 +292,7 @@ export function ESP32Flasher({
                             type="primary"
                             danger
                             icon={<ThunderboltOutlined />}
-                            onClick={() => {
-                              const opts: FlashStartOptions = {
-                                createBackupFirst: createBackup,
-                                eraseBeforeFlash: eraseFlash,
-                                autoResetAfter: autoReset,
-                              };
-                              startFlashing(opts);
-                            }}
+                            onClick={() => startFlashing()}
                             disabled={!canFlash}
                             size="large"
                           >

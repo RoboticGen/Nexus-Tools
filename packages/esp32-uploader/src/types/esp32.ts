@@ -92,7 +92,6 @@ export interface FlasherState {
   selectedFirmware: FirmwareImage | null;
   customFirmwareBinary: ArrayBuffer | null;
   customFirmwareName: string | null;
-  backupBinary: ArrayBuffer | null;
   operationLog: string[];
 }
 
