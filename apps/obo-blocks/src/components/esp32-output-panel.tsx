@@ -1,7 +1,7 @@
 "use client";
 
 import { DeleteOutlined, StopOutlined, LinkOutlined, DisconnectOutlined } from "@ant-design/icons";
-import { useESP32Uploader, ESP32REPL, ESP32FileManager } from "@nexus-tools/esp32-uploader";
+import { useESP32Uploader, ESP32REPL, ESP32FileManager, ESP32Flasher } from "@nexus-tools/esp32-uploader";
 import { Button as UIButton } from "@nexus-tools/ui";
 import { Tabs, Space, Button } from "antd";
 import { useState, useMemo, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
@@ -208,6 +208,23 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     </div>
   );
 
+  const flasherTab = (
+    <div className="tab-content-wrapper">
+      {canShowAdvancedFeatures ? (
+        <ESP32Flasher
+          serialPort={serialPort}
+          isConnected={isConnected}
+          onStatusUpdate={onStatusUpdate}
+          onError={onError}
+        />
+      ) : (
+        <div style={{ padding: "1rem", fontSize: "0.9rem" }}>
+          Connect your device first to access the Flasher.
+        </div>
+      )}
+    </div>
+  );
+
   const outputTab = (
     <div className="tab-content-wrapper">
       <div className="panel-header">
@@ -257,6 +274,12 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
             label: "REPL",
             disabled: !canShowAdvancedFeatures,
             children: replTab,
+          },
+          {
+            key: "flasher",
+            label: "Flasher",
+            disabled: !canShowAdvancedFeatures,
+            children: flasherTab,
           },
         ]}
       />
