@@ -83,12 +83,15 @@ export type FlasherPhase = "idle" | "detecting" | "erasing" | "flashing" | "veri
 export interface FlasherState {
   phase: FlasherPhase;
   isFlashing: boolean;
+  isRecoveryMode: boolean;
   progress: number;
   estimatedTimeRemaining: number; // in seconds
   currentOperation: string;
   error: string | null;
   chipInfo: ChipInfo | null;
   selectedFirmware: FirmwareImage | null;
+  customFirmwareBinary: ArrayBuffer | null;
+  customFirmwareName: string | null;
   backupBinary: ArrayBuffer | null;
   operationLog: string[];
 }

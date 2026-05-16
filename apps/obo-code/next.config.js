@@ -8,6 +8,14 @@ const nextConfig = {
   images: {
     remotePatterns: [],
   },
+  async rewrites() {
+    return [
+      {
+        source: "/firmware/:path*",
+        destination: "https://micropython.org/:path*",
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

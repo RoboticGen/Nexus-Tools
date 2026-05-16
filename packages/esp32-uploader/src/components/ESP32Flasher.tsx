@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, ChangeEvent } from "react";
 import { Button, Select, Checkbox, Space, Progress, Tabs } from "antd";
 import {
   ThunderboltOutlined,
@@ -14,6 +14,7 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import { useESP32Flasher } from "../hooks/use-esp32-flasher";
+import type { FlashStartOptions } from "../hooks/use-esp32-flasher";
 import { formatDuration } from "../utils/flasher-helper";
 import type { ESP32FlasherProps } from "../types/esp32";
 
@@ -37,12 +38,16 @@ export function ESP32Flasher({
   const [createBackup, setCreateBackup] = useState(true);
   const [autoReset, setAutoReset] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     state,
     detectChip,
+
     getCompatibleFirmwares,
     selectFirmware,
+    setLocalFirmware,
+    clearLocalFirmware,
     startFlashing,
     cancelFlashing,
     resetDevice,
@@ -105,17 +110,35 @@ export function ESP32Flasher({
 
   const compatibleFirmwares = getCompatibleFirmwares();
 
+  const handleLocalFirmwareSelect = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) {
+        return;
+      }
+
+      try {
+        const buffer = await file.arrayBuffer();
+        setLocalFirmware(file.name, buffer);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        addLog(`Failed to read local firmware: ${message}`, "error");
+      }
+    },
+    [setLocalFirmware, addLog]
+  );
+
+  const handleClearLocalFirmware = useCallback(() => {
+    clearLocalFirmware();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, [clearLocalFirmware]);
+
   return (
     <div className="flasher">
       {/* Toolbar */}
-      <div className="flasher__toolbar">
-        <span className="flasher__status">
-          <span className={state.chipInfo ? "flasher__dot flasher__dot--on" : "flasher__dot flasher__dot--off"} />
-          {state.chipInfo
-            ? `${state.chipInfo.chipFamily} Detected`
-            : "Waiting for Device"}
-        </span>
-      </div>
+
 
       {/* Tabbed Interface */}
       <Tabs
@@ -191,6 +214,28 @@ export function ESP32Flasher({
                           Selected: <strong>{state.selectedFirmware.name}</strong>
                         </div>
                       )}
+                      <div style={{ marginTop: "8px" }}>
+                        <div style={{ fontSize: "0.75rem", color: "#666", marginBottom: "4px" }}>
+                          Or upload a local firmware (.bin)
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".bin"
+                          onChange={handleLocalFirmwareSelect}
+                          disabled={isFlashingInProgress}
+                        />
+                        {state.customFirmwareName && (
+                          <div style={{ marginTop: "6px", display: "flex", gap: "8px", alignItems: "center" }}>
+                            <span style={{ fontSize: "0.8rem", color: "#666" }}>
+                              Local file: <strong>{state.customFirmwareName}</strong>
+                            </span>
+                            <Button size="small" onClick={handleClearLocalFirmware}>
+                              Clear
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Pre-Flash Options */}
@@ -255,6 +300,7 @@ export function ESP32Flasher({
                             <ul style={{ marginTop: "0.25rem", paddingLeft: "1.25rem" }}>
                               <li>Check your internet connection</li>
                               <li>Try a different MicroPython version</li>
+                              <li>Upload a local .bin firmware file</li>
                               <li>Visit <code>micropython.org/download</code> to get a firmware URL</li>
                             </ul>
                           </div>
@@ -278,7 +324,14 @@ export function ESP32Flasher({
                             type="primary"
                             danger
                             icon={<ThunderboltOutlined />}
-                            onClick={() => startFlashing()}
+                            onClick={() => {
+                              const opts: FlashStartOptions = {
+                                createBackupFirst: createBackup,
+                                eraseBeforeFlash: eraseFlash,
+                                autoResetAfter: autoReset,
+                              };
+                              startFlashing(opts);
+                            }}
                             disabled={!canFlash}
                             size="large"
                           >

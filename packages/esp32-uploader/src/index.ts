@@ -43,6 +43,8 @@ export { serialStreamManager } from "./utils/serial-stream-manager";
 export {
   getAvailableFirmwares,
   filterFirmwaresByChip,
+  getBoardsByChipFamily,
+  getFirmwaresByBoard,
   downloadFirmware,
   verifyFirmwareChecksum,
   translateFlasherError,
@@ -50,3 +52,6 @@ export {
   formatDuration,
   estimateFlashTime,
 } from "./utils/flasher-helper";
+
+// Firmware Catalog
+export { FIRMWARE_CATALOG, type FirmwareBoard } from "./data/firmware-catalog";

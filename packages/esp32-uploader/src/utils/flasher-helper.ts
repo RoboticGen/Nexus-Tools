@@ -4,146 +4,246 @@
  */
 
 import type { FirmwareImage, ChipInfo } from "../types/esp32";
+import { FIRMWARE_CATALOG } from "../data/firmware-catalog";
 
 // ─── Firmware Management ────────────────────────────────────────────────────
 
 /**
  * Get list of available MicroPython releases for ESP32.
- * Uses official GitHub releases and micropython.org downloads.
+ * Loads from comprehensive firmware catalog based on Thonny IDE data.
  */
 export function getAvailableFirmwares(): FirmwareImage[] {
-  return [
-    {
-      name: "MicroPython 1.24 (ESP32)",
-      version: "1.24-esp32",
-      url: "https://github.com/micropython/micropython/releases/download/v1.24/esp32-20240602-v1.24.bin",
-      releaseDate: "2024-06-02",
-      description: "Stable release for ESP32",
-      chipFamily: "ESP32",
-      checksumSha256: undefined,
-    },
-    {
-      name: "MicroPython 1.23 (ESP32)",
-      version: "1.23-esp32",
-      url: "https://github.com/micropython/micropython/releases/download/v1.23/esp32-20240304-v1.23.bin",
-      releaseDate: "2024-03-04",
-      description: "Previous stable release for ESP32",
-      chipFamily: "ESP32",
-    },
-    {
-      name: "MicroPython 1.24 (ESP32-S3)",
-      version: "1.24-esp32s3",
-      url: "https://github.com/micropython/micropython/releases/download/v1.24/esp32s3-20240602-v1.24.bin",
-      releaseDate: "2024-06-02",
-      description: "Stable release for ESP32-S3",
-      chipFamily: "ESP32-S3",
-    },
-    {
-      name: "MicroPython 1.23 (ESP32-S3)",
-      version: "1.23-esp32s3",
-      url: "https://github.com/micropython/micropython/releases/download/v1.23/esp32s3-20240304-v1.23.bin",
-      releaseDate: "2024-03-04",
-      description: "Previous stable release for ESP32-S3",
-      chipFamily: "ESP32-S3",
-    },
-    {
-      name: "MicroPython 1.24 (ESP32-C3)",
-      version: "1.24-esp32c3",
-      url: "https://github.com/micropython/micropython/releases/download/v1.24/esp32c3-20240602-v1.24.bin",
-      releaseDate: "2024-06-02",
-      description: "Stable release for ESP32-C3",
-      chipFamily: "ESP32-C3",
-    },
-  ];
+  const firmwares: FirmwareImage[] = [];
+  const versionReleaseMap: Record<string, string> = {
+    "1.28.0": "2026-04-06",
+    "1.27.0": "2025-12-09",
+    "1.26.0": "2025-09-23",
+    "1.25.0": "2025-07-01",
+    "1.24.0": "2025-04-14",
+  };
+
+  for (const board of FIRMWARE_CATALOG) {
+    for (const download of board.downloads) {
+      const releaseDate = versionReleaseMap[download.version] || "unknown";
+      const familyNormalized = board.family.toUpperCase().replace(/^ESP/, "ESP");
+      // Create unique key by including vendor to avoid duplicates across board models
+      const vendorKey = board.vendor.toLowerCase().replace(/\s+/g, "-");
+      const modelKey = board.model.toLowerCase().replace(/\s+/g, "-");
+
+      firmwares.push({
+        name: `MicroPython ${download.version} (${board.vendor} ${board.model})`,
+        version: `${download.version}-${board.family}-${vendorKey}-${modelKey}`,
+        url: download.url,
+        releaseDate,
+        description: `MicroPython ${download.version} for ${board.vendor} ${board.model}`,
+        chipFamily: familyNormalized,
+      });
+    }
+  }
+
+  return firmwares;
 }
 
 /**
  * Filter firmwares suitable for a given chip family.
+ * Normalizes chip family names for better matching.
  */
 export function filterFirmwaresByChip(
   firmwares: FirmwareImage[],
   chipFamily: string
 ): FirmwareImage[] {
-  return firmwares.filter((fw) =>
-    fw.chipFamily === chipFamily || fw.chipFamily === "ESP32"
+  const normalized = chipFamily.toUpperCase();
+
+  return firmwares.filter((fw) => {
+    const fwChip = fw.chipFamily.toUpperCase();
+
+    // Exact match or generic match
+    if (fwChip === normalized) return true;
+
+    // Allow generic ESP32 for all ESP32 variants
+    if (normalized.startsWith("ESP32") && fwChip === "ESP32") return true;
+
+    return false;
+  }).sort((a, b) => {
+    // Sort by version (newest first), then by name
+    const versionA = a.version.split("-")[0];
+    const versionB = b.version.split("-")[0];
+    const vCompare = versionB.localeCompare(versionA);
+    return vCompare !== 0 ? vCompare : a.name.localeCompare(b.name);
+  });
+}
+
+/**
+ * Get all available board models for a given chip family.
+ */
+export function getBoardsByChipFamily(chipFamily: string) {
+  const normalized = chipFamily.toLowerCase();
+  return FIRMWARE_CATALOG.filter(
+    (board) => board.family.toLowerCase() === normalized
   );
 }
 
 /**
- * Download firmware binary from URL.
+ * Get firmware URLs for a specific board model.
+ */
+export function getFirmwaresByBoard(vendor: string, model: string) {
+  return FIRMWARE_CATALOG.find(
+    (board) => board.vendor === vendor && board.model === model
+  );
+}
+
+/**
+ * Attempt to fetch firmware from a URL with optional CORS proxy fallback.
+ * Private helper function.
+ */
+async function fetchFirmwareData(
+  url: string,
+  useCorsProxy: boolean = false,
+  onProgress?: (loaded: number, total: number) => void
+): Promise<ArrayBuffer> {
+  // Use CORS proxy if needed (allorigins is reliable and free)
+  const fetchUrl = useCorsProxy 
+    ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+    : url;
+  
+  if (useCorsProxy) {
+    console.log(`[Flasher] Attempting download via CORS proxy...`);
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+  
+  const response = await fetch(fetchUrl, {
+    method: "GET",
+    headers: {
+      "Accept": "application/octet-stream",
+    },
+    mode: "cors",
+    credentials: "omit",
+    signal: controller.signal,
+  });
+
+  clearTimeout(timeoutId);
+
+  if (!response.ok) {
+    console.error(`[Flasher] HTTP error ${response.status}: ${response.statusText}`);
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  const total = parseInt(response.headers.get("content-length") || "0");
+  console.log(`[Flasher] Firmware size: ${total} bytes`);
+  
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    throw new Error("Response body not readable");
+  }
+
+  const chunks: Uint8Array[] = [];
+  let loaded = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    chunks.push(value);
+    loaded += value.length;
+    onProgress?.(loaded, total);
+  }
+
+  // Combine chunks into single ArrayBuffer
+  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return result.buffer;
+}
+
+/**
+ * Download firmware binary from URL with retry logic and CORS proxy fallback.
  * Returns ArrayBuffer of the binary data.
+ * Retries up to 3 times with exponential backoff.
+ * Falls back to CORS proxy if direct fetch fails with CORS error.
  */
 export async function downloadFirmware(
   url: string,
   onProgress?: (loaded: number, total: number) => void
 ): Promise<ArrayBuffer> {
-  try {
-    console.log(`[Flasher] Downloading firmware from: ${url}`);
-    
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Accept": "application/octet-stream",
-      },
-      mode: "cors",
-      credentials: "omit",
-    });
+  const MAX_RETRIES = 3;
+  let lastError: Error | null = null;
+  let corsErrorDetected = false;
 
-    if (!response.ok) {
-      console.error(`[Flasher] HTTP error ${response.status}: ${response.statusText}`);
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`[Flasher] Downloading firmware from: ${url} (attempt ${attempt}/${MAX_RETRIES})`);
+      
+      // On 2nd attempt after CORS error, try with CORS proxy
+      const useCorsProxy = corsErrorDetected && attempt > 1;
+      
+      const buffer = await fetchFirmwareData(url, useCorsProxy, onProgress);
+      console.log(`[Flasher] Download complete: ${buffer.byteLength} bytes`);
+      return buffer;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const message = lastError.message;
+      
+      console.error(`[Flasher] Download attempt ${attempt} failed: ${message}`);
+      
+      // Check if this is a CORS error
+      const isCorsError = message.includes("CORS") || message.includes("cors") || 
+                          (message.includes("Failed to fetch") && url.includes("micropython.org"));
+      
+      if (isCorsError && !corsErrorDetected) {
+        corsErrorDetected = true;
+        console.log(`[Flasher] CORS error detected, will use proxy on next retry`);
+      }
+      
+      // Don't retry on 404
+      if (message.includes("404")) {
+        break;
+      }
+      
+      // Retry on network/timeout errors
+      if (attempt < MAX_RETRIES && (message.includes("Failed to fetch") || message.includes("timeout") || message.includes("AbortError") || message.includes("Network"))) {
+        const waitSeconds = attempt * 2;
+        console.log(`[Flasher] Retrying in ${waitSeconds} seconds (attempt ${attempt + 1}/${MAX_RETRIES})...`);
+        await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+        continue;
+      }
+      
+      break;
     }
-
-    const total = parseInt(response.headers.get("content-length") || "0");
-    console.log(`[Flasher] Firmware size: ${total} bytes`);
-    
-    const reader = response.body?.getReader();
-
-    if (!reader) {
-      throw new Error("Response body not readable");
-    }
-
-    const chunks: Uint8Array[] = [];
-    let loaded = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      chunks.push(value);
-      loaded += value.length;
-      onProgress?.(loaded, total);
-    }
-
-    // Combine chunks into single ArrayBuffer
-    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-    const result = new Uint8Array(totalLength);
-    let offset = 0;
-
-    for (const chunk of chunks) {
-      result.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    console.log(`[Flasher] Download complete: ${totalLength} bytes`);
-    return result.buffer;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`[Flasher] Download failed: ${message}`);
-    
-    // Provide more specific error messages
-    if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
-      throw new Error("Network error: Check your internet connection and try again. The firmware URL may be unreachable.");
-    } else if (message.includes("CORS") || message.includes("cors")) {
-      throw new Error("CORS error: This URL is not allowed. Try downloading from a different source.");
-    } else if (message.includes("404")) {
-      throw new Error("Firmware not found: The firmware file may have been moved or removed.");
-    } else if (message.includes("Connection refused")) {
-      throw new Error("Connection refused: The download server is not responding.");
-    }
-    
-    throw new Error(`Failed to download firmware: ${message}`);
   }
+
+  // All retries exhausted
+  if (!lastError) {
+    lastError = new Error("Download failed for unknown reason");
+  }
+
+  const message = lastError.message;
+  console.error(`[Flasher] Download failed after ${MAX_RETRIES} attempts: ${message}`);
+  
+  // Provide more specific error messages
+  if (corsErrorDetected) {
+    throw new Error("Download blocked by CORS policy: Firmware server blocks browser downloads. Try: 1) Use a different device/network, 2) Download locally and upload manually, or 3) Contact support.");
+  } else if (message.includes("Failed to fetch")) {
+    throw new Error("Download failed: Unable to reach the firmware server. This may be a network issue (check your internet) or the server is unavailable. Tried 3 times.");
+  } else if (message.includes("NetworkError")) {
+    throw new Error("Download network error: Check your internet connection. Tried 3 times. Note: Your device/serial connection is fine - this is a download/internet issue.");
+  } else if (message.includes("404")) {
+    throw new Error("Firmware not found (404): The firmware file may have been moved or removed from the server. Try selecting a different firmware version.");
+  } else if (message.includes("Connection refused")) {
+    throw new Error("Download server refused connection: The firmware download server is not responding. Try again later.");
+  } else if (message.includes("timeout") || message.includes("AbortError")) {
+    throw new Error("Download timeout: The server took too long to respond (>60 seconds even after 3 retries). Check your internet connection or try again later.");
+  }
+  
+  throw new Error(`Firmware download failed after ${MAX_RETRIES} attempts: ${message}`);
 }
 
 /**

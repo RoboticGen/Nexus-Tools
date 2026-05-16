@@ -1128,8 +1128,9 @@ textarea.iPadShowKeyboard {
     display: none !important;
   }
 
-  /* Hide REPL tab on tablet */
-  .output-panel .ant-tabs-tab[data-node-key="repl"] {
+  /* Hide REPL and Flasher tabs on tablet */
+  .output-panel .ant-tabs-tab[data-node-key="repl"],
+  .output-panel .ant-tabs-tab[data-node-key="flasher"] {
     display: none !important;
   }
 }
@@ -1272,8 +1273,9 @@ textarea.iPadShowKeyboard {
     display: none !important;
   }
 
-  /* Hide REPL tab on mobile */
-  .output-panel .ant-tabs-tab[data-node-key="repl"] {
+  /* Hide REPL and Flasher tabs on mobile */
+  .output-panel .ant-tabs-tab[data-node-key="repl"],
+  .output-panel .ant-tabs-tab[data-node-key="flasher"] {
     display: none !important;
   }
 }
