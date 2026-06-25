@@ -1,0 +1,2461 @@
+/* ESP32 Uploader Styles - Using Global CSS Variables */
+.esp32-upload-trigger {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 50;
+}
+
+.esp32-upload-trigger button {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  border: none;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.9rem;
+  background-color: var(--btn-run);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.esp32-upload-trigger button:hover:not(:disabled) {
+  background-color: var(--btn-copy);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.esp32-upload-trigger button:disabled {
+  background-color: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* ESP32 Modal */
+.esp32-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.esp32-modal {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  max-width: 35rem;
+  width: 100%;
+  margin: 1rem;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: modalSlideIn 0.4s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modal Content Area - Scrollable */
+.esp32-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  max-height: calc(90vh - 120px); /* Account for header and footer */
+}
+
+.esp32-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.esp32-modal-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.esp32-modal-content::-webkit-scrollbar-thumb {
+  background: var(--btn-copy);
+  border-radius: 4px;
+}
+
+.esp32-modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--btn-run);
+}
+
+/* Upload Footer - Sticky */
+.esp32-upload-footer {
+  background: var(--panel-bg);
+  border-top: 1px solid var(--panel-border);
+  padding: 1.25rem 1.5rem;
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+@keyframes modalSlideIn {
+  from { transform: translateY(20px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Enhanced Progress Bar */
+.esp32-progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.esp32-progress-fill {
+  height: 100%;
+  background-color: var(--btn-run);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  position: relative;
+}
+
+.esp32-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: progressShine 2s ease-in-out infinite;
+}
+
+@keyframes progressShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Device Selector */
+.esp32-device-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 0.5rem;
+  background: var(--panel-bg);
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.esp32-device-select:focus {
+  border-color: var(--btn-copy);
+  box-shadow: 0 0 0 3px rgba(50, 170, 198, 0.1);
+}
+
+/* Code Preview */
+.esp32-code-preview {
+  background-color: #1f2937;
+  color: #10b981;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-family: 'SFMono-Regular', 'Monaco', 'Consolas', monospace;
+  font-size: 0.8rem;
+  height: 16rem;
+  overflow: auto;
+  line-height: 1.6;
+  border: 1px solid var(--panel-border);
+  position: relative;
+}
+
+.esp32-code-preview::before {
+  content: 'main.py';
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  font-size: 0.7rem;
+  color: rgba(16, 185, 129, 0.7);
+  font-weight: 500;
+  z-index: 1;
+  background: #1f2937;
+  padding: 0 0.5rem;
+}
+
+.esp32-code-preview::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.esp32-code-preview::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.esp32-code-preview::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.5);
+  border-radius: 4px;
+}
+
+.esp32-code-preview::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.7);
+}
+
+/* Improved scrollbar for both horizontal and vertical */
+.esp32-code-preview::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Upload Button - Always Visible */
+.esp32-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: none;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1rem;
+  background-color: var(--btn-run);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(69, 189, 152, 0.3);
+}
+
+.esp32-upload-btn:hover:not(:disabled) {
+  background-color: var(--btn-copy);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(50, 170, 198, 0.4);
+}
+
+.esp32-upload-btn:disabled {
+  background-color: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Connect Button */
+.esp32-connect-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--btn-copy);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--btn-copy);
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.esp32-connect-btn:hover:not(:disabled) {
+  background: var(--btn-copy);
+  color: white;
+  transform: scale(1.02);
+}
+
+.esp32-connect-btn:disabled {
+  border-color: var(--text-muted);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* Status Indicators */
+.esp32-status-connected {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--btn-run);
+  color: white;
+  border-radius: 2rem;
+  font-weight: 500;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(69, 189, 152, 0.3);
+}
+
+.esp32-status-disconnected {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  color: var(--text-muted);
+  border-radius: 2rem;
+  font-weight: 500;
+  font-size: 0.85rem;
+  border: 1px solid var(--panel-border);
+}
+
+/* Warning Messages */
+.esp32-warning {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border-left: 4px solid #f59e0b;
+}
+
+.warning-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #92400e;
+}
+
+.warning-subtitle {
+  font-size: 0.875rem;
+  color: #d97706;
+  margin: 0;
+}
+
+.esp32-error {
+  background-color: #fee2e2;
+  border: 1px solid #ef4444;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border-left: 4px solid #ef4444;
+}
+
+/* Instructions Panel */
+.esp32-instructions {
+  background-color: #eff6ff;
+  border: 1px solid var(--btn-copy);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  border-left: 4px solid var(--btn-copy);
+}
+
+.esp32-instructions ol {
+  margin: 0.75rem 0 0 0;
+  padding-left: 1.5rem;
+}
+
+.esp32-instructions li {
+  margin-bottom: 0.5rem;
+  font-weight: 400;
+}
+
+/* =====================
+   SIDEBAR TAB INTERFACE
+   ===================== */
+
+.esp32-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+}
+
+.esp32-sidebar-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  height: 200px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--panel-border);
+  border-top: 2px solid var(--btn-copy);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.esp32-sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Ant Design Tabs styling for sidebar */
+.esp32-sidebar-inner .ant-tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.esp32-sidebar-inner .ant-tabs-nav {
+  margin: 0;
+  background: linear-gradient(to bottom, #fafafa, #f0f0f0);
+  border-bottom: 1px solid var(--panel-border) !important;
+  flex-shrink: 0;
+}
+
+.esp32-sidebar-inner .ant-tabs-tab {
+  padding: 8px 16px !important;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent !important;
+  color: #666 !important;
+  font-weight: 500;
+}
+
+.esp32-sidebar-inner .ant-tabs-tab:hover {
+  color: #333 !important;
+  background-color: #e8e8e8;
+}
+
+.esp32-sidebar-inner .ant-tabs-tab-active {
+  background-color: var(--panel-bg) !important;
+  border-bottom-color: #9d9d9d !important;
+  color: #333 !important;
+}
+
+.esp32-sidebar-inner .ant-tabs-content-holder {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Force Ant Design's inner .ant-tabs-content to fill its holder */
+.esp32-sidebar-inner .ant-tabs-content-holder > .ant-tabs-content {
+  height: 100%;
+}
+
+.esp32-sidebar-inner .ant-tabs-tabpane {
+  display: flex !important;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.esp32-sidebar-inner .ant-tabs-tabpane-hidden {
+  display: none !important;
+}
+
+.esp32-sidebar-header {
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--panel-border);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.esp32-sidebar-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.esp32-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+  position: relative;
+}
+
+.esp32-tab-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.esp32-tab-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #ccc;
+}
+
+.esp32-tab-btn.active {
+  color: #333;
+  background: #f0f0f0;
+  border-bottom-color: #9d9d9d;
+}
+
+/* Tab indicators for auto-detected features */
+.esp32-tab-btn.has-content {
+  color: #059669; /* Green for detected files */
+}
+
+.esp32-tab-btn.ready {
+  color: #0d9488; /* Teal for ready REPL */
+}
+
+.esp32-tab-btn .tab-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 10px;
+  color: #10b981; /* Success green */
+  opacity: 0.8;
+}
+
+.esp32-tab-btn.has-content.ready .tab-indicator {
+  color: #0d9488;
+}
+
+.esp32-tab-btn i {
+  font-size: 0.875rem;
+}
+
+.esp32-tab-content {
+  flex: 1;
+  overflow: auto;
+  padding: 0.75rem;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+/* Uploader tab content wrapper */
+.esp32-tools {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  margin: 0;
+  gap: 1rem;
+}
+
+/* Section styling */
+.connection-section,
+.upload-section,
+.instructions-section {
+  flex-shrink: 0;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.connection-section h4,
+.upload-section h4,
+.instructions-section h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+}
+
+.connection-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.instructions-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.instructions-list li {
+  margin-bottom: 0.5rem;
+}
+
+.esp32-repl-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #0d1117;
+  min-height: 200px;
+}
+
+.esp32-feature-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  background: #0d1117;
+  margin: 0;
+  height: 100%;
+}
+
+.connection-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #d1ecf1;
+  border: 1px solid #bee5eb;
+  border-radius: 0.5rem;
+  color: #0c5460;
+  font-size: 0.875rem;
+  border-left: 4px solid var(--btn-copy);
+}
+
+/* Auto-detection status indicators */
+.auto-detection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 0.375rem;
+  color: #856404;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.auto-detection-status i {
+  color: #f39c12;
+}
+
+.auto-detection-complete {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 0.375rem;
+  color: #155724;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.auto-detection-complete i {
+  color: #28a745;
+}
+
+/* =====================
+   ESP32 REPL STYLES
+   Uses calc(100vh - offset) for heights.
+   Does NOT rely on percentage heights from Ant Design parents.
+   Ant Design 5 uses CSS-in-JS hashed class names, so .ant-tabs-*
+   selectors don't work. calc(100vh) always resolves correctly.
+   ===================== */
+
+/*
+ * Height budget (sidebar = 100vh):
+ *   Tab nav          ≈ 46px
+ *   REPL toolbar     = 44px
+ *   REPL input bar   = 48px
+ *   REPL output      = 100vh - 46 - 44 - 48 = 100vh - 138px
+ */
+
+.repl {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 0;            /* prevents content from expanding the flex item */
+  min-height: 150px;    /* minimum usable size */
+  overflow: hidden;
+  width: 100%;
+  background: #fff;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.85rem;
+}
+
+/* ── toolbar ── */
+.repl__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  flex-shrink: 0;
+  padding: 0 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  gap: 8px;
+}
+
+.repl__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.repl__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.repl__dot--on  { background: #10b981; }
+.repl__dot--off { background: #ef4444; }
+
+.repl__actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── output (flex-fills remaining space between toolbar & input) ── */
+.repl__output {
+  flex: 1;
+  height: 0;            /* flex item: 0 base so it never overflows */
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.repl__output::-webkit-scrollbar       { width: 6px; }
+.repl__output::-webkit-scrollbar-track  { background: transparent; }
+.repl__output::-webkit-scrollbar-thumb  { background: #cbd5e1; border-radius: 3px; }
+
+.repl__msg {
+  color: #94a3b8;
+  text-align: center;
+  margin-top: 2rem;
+}
+
+/* ── lines ── */
+.repl__line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+  padding: 1px 0;
+}
+.repl__line--input  { color: #1e40af; font-weight: 600; }
+.repl__line--output { color: #1e293b; }
+.repl__line--error  {
+  color: #dc2626;
+  font-weight: 600;
+  background: #fef2f2;
+  border-left: 3px solid #ef4444;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin: 2px 0;
+}
+
+/* ── input bar ── */
+.repl__input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  flex-shrink: 0;
+  padding: 0 12px;
+  background: #f1f5f9;
+  border-top: 2px solid #cbd5e1;
+}
+
+.repl__prompt {
+  color: #059669;
+  font-weight: 700;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.repl__field {
+  flex: 1;
+  height: 32px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 0 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: #000;
+  outline: none;
+}
+
+/* Mobile: Increase input height for touch */
+@media (max-width: 768px) {
+  .repl__input {
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+  }
+
+  .repl__field {
+    height: 40px;
+    font-size: 0.9rem;
+    padding: 0 12px;
+  }
+}
+.repl__field:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+.repl__field::placeholder { color: #94a3b8; }
+.repl__field:disabled { opacity: 0.6; }
+
+.repl__spin {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #cbd5e1;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: repl-spin 0.8s linear infinite;
+}
+
+@keyframes repl-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* File Manager Styles - MODERN DESIGN */
+.esp32-file-manager {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.file-manager-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  backdrop-filter: blur(10px);
+}
+
+.file-manager-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #1e293b;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.file-manager-info i {
+  color: #6b6b6b;
+  font-size: 1.25rem;
+  filter: drop-shadow(0 2px 4px rgba(107, 107, 107, 0.3));
+}
+
+.file-manager-info .path {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-refresh {
+  padding: 0.5rem 0.75rem;
+  background-color: var(--text-muted);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-refresh i {
+  font-size: 0.9rem;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background-color: var(--btn-run);
+  color: #ffffff;
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-refresh i.fa-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+.file-list-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  gap: 1.5rem;
+  color: #64748b;
+  padding: 3rem 2rem;
+}
+
+.file-list-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.file-list-error {
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(220, 38, 38, 0.05) 100%);
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+.file-list-error i {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.file-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  gap: 1.5rem;
+  color: #94a3b8;
+  padding: 3rem 2rem;
+}
+
+.file-list-empty i {
+  font-size: 4rem;
+  opacity: 0.4;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.file-manager-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  gap: 1.5rem;
+  color: #94a3b8;
+  padding: 3rem 2rem;
+}
+
+.file-manager-empty i {
+  font-size: 4rem;
+  opacity: 0.4;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.file-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+  scrollbar-width: thin !important;
+  scrollbar-gutter: stable;
+  scrollbar-color: rgba(59, 130, 246, 0.3) rgba(241, 245, 249, 0.5) !important;
+  background: #fafbfc;
+}
+
+.file-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.file-list::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.5);
+  border-radius: 5px;
+  margin: 0.5rem 0;
+}
+
+.file-list::-webkit-scrollbar-thumb {
+  background: rgba(157, 157, 157, 0.3);
+  border-radius: 5px;
+  transition: background 0.3s ease;
+}
+
+.file-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(157, 157, 157, 0.5);
+}
+
+/* Mobile: Larger scrollbar for touch targets */
+@media (max-width: 768px) {
+  .file-list::-webkit-scrollbar {
+    width: 14px;
+  }
+
+  .file-list::-webkit-scrollbar-thumb {
+    background: rgba(157, 157, 157, 0.5);
+  }
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 2px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.file-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #9d9d9d 0%, #8a8a8a 100%);
+  transform: scaleY(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.file-item:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+  border-color: #9d9d9d;
+  box-shadow: 0 8px 24px rgba(157, 157, 157, 0.15);
+  transform: translateY(-2px);
+}
+
+.file-item:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(157, 157, 157, 0.1);
+}
+
+.file-item:hover::before {
+  transform: scaleY(1);
+}
+
+.file-item-active {
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border-color: #9d9d9d;
+  box-shadow: 0 4px 16px rgba(157, 157, 157, 0.2);
+}
+
+.file-item-active::before {
+  transform: scaleY(1);
+}
+
+.file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #e5e5e5 0%, #d4d4d4 100%);
+  color: #6b6b6b;
+  font-size: 1.25rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(107, 107, 107, 0.15);
+}
+
+.file-item:hover .file-icon {
+  background: linear-gradient(135deg, #9d9d9d 0%, #8a8a8a 100%);
+  color: #ffffff;
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 4px 12px rgba(157, 157, 157, 0.3);
+}
+
+.file-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.file-item:hover .file-name {
+  color: #0f172a;
+}
+
+.file-size {
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-weight: 500;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Scrollbar for file list */
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+  color: var(--text-primary);
+  scrollbar-width: thin !important;
+  scrollbar-gutter: stable;
+  scrollbar-color: rgba(77, 151, 255, 0.5) rgba(77, 151, 255, 0.1) !important;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(77, 151, 255, 0.1);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(77, 151, 255, 0.5);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(77, 151, 255, 0.7);
+}
+
+.modal-body p {
+  margin: 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.modal-body i {
+  color: #6b6b6b;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.modal-actions {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  background: var(--panel-bg);
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-cancel {
+  background-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background-color: #95a3b3;
+  transform: translateY(-1px);
+}
+
+.btn-confirm {
+  background-color: var(--btn-run);
+  color: #ffffff;
+}
+
+.btn-confirm:hover:not(:disabled) {
+  background-color: #29d67d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(41, 214, 125, 0.3);
+}
+
+.btn-confirm:disabled {
+  background-color: #757575;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Download File Button */
+.btn-download-file {
+  padding: 0.5rem 0.75rem;
+  background-color: #9d9d9d;
+  border: 1px solid #9d9d9d;
+  color: #ffffff;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.btn-download-file:hover:not(:disabled) {
+  background-color: #8a8a8a;
+  border-color: #8a8a8a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(157, 157, 157, 0.4);
+}
+
+.btn-download-file:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #999;
+  border-color: #999;
+}
+
+.btn-download-file i {
+  font-size: 0.9rem;
+  display: inline-block;
+  color: #ffffff;
+}
+
+/* View File Button */
+.btn-view-file {
+  padding: 0.5rem 0.75rem;
+  background-color: #9d9d9d;
+  border: 1px solid #9d9d9d;
+  color: #ffffff;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.btn-view-file:hover:not(:disabled) {
+  background-color: #8a8a8a;
+  border-color: #8a8a8a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(157, 157, 157, 0.4);
+}
+
+.btn-view-file:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #999;
+  border-color: #999;
+}
+
+.btn-view-file i {
+  font-size: 0.9rem;
+  display: inline-block;
+  color: #ffffff;
+}
+
+/* File Actions Container */
+.file-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* File Manager Layout - Split View */
+.esp32-file-manager {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.file-manager-layout {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.file-manager-sidebar {
+  flex: 0 0 40%;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--panel-border);
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* File Viewer Panel - Side Panel */
+.file-viewer-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-bg);
+  overflow: scroll;
+  min-width: 0;
+  width: 100%;
+}
+
+.file-viewer-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--panel-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  background: var(--panel-bg);
+}
+
+.file-viewer-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.file-viewer-title i {
+  color: var(--btn-copy);
+  font-size: 1.1rem;
+}
+
+.btn-close-viewer {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-close-viewer:hover {
+  color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+.file-viewer-content {
+  flex: 1;
+  overflow: auto;
+  padding: 1.5rem;
+  background: #f5f5f5;
+}
+
+.file-viewer-content pre {
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* ============================================
+   Device File Manager Sidebar (from scratch)
+   All classes under .device-fm – single sidebar
+   ============================================ */
+.device-fm {
+  position: fixed;
+  left: 0;
+  top: 70px;
+  width: auto;
+  height: calc(100vh - 70px);
+  max-height: calc(100vh - 70px);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-right: 2px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
+  z-index: 500;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+
+.device-fm--expanded {
+  width: 300px;
+}
+
+.device-fm--collapsed {
+  width: 52px;
+}
+
+.device-fm__header {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  min-height: auto;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-bottom: 2px solid #cbd5e1;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.device-fm__header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.device-fm__header-content:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.device-fm__header-content:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.5);
+  outline-offset: -3px;
+}
+
+.device-fm__toggle-btn {
+  flex-shrink: 0;
+  padding: 4px !important;
+  height: 28px !important;
+  width: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #64748b !important;
+  transition: all 0.2s !important;
+}
+
+.device-fm__toggle-btn:hover {
+  color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+  transform: scale(1.1);
+}
+
+.device-fm--collapsed .device-fm__header-content {
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 0.375rem 0.25rem;
+  gap: 0.5rem;
+  min-height: auto;
+}
+
+.device-fm__header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.device-fm--collapsed .device-fm__header-actions {
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.device-fm__connect-btn {
+  flex-shrink: 0;
+  font-size: 0.9rem !important;
+  transition: color 0.2s !important;
+  padding: 2px 6px !important;
+  height: 28px !important;
+  width: 28px !important;
+  min-width: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.device-fm--collapsed .device-fm__connect-btn {
+  padding: 2px !important;
+  height: 28px !important;
+  width: 28px !important;
+  margin: 2px 0 !important;
+}
+
+.device-fm__connect-btn:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+.device-fm__upload-btn {
+  flex-shrink: 0;
+  font-size: 0.9rem !important;
+  color: var(--text-muted, #64748b) !important;
+  transition: color 0.2s !important;
+  padding: 2px 6px !important;
+  height: 28px !important;
+  width: 28px !important;
+  min-width: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.device-fm--collapsed .device-fm__upload-btn {
+  padding: 2px !important;
+  height: 28px !important;
+  width: 28px !important;
+  margin: 2px 0 !important;
+}
+
+.device-fm__upload-btn:not([disabled]):hover {
+  color: var(--btn-run, #0d9488) !important;
+}
+
+.device-fm__upload-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+/* Vertical "File Manager" label when collapsed */
+.device-fm__label-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 0;
+  flex-shrink: 0;
+}
+
+.device-fm__title-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.device-fm__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.device-fm__badge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(13, 148, 136, 0.1);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: var(--btn-run, #0d9488);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.device-fm__badge-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device-fm__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.device-fm__toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--panel-border, #e2e8f0);
+  background: var(--subtle-bg, #f8fafc);
+}
+
+.device-fm__path {
+  flex: 1;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted, #64748b);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device-fm__refresh {
+  flex-shrink: 0;
+}
+
+.device-fm__error {
+  flex-shrink: 0;
+  padding: 0.75rem;
+  background: #fee2e2;
+  border-bottom: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.device-fm__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  color: var(--text-muted, #64748b);
+}
+
+.device-fm__empty svg {
+  font-size: 2rem;
+  opacity: 0.5;
+}
+
+.device-fm__empty p {
+  font-size: 0.875rem;
+  text-align: center;
+  margin: 0;
+}
+
+.device-fm__list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  list-style: none;
+  margin: 0;
+  padding: 0.75rem;
+  background: #ffffff;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+}
+
+.device-fm__list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.device-fm__list::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0.5rem 0;
+}
+
+.device-fm__list::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.device-fm__list::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+/* Mobile touch scrollbar improvements */
+@media (hover: none) and (pointer: coarse) {
+  .device-fm__list::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  .device-fm__list::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.5);
+  }
+}
+
+.device-fm__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  border-left: 3px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  background: #ffffff;
+}
+
+.device-fm__item--clickable {
+  cursor: pointer;
+}
+
+.device-fm__item--clickable:hover {
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f0f0 100%);
+  border-left-color: #9d9d9d;
+  box-shadow: 0 2px 8px rgba(157, 157, 157, 0.12);
+  transform: translateX(4px);
+}
+
+.device-fm__item--active {
+  background: linear-gradient(135deg, #f0f0f0 0%, #e5e5e5 100%);
+  border-left-color: #9d9d9d;
+  box-shadow: 0 4px 12px rgba(157, 157, 157, 0.2);
+}
+
+.device-fm__item-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: #6b6b6b;
+  font-size: 1.125rem;
+  background: linear-gradient(135deg, #e5e5e5 0%, #d4d4d4 100%);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.device-fm__item--clickable:hover .device-fm__item-icon {
+  background: linear-gradient(135deg, #9d9d9d 0%, #8a8a8a 100%);
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+.device-fm__item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.device-fm__item-name {
+  font-size: 0.875rem;
+  color: #1e293b;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.device-fm__item-size {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.device-fm__item-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.device-fm__item--clickable:hover .device-fm__item-actions {
+  opacity: 1;
+}
+
+.device-fm__btn {
+  padding: 2px 4px !important;
+  height: 24px !important;
+  width: 24px !important;
+  min-width: auto !important;
+}
+
+.device-fm__btn--download {
+  color: #6b6b6b !important;
+}
+
+.device-fm__btn--delete {
+  color: #ef476f !important;
+}
+
+/* =====================
+   ACCESSIBILITY
+   ===================== */
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Detect touch capability and adjust hover behavior */
+@media (hover: none) and (pointer: coarse) {
+  .file-item:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .file-item:active {
+    background: linear-gradient(135deg, #f0f0f0 0%, #e5e5e5 100%);
+    border-color: #9d9d9d;
+  }
+
+  button:hover {
+    transform: none;
+  }
+
+  button:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Show file manager on desktop screens 1025px and above */
+@media (min-width: 1025px) {
+  .device-fm {
+    display: flex !important;
+    visibility: visible !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 70px !important;
+    min-width: auto !important;
+    height: calc(100vh - 70px) !important;
+    max-height: calc(100vh - 70px) !important;
+    z-index: 500 !important;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .device-fm--expanded {
+    width: 300px !important;
+  }
+
+  .device-fm--collapsed {
+    width: 52px !important;
+  }
+
+  /* Smooth transitions for header elements when expanding/collapsing */
+  .device-fm__header {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .device-fm__title-wrap {
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .device-fm__body {
+    transition: opacity 0.2s ease !important;
+  }
+}
+
+/* =====================
+   MOBILE RESPONSIVENESS
+   ===================== */
+
+/* Hide file manager completely below 1025px */
+@media (max-width: 1024px) {
+  .device-fm {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    position: static !important;
+  }
+
+  .device-fm--expanded,
+  .device-fm--collapsed {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+  }
+}
+
+/* Tablet (600px - 768px) - More room, show some details */
+@media (max-width: 768px) and (min-width: 601px) {
+  /* Ensure sidebar takes proper space and doesn't overflow */
+  .esp32-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+  }
+
+  .esp32-sidebar-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* If file manager is shown, it takes 50% and uploader takes 50% */
+  .file-manager-layout {
+    flex: 0 0 45%;
+    overflow: hidden;
+  }
+
+  .esp32-tools {
+    flex: 0 0 55%;
+    padding: 0.75rem;
+    gap: 0.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    font-size: 0.85rem;
+  }
+
+  .esp32-tools h4 {
+    font-size: 0.75rem;
+    margin: 0.375rem 0;
+  }
+
+  .esp32-tools button {
+    min-height: 40px;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .connection-section,
+  .upload-section,
+  .instructions-section {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .file-item {
+    padding: 0.625rem 0.875rem;
+  }
+
+  .file-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .repl__output {
+    font-size: 0.75rem;
+  }
+
+  .repl__field {
+    font-size: 0.8rem;
+    height: 36px;
+  }
+}
+
+/* Mobile - Hide tabs header and show only uploader content */
+@media (max-width: 768px) {
+  /* Hide REPL and Files tabs on tablet - only show Uploader */
+  .esp32-sidebar-inner .ant-tabs-nav {
+    display: none !important;
+  }
+
+  /* Full-height content on mobile */
+  .esp32-sidebar-inner .ant-tabs-content-holder {
+    border: none;
+    width: 100%;
+  }
+
+  .esp32-sidebar-inner .ant-tabs-tabpane {
+    height: 100%;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  /* Main uploader container - prevent overflow */
+  .esp32-tools {
+    flex: 1;
+    padding: 0.75rem;
+    gap: 0.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-width: 100%;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .esp32-tools h4 {
+    font-size: 0.8rem;
+    margin: 0.375rem 0;
+    font-weight: 600;
+  }
+
+  /* Touch-friendly buttons - scaled for mobile */
+  .esp32-tools button {
+    min-height: 40px;
+    font-size: 0.85rem;
+    padding: 0.625rem 0.875rem;
+    width: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .esp32-tools button:active {
+    background-color: rgba(0, 0, 0, 0.05);
+    transform: scale(0.98);
+  }
+
+  /* Sections compress on tablet */
+  .connection-section,
+  .upload-section,
+  .instructions-section {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+    width: 100%;
+  }
+
+  /* Connection status - stack vertically */
+  .connection-status {
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .connection-actions {
+    display: flex;
+    width: 100%;
+    gap: 0.375rem;
+    flex-direction: column;
+  }
+
+  .connection-actions button {
+    width: 100%;
+    min-height: 40px;
+    font-size: 0.85rem;
+  }
+
+  .status-indicator {
+    font-size: 0.75rem;
+  }
+
+  /* Upload section - compact */
+  .upload-progress {
+    margin-bottom: 0.75rem;
+  }
+
+  .upload-hint {
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Instructions - smaller text */
+  .instructions-section ol {
+    padding-left: 1rem;
+    font-size: 0.8rem;
+    margin: 0;
+  }
+
+  .instructions-section li {
+    margin-bottom: 0.375rem;
+    line-height: 1.3;
+  }
+
+  /* Tablet: Show file manager in responsive single-column layout */
+  .file-manager-layout {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 100%;
+    gap: 0;
+    flex: 0 0 auto;
+  }
+
+  .file-manager-sidebar {
+    flex: 0 0 auto;
+    display: flex !important;
+    flex-direction: column;
+    border-right: none;
+    border-bottom: 1px solid var(--panel-border);
+    height: 35vh;
+    max-height: 35vh;
+    overflow: auto;
+    width: 100% !important;
+    min-width: 100% !important;
+    min-height: 0;
+  }
+
+  .file-viewer-panel {
+    display: none !important;
+    flex: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* File manager is already hidden at this breakpoint by 1024px media query */
+
+  /* Prevent horizontal scroll */
+  * {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Better overall mobile spacing */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .esp32-upload-trigger {
+    bottom: 0.75rem;
+    right: 0.75rem;
+    z-index: 50;
+  }
+
+  .esp32-upload-trigger button {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.8rem;
+    gap: 0.3rem;
+    white-space: nowrap;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .esp32-modal {
+    max-width: calc(100vw - 1rem);
+    margin: 0.5rem;
+    border-radius: 0.375rem;
+    max-height: calc(100vh - 1rem);
+  }
+
+  .esp32-modal-content {
+    padding: 1rem;
+    max-height: calc(100vh - 100px);
+  }
+
+  .esp32-tools {
+    flex: 1;
+    padding: 0.625rem;
+    gap: 0.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    min-height: 0;
+  }
+
+  .esp32-tools h4 {
+    font-size: 0.8rem;
+    margin: 0.375rem 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  /* Sections - with better touch spacing */
+  .connection-section,
+  .upload-section,
+  .instructions-section {
+    padding: 0.625rem;
+    margin-bottom: 0.5rem;
+    border-radius: 3px;
+  }
+
+  /* Instructions - ultra small text */
+  .instructions-section ol {
+    font-size: 0.75rem;
+    padding-left: 0.875rem;
+    margin: 0;
+  }
+
+  .instructions-section li {
+    margin-bottom: 0.3rem;
+    line-height: 1.25;
+  }
+
+  /* Buttons - full width, better touch targets */
+  .esp32-tools button {
+    min-height: 42px;
+    font-size: 0.875rem;
+    padding: 0.625rem 0.875rem;
+    width: 100%;
+    margin: 0;
+  }
+
+  .ant-btn {
+    font-size: 0.8rem !important;
+    min-height: 40px !important;
+  }
+
+  /* File items - better spacing on mobile */
+  .file-item {
+    padding: 0.625rem 0.875rem;
+    margin-bottom: 0.375rem;
+    gap: 0.625rem;
+  }
+
+  .file-item:active {
+    background: linear-gradient(135deg, #f0f0f0 0%, #e5e5e5 100%);
+  }
+
+  .file-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .file-name {
+    font-size: 0.85rem;
+  }
+
+  /* REPL improvements on mobile */
+  .repl {
+    font-size: 0.7rem;
+  }
+
+  .repl__output {
+    padding: 6px 8px;
+    font-size: 0.7rem;
+  }
+
+  .repl__line {
+    padding: 1px 0;
+  }
+
+  .repl__toolbar {
+    padding: 0 8px;
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .repl__status {
+    font-size: 0.7rem;
+  }
+
+  .repl__input {
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .repl__field {
+    height: 38px;
+    font-size: 0.8rem;
+  }
+
+  /* Status indicators - condensed */
+  .status-indicator {
+    font-size: 0.75rem;
+    padding: 0.375rem;
+  }
+
+  .connection-status {
+    gap: 0.375rem;
+  }
+
+  /* Upload progress */
+  .upload-progress {
+    margin-bottom: 0.5rem;
+  }
+
+  /* Instructions - ultra small text */
+  .instructions-section ol {
+    font-size: 0.75rem;
+    padding-left: 1rem;
+    margin: 0;
+  }
+
+  .instructions-section li {
+    margin-bottom: 0.375rem;
+    line-height: 1.3;
+  }
+
+  /* Upload hint - tiny */
+  .upload-hint {
+    font-size: 0.7rem;
+    margin-top: 0.5rem;
+    padding: 0.375rem;
+  }
+
+  /* Connection actions - stack properly */
+  .connection-actions {
+    display: flex;
+    gap: 0.375rem;
+    flex-direction: column;
+  }
+
+  .connection-actions button {
+    width: 100%;
+  }
+
+  /* Prevent any horizontal scrolling */
+  body,
+  html {
+    overflow-x: hidden;
+  }
+
+  .esp32-sidebar {
+    overflow-x: hidden;
+    width: 100vw;
+    padding: 0;
+    margin: 0;
+  }
+
+  .esp32-sidebar-inner {
+    overflow-x: hidden;
+    width: 100vw;
+    padding: 0;
+    margin: 0;
+  }
+
+  .esp32-tools {
+    overflow-x: hidden;
+    width: 100vw;
+    padding: 0.5rem;
+  }
+
+  /* Hide file manager sidebar and expand uploader to full width */
+  .file-manager-sidebar {
+    display: none !important;
+    width: 0 !important;
+    flex: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .file-manager-layout {
+    display: block !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: none !important;
+  }
+
+  .file-viewer-panel {
+    display: none !important;
+    width: 0 !important;
+    flex: 0 !important;
+    min-width: 0 !important;
+  }
+
+  /* File manager fully hidden on mobile screens */
+  .device-fm {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+  }
+
+
+  /* Ensure sidebars don't reserve space */
+  .esp32-sidebar {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+}
+
+/* Extra small phones (< 360px) */
+@media (max-width: 360px) {
+  .esp32-tools {
+    padding: 0.375rem;
+  }
+
+  .esp32-tools h4 {
+    font-size: 0.75rem;
+  }
+
+  .esp32-tools button {
+    min-height: 36px;
+    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  .connection-section,
+  .upload-section,
+  .instructions-section {
+    padding: 0.375rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .instructions-section ol {
+    font-size: 0.7rem;
+    padding-left: 0.875rem;
+  }
+
+  .instructions-section li {
+    margin-bottom: 0.25rem;
+  }
+
+  /* Mobile: Stack file manager vertically with better spacing */
+  .file-manager-sidebar {
+    flex: 0 0 100%;
+    max-height: 35vh;
+    border-bottom: 2px solid var(--panel-border);
+  }
+
+  .file-viewer-panel {
+    flex: 1;
+    max-height: 65vh;
+  }
+
+  /* Mobile: Hide device file manager */
+  .device-fm {
+    display: none !important;
+    width: 0 !important;
+  }
+}
