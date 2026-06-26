@@ -9,17 +9,13 @@ export default function LoginPage() {
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   useEffect(() => {
-    // Silently redirect to Keycloak - no UI shown
+    // Kick off the Keycloak flow as soon as we hit the client. signIn() must
+    // run here (not server-side) so NextAuth can set its state/PKCE cookies
+    // before redirecting; the callback validates them.
     signIn("keycloak", { redirect: true, callbackUrl });
   }, [callbackUrl]);
 
-  // While redirecting, show minimal loading screen
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-white">
-      <div className="text-center">
-        <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600 mx-auto"></div>
-        <p className="text-gray-600">Redirecting to login...</p>
-      </div>
-    </div>
-  );
+  // Render nothing so the user never sees an intermediate page — just a brief
+  // blank frame before the browser navigates to Keycloak.
+  return null;
 }
