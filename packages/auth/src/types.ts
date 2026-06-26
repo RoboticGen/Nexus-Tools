@@ -29,7 +29,6 @@ export interface NextAuthSession extends Session {
   };
   accessToken?: string;
   idToken?: string;
-  refreshToken?: string;
   expiresAt?: number;
   error?: string;
 }

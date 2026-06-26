@@ -10,7 +10,10 @@ export function getAuthConfig(): NextAuthOptions {
   const keycloakUrl = process.env.KEYCLOAK_URL || "https://auth.roboticgen.co";
   const realm = process.env.KEYCLOAK_REALM || "roboticgen";
   const clientId = process.env.KEYCLOAK_CLIENT_ID || "obo-nexus";
-  const clientSecret = process.env.KEYCLOAK_CLIENT_SECRET || "124";
+  const clientSecret = process.env.KEYCLOAK_CLIENT_SECRET;
+  if (!clientSecret) {
+    throw new Error("KEYCLOAK_CLIENT_SECRET env var is required");
+  }
   const nextAuthUrl = process.env.NEXTAUTH_URL || "http://localhost:3001";
 
   // Log configuration for debugging (development only)
@@ -41,13 +44,13 @@ export function getAuthConfig(): NextAuthOptions {
     session: {
       strategy: "jwt",
       maxAge: 60 * 60, // 1 hour
-      updateAge: 60 * 60, // 1 hour
+      updateAge: 60 * 10, // re-run jwt callback at least every 10 minutes
     },
     jwt: {
       maxAge: 60 * 60, // 1 hour
     },
     callbacks: {
-      async jwt({ token, account }) {
+      async jwt({ token, account, profile }) {
         try {
           // Initial sign in
           if (account) {
@@ -56,6 +59,10 @@ export function getAuthConfig(): NextAuthOptions {
             token.idToken = account.id_token;
             token.expiresAt = (account.expires_at || Date.now() / 1000 + 3600) as number;
             token.sub = account.providerAccountId;
+
+            // Extract realm roles from the Keycloak profile (id_token claims)
+            const p = profile as any;
+            token.roles = p?.realm_access?.roles ?? p?.roles ?? [];
           }
 
           // Refresh token if expired (within 5 minutes)
@@ -81,7 +88,7 @@ export function getAuthConfig(): NextAuthOptions {
 
               if (!response.ok) {
                 console.error("Token refresh failed:", response.status);
-                return token;
+                return { ...token, error: "RefreshAccessTokenError" };
               }
 
               const refreshedTokens = await response.json();
@@ -90,8 +97,11 @@ export function getAuthConfig(): NextAuthOptions {
               token.expiresAt = refreshedTokens.expires_in
                 ? Math.floor(Date.now() / 1000) + refreshedTokens.expires_in
                 : (token.expiresAt as number);
+              // Clear any previous refresh error after a successful refresh
+              delete token.error;
             } catch (error) {
               console.error("Token refresh error:", error);
+              return { ...token, error: "RefreshAccessTokenError" };
             }
           }
 
@@ -115,8 +125,10 @@ export function getAuthConfig(): NextAuthOptions {
               image: token.picture as string | undefined,
             },
             accessToken: token.accessToken as string,
+            // idToken is exposed for RP-initiated logout (id_token_hint).
+            // refreshToken is intentionally NOT returned: it must never leave
+            // the server, where it is kept inside the encrypted JWT cookie.
             idToken: token.idToken as string | undefined,
-            refreshToken: token.refreshToken as string,
             expiresAt: token.expiresAt as number,
             error: token.error as string | undefined,
           };

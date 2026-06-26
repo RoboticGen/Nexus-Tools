@@ -43,6 +43,5 @@ export function useRefreshToken() {
     timeUntilExpiry,
     isAboutToExpire,
     accessToken: session?.accessToken,
-    refreshToken: session?.refreshToken,
   };
 }

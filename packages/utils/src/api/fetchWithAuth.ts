@@ -1,4 +1,4 @@
-import { getSession } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
 
 interface FetchOptions extends RequestInit {
   skipAuth?: boolean;
@@ -33,36 +33,40 @@ export async function fetchWithAuth(
     headers,
   });
 
-  // If unauthorized and we have a refresh token, try to refresh
-  if (response.status === 401 && session?.refreshToken && !skipAuth) {
+  // On 401, re-fetch the session. getSession() re-runs the server-side jwt
+  // callback, which refreshes the access token if it has expired. We only
+  // retry when we actually receive a *different* token, to avoid replaying the
+  // same expired credential.
+  if (response.status === 401 && !skipAuth) {
     try {
-      // Call the NextAuth refresh endpoint
-      const refreshResponse = await fetch("/api/auth/session");
+      const refreshed = await getSession();
 
-      if (refreshResponse.ok) {
-        // Get the new session
-        const newSession = await getSession();
-
-        if (newSession?.accessToken) {
-          // Retry the original request with new token
-          headers.set("Authorization", `Bearer ${newSession.accessToken}`);
-          response = await fetch(url, {
-            ...fetchOptions,
-            headers,
-          });
+      // Refresh token is invalid/expired/revoked — the session can't be
+      // recovered. Sign out fully (clears the NextAuth cookie) before
+      // redirecting, otherwise the stale cookie causes a /login redirect loop.
+      if (refreshed?.error === "RefreshAccessTokenError") {
+        if (typeof window !== "undefined") {
+          await signOut({ callbackUrl: "/login" });
         }
+        return response;
+      }
+
+      const newToken = refreshed?.accessToken;
+      if (newToken && newToken !== session?.accessToken) {
+        headers.set("Authorization", `Bearer ${newToken}`);
+        response = await fetch(url, {
+          ...fetchOptions,
+          headers,
+        });
       }
     } catch (error) {
-      console.error("Token refresh failed:", error);
+      console.error("Session refresh failed:", error);
     }
   }
 
-  // If still unauthorized after refresh attempt, could redirect to login
-  if (response.status === 401 && !skipAuth) {
-    // Optionally redirect to login
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
+  // Still unauthorized with no recoverable session — send the user to login.
+  if (response.status === 401 && !skipAuth && typeof window !== "undefined") {
+    await signOut({ callbackUrl: "/login" });
   }
 
   return response;
