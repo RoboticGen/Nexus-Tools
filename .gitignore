@@ -25,6 +25,12 @@ coverage
 !.vscode/settings.json
 .idea
 
+# Claude Code local settings
+.claude/settings.local.json
+
+# Misc local artifacts
+cookies.txt
+
 # OS
 .DS_Store
 Thumbs.db

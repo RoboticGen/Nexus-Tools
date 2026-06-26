@@ -104,9 +104,13 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
     async (_port: SerialPortType, filename: string, content: string): Promise<void> => {
       const sanitizedContent = content.trimEnd();
 
+      // Escape backslashes and single quotes so the filename can't break out of
+      // the Python string literal (or inject code) on the device.
+      const safeFilename = filename.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+
       // Use JSON.stringify to safely escape the content string for Python
       const pythonCode = [
-        `f=open('${filename}','w')`,
+        `f=open('${safeFilename}','w')`,
         `f.write(${JSON.stringify(sanitizedContent)})`,
         `f.close()`,
         `print('OK')`,
