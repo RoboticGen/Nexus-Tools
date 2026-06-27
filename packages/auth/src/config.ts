@@ -1,6 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
-import type { KeycloakToken, NextAuthSession } from "./types";
+import type { NextAuthSession } from "./types";
 
 /**
  * Get NextAuth configuration for Keycloak OAuth provider
@@ -120,7 +120,11 @@ export function getAuthConfig(): NextAuthOptions {
               id: (token.sub as string) || "",
               email: token.email || "",
               name: token.name || "",
-              role: (token.roles as string[])?.includes("admin") ? "admin" : "user",
+              role: (token.roles as string[])?.includes("admin")
+                ? "admin"
+                : (token.roles as string[])?.includes("mentor")
+                  ? "mentor"
+                  : "student",
               roles: (token.roles as string[]) || [],
               image: token.picture as string | undefined,
             },
@@ -156,7 +160,5 @@ export function getAuthConfig(): NextAuthOptions {
       signIn: "/login",
       error: "/login",
     },
-
-    trustHost: true,
   };
 }

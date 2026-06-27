@@ -1,5 +1,5 @@
-import NextAuth from "next-auth";
 import { getAuthConfig } from "@nexus-tools/auth";
+import NextAuth from "next-auth";
 
 const handler = NextAuth(getAuthConfig());
 

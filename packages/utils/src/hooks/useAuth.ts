@@ -28,7 +28,7 @@ export function useAuth(): UseAuthReturn {
     status,
     isLoading: status === "loading",
     isAuthenticated: status === "authenticated",
-    user: session?.user || null,
+    user: (session?.user as NextAuthSession["user"]) || null,
     logout,
   };
 }

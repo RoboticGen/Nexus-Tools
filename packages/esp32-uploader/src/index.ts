@@ -21,11 +21,12 @@ export { useESP32REPL } from "./hooks/use-esp32-repl";
 export { useESP32FileManager } from "./hooks/use-esp32-file-manager";
 
 // Types
-export type { 
-  ESP32Device, 
-  ESP32UploaderState, 
-  SerialPortOptions, 
-  USBFilter 
+export type {
+  ESP32Device,
+  ESP32UploaderState,
+  SerialPort,
+  SerialPortOptions,
+  USBFilter
 } from "./types/esp32";
 
 // Constants

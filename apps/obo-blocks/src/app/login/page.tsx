@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { Suspense, useEffect } from "react";
 
-export default function LoginPage() {
+function LoginRedirect() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
@@ -18,4 +18,12 @@ export default function LoginPage() {
   // Render nothing so the user never sees an intermediate page — just a brief
   // blank frame before the browser navigates to Keycloak.
   return null;
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginRedirect />
+    </Suspense>
+  );
 }

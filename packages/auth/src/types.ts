@@ -23,7 +23,7 @@ export interface NextAuthSession extends Session {
     id: string;
     email: string;
     name: string;
-    role: "admin" | "user" | "guest";
+    role: "admin" | "mentor" | "student";
     roles?: string[];
     image?: string;
   };
