@@ -1,5 +1,6 @@
 # Nexus Tools Monorepo
 
+
 A modern monorepo containing three Next.js frontend applications with shared packages.
 
 ## 📁 Project Structure
