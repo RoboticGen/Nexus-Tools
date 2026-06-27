@@ -12,6 +12,7 @@
     "clean": "rimraf .next .turbo node_modules"
   },
   "dependencies": {
+    "@nexus-tools/auth": "workspace:*",
     "@nexus-tools/esp32-uploader": "workspace:*",
     "@nexus-tools/blockly-python-generator": "workspace:*",
     "@nexus-tools/micropython-esp32": "workspace:*",

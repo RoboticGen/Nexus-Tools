@@ -48,3 +48,6 @@ yarn-error.log*
 **/public/sw.js.map
 **/public/workbox-*.js.map
 **/public/worker-*.js.map
+
+# libcurl cookie jar (never commit session cookies)
+cookies.txt

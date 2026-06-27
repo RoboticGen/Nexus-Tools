@@ -12,6 +12,7 @@
     "clean": "rimraf .next .turbo node_modules"
   },
   "dependencies": {
+    "@nexus-tools/auth": "workspace:*",
     "@nexus-tools/types": "workspace:*",
     "@nexus-tools/ui": "workspace:*",
     "@nexus-tools/utils": "workspace:*",
