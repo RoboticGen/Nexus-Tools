@@ -14,7 +14,7 @@ export default function UnauthorizedPage() {
             Unauthorized
           </p>
           <p className="mt-2 text-slate-600">
-            You don't have permission to access this resource.
+            You don&apos;t have permission to access this resource.
           </p>
         </div>
 

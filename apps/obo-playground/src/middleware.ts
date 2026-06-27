@@ -1,9 +1,9 @@
-import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import { withAuth } from "next-auth/middleware";
 
 // Apply auth to all routes except public ones
 export default withAuth(
-  function middleware(req) {
+  function middleware() {
     // If user is not authenticated, withAuth will handle the redirect
     // based on the pages.signIn config
     return NextResponse.next();

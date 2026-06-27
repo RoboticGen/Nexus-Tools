@@ -1,7 +1,9 @@
-import type { Metadata } from "next";
 
 import { Inter } from "next/font/google";
+
 import { Providers } from "./providers";
+
+import type { Metadata } from "next";
 
 import "antd/dist/reset.css";
 import "@nexus-tools/esp32-uploader/styles";
