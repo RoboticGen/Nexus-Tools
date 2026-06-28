@@ -162,7 +162,11 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
    * Connect to ESP32 (without uploading)
    */
   const connectToDevice = useCallback(async () => {
+    console.log("[ESP32Uploader.connectToDevice] Starting connection...");
+    console.log("[ESP32Uploader.connectToDevice] espSupported:", espSupported);
+    
     if (!espSupported) {
+      console.error("[ESP32Uploader.connectToDevice] Web Serial API not supported!");
       setConnectionError("ESP Web Tools not supported");
       return;
     }
@@ -170,9 +174,11 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
     try {
       setConnectionError(null);
       onStatusUpdate?.("Connecting to ESP32...");
+      console.log("[ESP32Uploader.connectToDevice] Calling connectToESP32...");
       
       // Connect and keep the port open for future uploads
       const port = await connectToESP32();
+      console.log("[ESP32Uploader.connectToDevice] Port opened successfully:", port);
       connectedPortRef.current = port;
       setSerialPort(port);
       setIsConnected(true);
@@ -182,6 +188,7 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
       onConnectionEstablished?.(port);
       
     } catch (error: any) {
+      console.error("[ESP32Uploader.connectToDevice] Connection error:", error);
       setIsConnected(false);
       connectedPortRef.current = null;
       setSerialPort(null);
@@ -197,7 +204,7 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
       setConnectionError(userFriendlyMsg);
       onError?.(userFriendlyMsg);
     }
-  }, [espSupported, connectToESP32, onStatusUpdate, onError]);
+  }, [espSupported, connectToESP32, onStatusUpdate, onError, onConnectionEstablished]);
 
   /**
    * Reset connection state
@@ -274,7 +281,11 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
   // Initialize on mount
   useEffect(() => {
     setIsMounted(true);
-    setEspSupported(checkSerialSupport());
+    const isSupported = checkSerialSupport();
+    console.log("[ESP32Uploader] Web Serial API support check:", isSupported);
+    console.log("[ESP32Uploader] navigator.serial:", (navigator as any).serial ? "available" : "NOT available");
+    console.log("[ESP32Uploader] isSecureContext:", window.isSecureContext);
+    setEspSupported(isSupported);
   }, [checkSerialSupport]);
 
   // Cleanup on unmount

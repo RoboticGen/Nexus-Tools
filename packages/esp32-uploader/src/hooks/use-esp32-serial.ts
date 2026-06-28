@@ -40,14 +40,19 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
    */
   const connectToESP32 = useCallback(async (): Promise<SerialPortType> => {
     try {
+      console.log("[useESP32Serial] Requesting port with filters:", ESP32_USB_FILTERS);
       const port = await (navigator as any).serial.requestPort({
         filters: ESP32_USB_FILTERS,
       });
+
+      console.log("[useESP32Serial] Port selected:", port);
 
       await port.open({
         baudRate,
         ...DEFAULT_SERIAL_OPTIONS,
       });
+
+      console.log("[useESP32Serial] Port opened with baudRate:", baudRate);
 
       // Hand the port to the stream manager immediately.
       // From this point on, ALL reads/writes go through the manager.
@@ -55,11 +60,28 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
 
       return port;
     } catch (error: any) {
+      console.error("[useESP32Serial] Connection error:", error);
+      
       if (error.name === "NotFoundError") {
         if (error.message?.includes("No port selected")) {
           throw new Error("Connection cancelled - no device was selected");
         }
-        throw new Error("ESP32 device not found. Please check your USB connection and try again.");
+        // Try without filters to see what's available
+        console.warn("[useESP32Serial] No filtered device found. Attempting to show all ports...");
+        try {
+          const port = await (navigator as any).serial.requestPort();
+          console.log("[useESP32Serial] Port selected (no filter):", port);
+          
+          await port.open({
+            baudRate,
+            ...DEFAULT_SERIAL_OPTIONS,
+          });
+          
+          await serialStreamManager.initialize(port);
+          return port;
+        } catch (_err) {
+          throw new Error("ESP32 device not found. Please check your USB connection and try again.");
+        }
       } else if (error.name === "NetworkError") {
         throw new Error("Failed to open connection to ESP32. Device may be in use by another application.");
       } else if (error.name === "InvalidStateError") {
@@ -82,9 +104,13 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
     async (_port: SerialPortType, filename: string, content: string): Promise<void> => {
       const sanitizedContent = content.trimEnd();
 
+      // Escape backslashes and single quotes so the filename can't break out of
+      // the Python string literal (or inject code) on the device.
+      const safeFilename = filename.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+
       // Use JSON.stringify to safely escape the content string for Python
       const pythonCode = [
-        `f=open('${filename}','w')`,
+        `f=open('${safeFilename}','w')`,
         `f.write(${JSON.stringify(sanitizedContent)})`,
         `f.close()`,
         `print('OK')`,

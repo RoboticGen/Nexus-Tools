@@ -18,7 +18,8 @@
     "@nexus-tools/ui": "workspace:*",
     "antd": "^5.11.0",
     "@ant-design/icons": "^5.2.0",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "esptool-js": "0.5.7"
   },
   "devDependencies": {
     "@nexus-tools/eslint-config": "*",

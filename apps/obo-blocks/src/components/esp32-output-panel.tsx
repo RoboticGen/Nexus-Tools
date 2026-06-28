@@ -205,6 +205,23 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     </div>
   );
 
+  const flasherTab = (
+    <div className="tab-content-wrapper">
+      {canShowAdvancedFeatures ? (
+        <ESP32Flasher
+          serialPort={serialPort}
+          isConnected={isConnected}
+          onStatusUpdate={onStatusUpdate}
+          onError={onError}
+        />
+      ) : (
+        <div style={{ padding: "1rem", fontSize: "0.9rem" }}>
+          Connect your device first to access the Flasher.
+        </div>
+      )}
+    </div>
+  );
+
   const outputTab = (
     <div className="tab-content-wrapper">
       <div className="panel-header">
@@ -254,6 +271,12 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
             label: "REPL",
             disabled: !canShowAdvancedFeatures,
             children: replTab,
+          },
+          {
+            key: "flasher",
+            label: "Flasher",
+            disabled: !canShowAdvancedFeatures,
+            children: flasherTab,
           },
         ]}
       />

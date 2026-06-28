@@ -49,3 +49,55 @@ export interface USBFilter {
   usbVendorId: number;
   usbProductId?: number;
 }
+
+// ─── Flasher Types ───────────────────────────────────────────────────────────
+
+export interface ChipInfo {
+  chipId: string;
+  chipFamily: string;
+  chipModel: string;
+  revision: number;
+  features: string[];
+}
+
+export interface FirmwareImage {
+  name: string;
+  version: string;
+  url: string;
+  checksumSha256?: string;
+  releaseDate: string;
+  description: string;
+  chipFamily: string;
+}
+
+export interface FlashOperation {
+  startTime: number;
+  estimatedDurationMs: number;
+  bytesTotal: number;
+  bytesWritten: number;
+  percentComplete: number;
+}
+
+export type FlasherPhase = "idle" | "detecting" | "erasing" | "flashing" | "verifying" | "rollback" | "completed" | "error";
+
+export interface FlasherState {
+  phase: FlasherPhase;
+  isFlashing: boolean;
+  isRecoveryMode: boolean;
+  progress: number;
+  estimatedTimeRemaining: number; // in seconds
+  currentOperation: string;
+  error: string | null;
+  chipInfo: ChipInfo | null;
+  selectedFirmware: FirmwareImage | null;
+  customFirmwareBinary: ArrayBuffer | null;
+  customFirmwareName: string | null;
+  operationLog: string[];
+}
+
+export interface ESP32FlasherProps {
+  serialPort: any;
+  isConnected?: boolean;
+  onStatusUpdate?: (status: string) => void;
+  onError?: (error: string) => void;
+}

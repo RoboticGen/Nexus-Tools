@@ -247,8 +247,9 @@ class SerialStreamManager {
           await this.write(REPL_CONTROL.CTRL_C);
           await delay(50);
           await this.write(REPL_CONTROL.CTRL_A);
-          // Increased timeout for raw REPL entry (3 seconds) - some devices are slow
-          await waitFor(() => buffer.includes(">"), 3000);
+          // 6s timeout: a freshly-flashed device can print several seconds of boot
+          // output before the Raw REPL prompt appears.
+          await waitFor(() => buffer.includes(">"), 6000);
           buffer = "";
 
           // Step 2: Send code + Ctrl-D to execute
@@ -377,6 +378,179 @@ class SerialStreamManager {
     }
     this.releaseLocks();
     this.port = null;
+  }
+
+  // ── Flasher Operations ───────────────────────────────────────────────────
+
+  /**
+   * Detect ESP32 chip information via Raw REPL.
+   * Returns chip ID, family, and revision.
+   */
+  async detectChip(): Promise<{ chipId: string; chipFamily: string; revision: number }> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    const code = `
+import binascii
+import os
+import machine
+
+# Get system info and unique ID
+uinfo = os.uname()
+uid = binascii.hexlify(machine.unique_id()).decode()
+
+print(f"SYSNAME={uinfo.sysname}")
+print(f"MACHINE={uinfo.machine}")
+print(f"UID={uid}")
+`.trim();
+
+    const result = await this.executeRawREPL(code, 3000);
+    
+    if (result.error) {
+      throw new Error(`Failed to detect chip: ${result.error}`);
+    }
+
+    // Parse output
+    const output = result.output || "";
+    const sysnameMatch = output.match(/SYSNAME=(\S+)/);
+    const machineMatch = output.match(/MACHINE=(\S+)/);
+    const uidMatch = output.match(/UID=([a-f0-9]+)/);
+
+    if (!sysnameMatch) {
+      throw new Error("Could not detect ESP32 platform information");
+    }
+
+    const sysname = sysnameMatch[1];
+    const machine = machineMatch ? machineMatch[1] : "Unknown";
+    const uid = uidMatch ? uidMatch[1] : "unknown";
+
+    // Parse chip family from machine string (e.g., "ESP32 module with ESP32" or "esp32 with FeatherS3")
+    let chipFamily = "ESP32";
+    if (machine.includes("S3") || sysname.includes("S3")) {
+      chipFamily = "ESP32-S3";
+    } else if (machine.includes("S2") || sysname.includes("S2")) {
+      chipFamily = "ESP32-S2";
+    } else if (machine.includes("C3") || sysname.includes("C3")) {
+      chipFamily = "ESP32-C3";
+    } else if (machine.includes("C6") || sysname.includes("C6")) {
+      chipFamily = "ESP32-C6";
+    }
+
+    return {
+      chipId: uid,
+      chipFamily,
+      revision: 0, // Revision not easily detectable without esp-idf
+    };
+  }
+
+  /**
+   * Get MicroPython firmware version currently on device.
+   */
+  async getFirmwareVersion(): Promise<string> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    const code = `import sys; print(sys.version)`.trim();
+    const result = await this.executeRawREPL(code, 6000);
+
+    if (result.error) {
+      return "Unknown";
+    }
+
+    const versionMatch = result.output.match(/MicroPython v(\d+\.\d+\.\d+)/);
+    return versionMatch ? versionMatch[1] : "Unknown";
+  }
+
+  /**
+   * Erase entire flash storage on ESP32.
+   * WARNING: This removes all files, including boot scripts.
+   */
+  async eraseFlash(): Promise<void> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    // Use raw REPL with extended timeout (erase can take 10+ seconds).
+    // Recursively deletes files AND directories. Exceptions are NOT swallowed:
+    // any failure propagates to the REPL stderr so result.error is populated
+    // and we abort instead of flashing over a partially-erased filesystem.
+    // "Erase complete" only prints if the whole walk finished without error.
+    const code = `
+import os
+
+def _rmtree(path):
+    for entry in os.listdir(path):
+        full = path.rstrip('/') + '/' + entry
+        if os.stat(full)[0] & 0x4000:
+            _rmtree(full)
+            os.rmdir(full)
+        else:
+            os.remove(full)
+
+print("Erasing flash...")
+for entry in os.listdir('/'):
+    if entry == 'sys':
+        continue
+    full = '/' + entry
+    if os.stat(full)[0] & 0x4000:
+        _rmtree(full)
+        os.rmdir(full)
+    else:
+        os.remove(full)
+print("Erase complete")
+`.trim();
+
+    const result = await this.executeRawREPL(code, 15000);
+
+    if (result.error) {
+      throw new Error(`Flash erase failed: ${result.error}`);
+    }
+    if (!result.output.includes("Erase complete")) {
+      throw new Error("Flash erase did not complete — filesystem may be partially erased");
+    }
+  }
+
+  /**
+   * Soft reset the ESP32 device.
+   * Resets the MicroPython interpreter without power cycling.
+   */
+  async softReset(): Promise<void> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    return this.enqueue("softReset", async () => {
+      await this.write(REPL_CONTROL.CTRL_D);
+      await delay(1000);
+    });
+  }
+
+  /**
+   * Hard reset by controlling DTR/RTS lines if available.
+   * Falls back to soft reset if hardware lines aren't accessible.
+   */
+  async hardReset(): Promise<void> {
+    if (!this.isReady()) {
+      throw new Error("Serial stream manager not initialized");
+    }
+
+    try {
+      // Try to use DTR/RTS if available
+      if (this.port?.setSignals) {
+        await this.port.setSignals({ dataTerminalReady: false });
+        await delay(100);
+        await this.port.setSignals({ dataTerminalReady: true });
+        await delay(500);
+      } else {
+        // Fallback: soft reset
+        await this.softReset();
+      }
+    } catch (err) {
+      console.warn("Hard reset failed, falling back to soft reset:", err);
+      await this.softReset();
+    }
   }
 }
 
