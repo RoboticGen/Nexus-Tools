@@ -22,16 +22,12 @@ export { useESP32FileManager } from "./hooks/use-esp32-file-manager";
 export { useESP32Flasher } from "./hooks/use-esp32-flasher";
 
 // Types
-export type { 
-  ESP32Device, 
-  ESP32UploaderState, 
-  SerialPortOptions, 
-  USBFilter,
-  ChipInfo,
-  FirmwareImage,
-  FlashOperation,
-  FlasherState,
-  ESP32FlasherProps,
+export type {
+  ESP32Device,
+  ESP32UploaderState,
+  SerialPort,
+  SerialPortOptions,
+  USBFilter
 } from "./types/esp32";
 
 // Constants

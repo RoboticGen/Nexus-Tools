@@ -1,7 +1,7 @@
 "use client";
 
 import { DeleteOutlined, StopOutlined, LinkOutlined, DisconnectOutlined } from "@ant-design/icons";
-import { useESP32Uploader, ESP32REPL, ESP32FileManager, ESP32Flasher } from "@nexus-tools/esp32-uploader";
+import { useESP32Uploader, ESP32REPL, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { Button as UIButton } from "@nexus-tools/ui";
 import { Tabs, Space, Button } from "antd";
 import { useState, useMemo, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
@@ -52,7 +52,6 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
       code = "",
       onStatusUpdate,
       onError,
-      onOpenFileInEditor,
       onSaveFileToDevice,
       onConnectionStatusChange,
       onSerialPortChange,
@@ -62,8 +61,8 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     ref
   ) => {
   const [activeTab, setActiveTab] = useState<string>("output");
-  const [replReady, setReplReady] = useState(false);
-  const [autoDetecting, setAutoDetecting] = useState(false);
+  const [, setReplReady] = useState(false);
+  const [, setAutoDetecting] = useState(false);
   const autoDetectionTriggeredRef = useRef(false);
   const fileManagerRefreshRef = useRef<(() => void) | null>(null);
 
@@ -86,13 +85,11 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
   }, [onStatusUpdate, onError]);
 
   const {
-    selectedDevice,
     isMounted,
     isConnected,
     serialPort,
     isFlashing,
     espSupported,
-    connectionError,
     connectToDevice,
     resetConnection,
     saveFileToDevice,
@@ -346,3 +343,5 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
   );
   }
 );
+
+ESP32OutputPanel.displayName = "ESP32OutputPanel";
