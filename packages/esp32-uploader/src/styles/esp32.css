@@ -1430,24 +1430,21 @@
    All classes under .device-fm – single sidebar
    ============================================ */
 .device-fm {
-  position: fixed;
-  left: 0;
-  top: 70px;
+  /* flex child – no fixed positioning needed */
+  flex-shrink: 0;
   width: auto;
-  height: calc(100vh - 70px);
-  max-height: calc(100vh - 70px);
+  height: 100%;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border-right: 2px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
-  z-index: 500;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
 }
 
 .device-fm--expanded {
-  width: 300px;
+  width: 220px;
 }
 
 .device-fm--collapsed {
@@ -1883,40 +1880,20 @@
   }
 }
 
-/* Show file manager on desktop screens 1025px and above */
+/* Desktop: sidebar is a flex child, no fixed positioning */
 @media (min-width: 1025px) {
   .device-fm {
     display: flex !important;
-    visibility: visible !important;
-    position: fixed !important;
-    left: 0 !important;
-    top: 70px !important;
-    min-width: auto !important;
-    height: calc(100vh - 70px) !important;
-    max-height: calc(100vh - 70px) !important;
-    z-index: 500 !important;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: static !important;
+    height: 100% !important;
   }
 
   .device-fm--expanded {
-    width: 300px !important;
+    width: 220px !important;
   }
 
   .device-fm--collapsed {
     width: 52px !important;
-  }
-
-  /* Smooth transitions for header elements when expanding/collapsing */
-  .device-fm__header {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  }
-
-  .device-fm__title-wrap {
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  }
-
-  .device-fm__body {
-    transition: opacity 0.2s ease !important;
   }
 }
 
@@ -1924,21 +1901,12 @@
    MOBILE RESPONSIVENESS
    ===================== */
 
-/* Hide file manager completely below 1025px */
+/* Hide file manager on small screens */
 @media (max-width: 1024px) {
   .device-fm {
     display: none !important;
-    visibility: hidden !important;
     width: 0 !important;
     min-width: 0 !important;
-    position: static !important;
-  }
-
-  .device-fm--expanded,
-  .device-fm--collapsed {
-    display: none !important;
-    visibility: hidden !important;
-    width: 0 !important;
   }
 }
 
@@ -2458,4 +2426,55 @@
     display: none !important;
     width: 0 !important;
   }
+}
+/* ── Nexus Files tab additions ── */
+
+.device-fm__tab-nav {
+  display: flex;
+  flex-shrink: 0;
+  background: #fafafa;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.device-fm__tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.device-fm__tab-btn:hover {
+  color: #111827;
+}
+
+.device-fm__tab-btn--active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+.device-fm__tab-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.device-fm__item-date {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.75rem;
+}
+
+.device-fm__empty-hint {
+  font-size: 0.75rem !important;
+  color: var(--text-muted, #94a3b8) !important;
 }

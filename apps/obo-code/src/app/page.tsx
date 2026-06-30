@@ -4,6 +4,7 @@
 
 import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
+import { listNexusFiles, saveNexusFile, deleteNexusFile, type NexusToolFile } from "@nexus-tools/utils";
 import { notification } from "antd";
 import { useState, useCallback, useEffect, useRef } from "react";
 
@@ -34,10 +35,14 @@ export default function Home() {
   const [serialPort, setSerialPort] = useState<SerialPort | null>(null);
   const [activeEditorFileName, setActiveEditorFileName] = useState<string | null>(null);
   const [fileManagerExpanded, setFileManagerExpanded] = useState(true);
+  const [nexusFiles, setNexusFiles] = useState<NexusToolFile[]>([]);
+  const [isNexusFilesLoading, setIsNexusFilesLoading] = useState(false);
   const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
   const outputPanelRef = useRef<ESP32OutputPanelHandle>(null);
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
   const fileManagerRef = useRef<DeviceFileManagerSidebarHandle>(null);
+
+  const nexusApiUrl = process.env.NEXT_PUBLIC_NEXUS_TOOLS_API_URL ?? "";
 
   // Set the document title explicitly to ensure it shows correct app name
   useEffect(() => {
@@ -57,6 +62,40 @@ export default function Home() {
       placement: "topRight",
     });
   }, []);
+
+  const handleNexusFilesRefresh = useCallback(async () => {
+    if (!nexusApiUrl) return;
+    setIsNexusFilesLoading(true);
+    try {
+      const result = await listNexusFiles(nexusApiUrl, "OBO_CODE");
+      console.log("[Nexus] GET response:", result);
+      setNexusFiles(result.files ?? []);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[Nexus] fetch error:", err);
+      showNotification(msg, "error");
+    } finally {
+      setIsNexusFilesLoading(false);
+    }
+  }, [nexusApiUrl, showNotification]);
+
+  const handleSaveToNexus = useCallback(async (filename: string, content: string) => {
+    if (!nexusApiUrl) return;
+    try {
+      await saveNexusFile(nexusApiUrl, "OBO_CODE", filename, content);
+      showNotification(`"${filename}" saved to Nexus`, "success");
+      await handleNexusFilesRefresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showNotification(msg, "error");
+    }
+  }, [nexusApiUrl, showNotification, handleNexusFilesRefresh]);
+
+  const handleDeleteNexusFile = useCallback(async (id: string) => {
+    if (!nexusApiUrl) return;
+    await deleteNexusFile(nexusApiUrl, id);
+    showNotification("File deleted from Nexus", "success");
+  }, [nexusApiUrl, showNotification]);
 
   // Callback to open file in code editor (from file manager)
   const handleOpenFileInEditor = useCallback((filename: string, content: string) => {
@@ -189,62 +228,67 @@ export default function Home() {
     <div className="app-container">
       <Navbar />
 
-      <div
-        className={`main-content main-content-with-file-manager${!fileManagerExpanded ? " file-manager-collapsed" : ""}`}
-      >
-        <div className="left-panel">
-          <SharedCodePanel
-            code={code}
-            isEditing={true}
-            onCodeChange={setCode}
-            onActiveTabChange={setActiveEditorFileName}
-            onRun={handleRun}
-            onRunInESP32={handleRunInESP32}
-            onCopy={handleCopy}
-            onExport={handleExport}
-            onSaveToDevice={handleSaveToDevice}
-            isConnected={serialPort !== null}
-            codeEditorRef={codeEditorRef}
-            showEditButton={false}
-            className="code-panel"
-          />
-          <ESP32OutputPanel
-            ref={outputPanelRef}
-            output={output}
-            onClear={handleClear}
-            onStop={handleStop}
-            code={code}
-            onStatusUpdate={showNotification}
-            onError={showNotification}
-            onOpenFileInEditor={handleOpenFileInEditor}
-            onSaveFileToDevice={(saveFunc) => {
-              saveFileToDeviceRef.current = saveFunc;
-            }}
-            onConnectionStatusChange={setIsDeviceConnected}
-            onSerialPortChange={setSerialPort}
-            className="output-panel"
-          />
-        </div>
+      <div className="app-body">
+        <DeviceFileManagerSidebar
+          ref={fileManagerRef}
+          serialPort={serialPort}
+          isConnected={serialPort !== null}
+          activeFileName={activeEditorFileName}
+          onError={showNotification}
+          onOpenFileInEditor={handleOpenFileInEditor}
+          onExpandChange={setFileManagerExpanded}
+          onConnect={handleConnect}
+          onDisconnect={handleDisconnect}
+          nexusFiles={nexusFiles}
+          isNexusFilesLoading={isNexusFilesLoading}
+          onNexusFilesRefresh={handleNexusFilesRefresh}
+          onDeleteNexusFile={handleDeleteNexusFile}
+        />
 
-        <div className="right-panel">
-          <TurtleWorkspace
-            background={background}
-            onBackgroundChange={setBackground}
-          />
+        <div className="main-content">
+          <div className="left-panel">
+            <SharedCodePanel
+              code={code}
+              isEditing={true}
+              onCodeChange={setCode}
+              onActiveTabChange={setActiveEditorFileName}
+              onRun={handleRun}
+              onRunInESP32={handleRunInESP32}
+              onCopy={handleCopy}
+              onExport={handleExport}
+              onSaveToDevice={handleSaveToDevice}
+              onSaveToNexus={handleSaveToNexus}
+              isConnected={serialPort !== null}
+              codeEditorRef={codeEditorRef}
+              showEditButton={false}
+              className="code-panel"
+            />
+            <ESP32OutputPanel
+              ref={outputPanelRef}
+              output={output}
+              onClear={handleClear}
+              onStop={handleStop}
+              code={code}
+              onStatusUpdate={showNotification}
+              onError={showNotification}
+              onOpenFileInEditor={handleOpenFileInEditor}
+              onSaveFileToDevice={(saveFunc) => {
+                saveFileToDeviceRef.current = saveFunc;
+              }}
+              onConnectionStatusChange={setIsDeviceConnected}
+              onSerialPortChange={setSerialPort}
+              className="output-panel"
+            />
+          </div>
+
+          <div className="right-panel">
+            <TurtleWorkspace
+              background={background}
+              onBackgroundChange={setBackground}
+            />
+          </div>
         </div>
       </div>
-
-      <DeviceFileManagerSidebar
-        ref={fileManagerRef}
-        serialPort={serialPort}
-        isConnected={serialPort !== null}
-        activeFileName={activeEditorFileName}
-        onError={showNotification}
-        onOpenFileInEditor={handleOpenFileInEditor}
-        onExpandChange={setFileManagerExpanded}
-        onConnect={handleConnect}
-        onDisconnect={handleDisconnect}
-      />
     </div>
   );
 }
