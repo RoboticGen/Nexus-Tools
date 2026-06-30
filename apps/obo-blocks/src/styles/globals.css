@@ -201,6 +201,14 @@ div:nth-of-type(2)::-webkit-resizer {
   align-items: center;
 }
 
+.panel-toolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
 .button-group {
   display: flex;
   flex-direction: row;
@@ -351,6 +359,7 @@ div:nth-of-type(2)::-webkit-resizer {
   gap: 0.5rem;
   padding: 0.5rem;
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   height: 100%;
 }
@@ -1499,72 +1508,21 @@ body {
   padding: 0.5rem;
 }
 
-/* Adjust main content when file manager sidebar is present - DESKTOP ONLY */
-@media (min-width: 1025px) {
-  .main-content-with-file-manager {
-    padding-left: 300px;
-    width: 100% !important;
-    min-height: calc(100vh - 3.5rem);
-    transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .main-content-with-file-manager.file-manager-collapsed {
-    padding-left: 52px;
-    width: 100% !important;
-  }
+/* Flex row: sidebar + main content side by side */
+.app-body {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
 }
 
-/* Hide file manager on screens below 1025px - main content takes full width */
+/* Hide file manager on small screens */
 @media (max-width: 1024px) {
   .device-fm {
     display: none !important;
-    visibility: hidden !important;
     width: 0 !important;
     min-width: 0 !important;
-  }
-
-  .file-manager-sidebar {
-    display: none !important;
-    visibility: hidden !important;
-    width: 0 !important;
-    min-width: 0 !important;
-    margin-left: 0 !important;
-  }
-
-  .main-content-with-file-manager {
-    padding-left: 0 !important;
-    width: 100% !important;
-  }
-
-  .main-content-with-file-manager.file-manager-collapsed {
-    padding-left: 0 !important;
-    width: 100% !important;
-  }
-}
-
-/* Show file manager on desktop screens 1025px and above */
-@media (min-width: 1025px) {
-  .device-fm {
-    display: flex !important;
-    visibility: visible !important;
-  }
-
-  .file-manager-sidebar {
-    display: flex !important;
-    visibility: visible !important;
-    width: 300px !important;
-    min-width: 300px !important;
-  }
-
-  .main-content-with-file-manager {
-    padding-left: 300px !important;
-    width: 100% !important;
-    transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  }
-
-  .main-content-with-file-manager.file-manager-collapsed {
-    padding-left: 52px !important;
-    width: 100% !important;
   }
 }
 

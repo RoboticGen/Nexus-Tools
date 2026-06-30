@@ -204,19 +204,6 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
               </Button>
             )}
           </Space>
-          {connectionError && (
-            <div style={{ 
-              marginTop: "1rem",
-              padding: "0.75rem",
-              background: "#f8d7da",
-              border: "1px solid #f5c6cb",
-              borderRadius: "4px",
-              color: "#721c24",
-              fontSize: "0.85rem"
-            }}>
-              <strong>Error:</strong> {connectionError}
-            </div>
-          )}
         </div>
       )}
 
