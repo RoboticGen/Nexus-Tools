@@ -10,7 +10,7 @@ export function LogoutButton() {
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
-    const postLogout = `${window.location.origin}/login`;
+    const postLogout = window.location.origin;
     const logoutUrl = new URL(
       `${keycloakUrl}/realms/${realm}/protocol/openid-connect/logout`
     );
