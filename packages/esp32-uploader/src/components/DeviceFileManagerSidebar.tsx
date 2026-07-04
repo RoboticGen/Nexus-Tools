@@ -80,6 +80,10 @@ export interface DeviceFileManagerSidebarProps {
   isNexusFilesLoading?: boolean;
   onNexusFilesRefresh?: () => void;
   onDeleteNexusFile?: (id: string) => Promise<void>;
+  /** Whether the user is signed in – gates the Nexus tab behind login */
+  isNexusAuthenticated?: boolean;
+  /** Called when a signed-out user wants to access Nexus Files */
+  onNexusSignIn?: () => void;
 }
 
 export interface DeviceFileManagerSidebarHandle {
@@ -102,6 +106,8 @@ function DeviceFileManagerSidebarComponent({
   isNexusFilesLoading = false,
   onNexusFilesRefresh,
   onDeleteNexusFile,
+  isNexusAuthenticated = true,
+  onNexusSignIn,
 }: DeviceFileManagerSidebarProps, ref) {
   const { files, isLoading, error, fetchFiles, refreshFiles, downloadFile, viewFile, deleteFile } =
     useESP32FileManager({ serialPort });
@@ -122,12 +128,12 @@ function DeviceFileManagerSidebarComponent({
     if (error) onError?.(error);
   }, [error, onError]);
 
-  // Load nexus files when tab becomes active
+  // Load nexus files when tab becomes active (only if signed in)
   useEffect(() => {
-    if (activeTab === "nexus" && onNexusFilesRefresh) {
+    if (activeTab === "nexus" && isNexusAuthenticated && onNexusFilesRefresh) {
       onNexusFilesRefresh();
     }
-  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab, isNexusAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggle = useCallback(() => {
     const next = !expanded;
@@ -323,7 +329,7 @@ function DeviceFileManagerSidebarComponent({
                 onDownload={handleDownload}
                 onDelete={handleDelete}
               />
-            ) : (
+            ) : isNexusAuthenticated ? (
               <NexusFilesContent
                 files={nexusFiles}
                 isLoading={isNexusFilesLoading}
@@ -333,6 +339,14 @@ function DeviceFileManagerSidebarComponent({
                 onOpen={handleOpenNexusFile}
                 onDelete={handleDeleteNexusFile}
               />
+            ) : (
+              <div className="device-fm__empty">
+                <CloudOutlined />
+                <p>Sign in to view your Nexus files</p>
+                <Button type="primary" size="small" onClick={onNexusSignIn}>
+                  Sign In
+                </Button>
+              </div>
             )}
           </div>
         </div>

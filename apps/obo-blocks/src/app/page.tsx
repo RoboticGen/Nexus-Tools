@@ -5,6 +5,7 @@ import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
 import { listNexusFiles, saveNexusFile, deleteNexusFile, type NexusToolFile } from "@nexus-tools/utils";
 import { notification } from "antd";
 import dynamic from "next/dynamic";
+import { signIn, useSession } from "next-auth/react";
 import { useState, useCallback, useEffect, useRef } from "react";
 
 import { ESP32OutputPanel, type ESP32OutputPanelHandle } from "@/components/esp32-output-panel";
@@ -38,6 +39,12 @@ export default function Home() {
   const fileManagerRef = useRef<DeviceFileManagerSidebarHandle>(null);
 
   const nexusApiUrl = process.env.NEXT_PUBLIC_NEXUS_TOOLS_API_URL ?? "";
+  const { status: sessionStatus } = useSession();
+  const isNexusAuthenticated = sessionStatus === "authenticated";
+  const signInToNexus = useCallback(
+    () => signIn("keycloak", { callbackUrl: typeof window !== "undefined" ? window.location.href : "/" }),
+    []
+  );
 
   const { copyTextToClipboard, downloadPythonFile } = useEditorHandlers();
 
@@ -86,7 +93,7 @@ export default function Home() {
   );
 
   const handleNexusFilesRefresh = useCallback(async () => {
-    if (!nexusApiUrl) return;
+    if (!nexusApiUrl || !isNexusAuthenticated) return;
     setIsNexusFilesLoading(true);
     try {
       const result = await listNexusFiles(nexusApiUrl, "OBO_BLOCKS");
@@ -97,10 +104,14 @@ export default function Home() {
     } finally {
       setIsNexusFilesLoading(false);
     }
-  }, [nexusApiUrl, showNotification]);
+  }, [nexusApiUrl, isNexusAuthenticated, showNotification]);
 
   const handleSaveToNexus = useCallback(async (filename: string, content: string) => {
     if (!nexusApiUrl) return;
+    if (!isNexusAuthenticated) {
+      signInToNexus();
+      return;
+    }
     try {
       await saveNexusFile(nexusApiUrl, "OBO_BLOCKS", filename, content);
       showNotification(`"${filename}" saved to Nexus`, "success");
@@ -109,13 +120,13 @@ export default function Home() {
       const msg = err instanceof Error ? err.message : String(err);
       showNotification(msg, "error");
     }
-  }, [nexusApiUrl, showNotification, handleNexusFilesRefresh]);
+  }, [nexusApiUrl, isNexusAuthenticated, signInToNexus, showNotification, handleNexusFilesRefresh]);
 
   const handleDeleteNexusFile = useCallback(async (id: string) => {
-    if (!nexusApiUrl) return;
+    if (!nexusApiUrl || !isNexusAuthenticated) return;
     await deleteNexusFile(nexusApiUrl, id);
     showNotification("File deleted from Nexus", "success");
-  }, [nexusApiUrl, showNotification]);
+  }, [nexusApiUrl, isNexusAuthenticated, showNotification]);
 
   // Callback to open file in code editor (from file manager)
   const handleOpenFileInEditor = useCallback((filename: string, content: string) => {
@@ -188,6 +199,8 @@ export default function Home() {
           isNexusFilesLoading={isNexusFilesLoading}
           onNexusFilesRefresh={handleNexusFilesRefresh}
           onDeleteNexusFile={handleDeleteNexusFile}
+          isNexusAuthenticated={isNexusAuthenticated}
+          onNexusSignIn={signInToNexus}
         />
 
         {isClient && (
