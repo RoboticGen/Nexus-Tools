@@ -1,22 +1,55 @@
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@nexus-tools/ui";
-import { capitalize } from "@nexus-tools/utils";
+"use client";
+
+import { SharedCodePanel } from "@nexus-tools/ui";
+import { useCallback, useState } from "react";
+
+import { ConsolePanel } from "@/components/console-panel";
+import { useObocarRunner } from "@/hooks/use-obocar-runner";
+
+const DEFAULT_CODE = `from obocar import OboCar
+
+car = OboCar()
+
+for i in range(3):
+    car.forward(speed=100)
+    car.sleep(5)
+    car.right(speed=100)
+    car.sleep(5)
+    print(car.sensor("front"))
+
+print(car.status())
+`;
 
 export default function Home() {
-  const appName = capitalize("obo-playground");
+  const [code, setCode] = useState(DEFAULT_CODE);
+
+  const { runCode, stopCode, isRunning, output, clearOutput } = useObocarRunner({
+    workerUrl: "/worker.js",
+    onError: (error: string) => console.error("OboCar execution error:", error),
+  });
+
+  const handleRun = useCallback(() => {
+    if (!code.trim() || isRunning) return;
+    runCode(code);
+  }, [code, isRunning, runCode]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center">{appName}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center gap-4">
-          <p className="text-muted-foreground text-center">
-            Welcome to {appName} - Part of Nexus Tools Monorepo
-          </p>
-          <Button>Get Started</Button>
-        </CardContent>
-      </Card>
+    <main className="obo-playground-container">
+      <div className="obo-playground-panel">
+        <SharedCodePanel
+          code={code}
+          isEditing
+          onCodeChange={setCode}
+          onRun={handleRun}
+          showEditButton={false}
+          showRunInESP32Button={false}
+          showSaveDeviceButton={false}
+          className="code-panel"
+        />
+      </div>
+      <div className="obo-playground-panel">
+        <ConsolePanel output={output} isRunning={isRunning} onClear={clearOutput} onStop={stopCode} />
+      </div>
     </main>
   );
 }

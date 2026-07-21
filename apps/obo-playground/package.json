@@ -12,6 +12,10 @@
     "clean": "rimraf .next .turbo node_modules"
   },
   "dependencies": {
+    "@ant-design/icons": "^5.2.0",
+    "@nexus-tools/event-executor": "workspace:*",
+    "@nexus-tools/obocar-wrapper": "workspace:*",
+    "@nexus-tools/pyodide-executor": "workspace:*",
     "@nexus-tools/types": "workspace:*",
     "@nexus-tools/ui": "workspace:*",
     "@nexus-tools/utils": "workspace:*",

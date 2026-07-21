@@ -1,0 +1,31 @@
+{
+  "name": "@nexus-tools/event-executor",
+  "version": "1.0.0",
+  "description": "Event-driven bridge between the obocar Pyodide worker and the UI",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "require": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nexus-tools/obocar-wrapper": "workspace:*",
+    "@nexus-tools/pyodide-executor": "workspace:*",
+    "@nexus-tools/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@nexus-tools/typescript-config": "workspace:*",
+    "@types/react": "^18.2.0",
+    "react": "^18.2.0",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  }
+}
