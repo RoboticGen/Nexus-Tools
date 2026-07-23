@@ -63,20 +63,13 @@ export interface CarStatusEvent extends CarEventBase {
   distance: number;
 }
 
-export interface CollisionEvent extends CarEventBase {
-  type: "collision";
-  position: [number, number];
-  obstacle: [number, number];
-}
-
 export type CarEvent =
   | CarResetEvent
   | CarMovedEvent
   | CarTurnedEvent
   | CarStoppedEvent
   | SensorReadEvent
-  | CarStatusEvent
-  | CollisionEvent;
+  | CarStatusEvent;
 
 /** Sentinel prefix the Python library tags structured events with in stdout. */
 export const CAR_EVENT_SENTINEL = "@@EVENT@@";

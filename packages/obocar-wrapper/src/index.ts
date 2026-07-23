@@ -21,5 +21,4 @@ export type {
   CarStoppedEvent,
   SensorReadEvent,
   CarStatusEvent,
-  CollisionEvent,
 } from "./types";

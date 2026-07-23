@@ -43,15 +43,8 @@ class OboCar:
         self.heading = 0.0
         self.total_distance = 0.0
         self.sensor_range = 20.0
-        self.obstacles = self._generate_obstacles()
         self._pending = None  # primed motion: {"action": ..., "speed": ...}
         _emit("reset", position=self.get_position(), heading=self.get_heading())
-
-    def _generate_obstacles(self):
-        return [
-            (round(random.uniform(-30, 30), 1), round(random.uniform(-30, 30), 1))
-            for _ in range(8)
-        ]
 
     def forward(self, speed=50):
         """Prime the car to drive forward at the given speed (0-100). Call sleep() to run it."""
@@ -107,7 +100,6 @@ class OboCar:
                 position=self.get_position(),
                 heading=self.get_heading(),
             )
-            self._check_collision()
         else:  # left / right
             degrees = speed / 100.0 * DEGREES_PER_SECOND_AT_SPEED_100 * seconds
             turn = -degrees if action == "left" else degrees
@@ -133,24 +125,13 @@ class OboCar:
 
     def sensor(self, direction="front"):
         """Return the distance reading (in units) for the given sensor direction."""
-        sensor_angles = {"front": 0, "right": 90, "back": 180, "left": 270}
-        if direction not in sensor_angles:
+        valid_directions = ("front", "right", "back", "left")
+        if direction not in valid_directions:
             raise ValueError(
-                f"Invalid sensor direction: {direction}. Use: {list(sensor_angles.keys())}"
+                f"Invalid sensor direction: {direction}. Use: {list(valid_directions)}"
             )
 
-        sensor_angle = (self.heading + sensor_angles[direction]) % 360
-        min_distance = self.sensor_range
-
-        for ox, oy in self.obstacles:
-            dx, dy = ox - self.position[0], oy - self.position[1]
-            dist = math.sqrt(dx ** 2 + dy ** 2)
-            angle_to_obstacle = math.degrees(math.atan2(dx, dy))
-            angle_diff = abs((angle_to_obstacle - sensor_angle + 180) % 360 - 180)
-            if angle_diff <= 30 and dist < min_distance:
-                min_distance = dist
-
-        reading = round(max(0.1, min_distance + random.uniform(-0.2, 0.2)), 1)
+        reading = round(max(0.1, self.sensor_range + random.uniform(-0.2, 0.2)), 1)
         _emit("sensor_read", direction=direction, value=reading)
         return reading
 
@@ -176,21 +157,11 @@ class OboCar:
         _emit("status", **state)
         return state
 
-    def _check_collision(self):
-        for ox, oy in self.obstacles:
-            dx, dy = ox - self.position[0], oy - self.position[1]
-            if math.sqrt(dx ** 2 + dy ** 2) < 1.0:
-                print(f"COLLISION! Hit obstacle at ({ox:.1f}, {oy:.1f})")
-                _emit("collision", position=self.get_position(), obstacle=[ox, oy])
-                return True
-        return False
-
     def reset(self):
         """Reset the car to its initial state."""
         self.position = [0.0, 0.0]
         self.heading = 0.0
         self.total_distance = 0.0
-        self.obstacles = self._generate_obstacles()
         self._pending = None
         print("Car reset to initial state")
         _emit("reset", position=self.get_position(), heading=self.get_heading())
