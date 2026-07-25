@@ -21,7 +21,8 @@
   "dependencies": {
     "antd": "^5.11.0",
     "@ant-design/icons": "^5.2.0",
-    "@nexus-tools/monaco-editor": "workspace:*"
+    "@nexus-tools/monaco-editor": "workspace:*",
+    "next-auth": "^4.24.0"
   },
   "devDependencies": {
     "@nexus-tools/eslint-config": "workspace:*",

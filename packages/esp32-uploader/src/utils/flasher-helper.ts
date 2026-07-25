@@ -98,16 +98,18 @@ export function getFirmwaresByBoard(vendor: string, model: string) {
  */
 async function fetchFirmwareData(
   url: string,
-  useCorsProxy: boolean = false,
+  useProxy: boolean = false,
   onProgress?: (loaded: number, total: number) => void
 ): Promise<ArrayBuffer> {
-  // Use CORS proxy if needed (allorigins is reliable and free)
-  const fetchUrl = useCorsProxy 
-    ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+  // External hosts (e.g. micropython.org) don't send CORS headers, so the
+  // browser can't fetch them directly. Route those through the app's own
+  // same-origin server proxy, which fetches the binary server-side.
+  const fetchUrl = useProxy
+    ? `/api/firmware-proxy?url=${encodeURIComponent(url)}`
     : url;
-  
-  if (useCorsProxy) {
-    console.log(`[Flasher] Attempting download via CORS proxy...`);
+
+  if (useProxy) {
+    console.log(`[Flasher] Downloading via same-origin firmware proxy...`);
   }
 
   const controller = new AbortController();
@@ -176,38 +178,30 @@ export async function downloadFirmware(
 ): Promise<ArrayBuffer> {
   const MAX_RETRIES = 3;
   let lastError: Error | null = null;
-  let corsErrorDetected = false;
+
+  // Absolute http(s) URLs point at external hosts and must go through the
+  // same-origin server proxy (browser CORS blocks a direct fetch). Relative
+  // URLs are same-origin static assets and can be fetched directly.
+  const useProxy = /^https?:\/\//i.test(url);
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       console.log(`[Flasher] Downloading firmware from: ${url} (attempt ${attempt}/${MAX_RETRIES})`);
-      
-      // On 2nd attempt after CORS error, try with CORS proxy
-      const useCorsProxy = corsErrorDetected && attempt > 1;
-      
-      const buffer = await fetchFirmwareData(url, useCorsProxy, onProgress);
+
+      const buffer = await fetchFirmwareData(url, useProxy, onProgress);
       console.log(`[Flasher] Download complete: ${buffer.byteLength} bytes`);
       return buffer;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       const message = lastError.message;
-      
+
       console.error(`[Flasher] Download attempt ${attempt} failed: ${message}`);
-      
-      // Check if this is a CORS error
-      const isCorsError = message.includes("CORS") || message.includes("cors") || 
-                          (message.includes("Failed to fetch") && url.includes("micropython.org"));
-      
-      if (isCorsError && !corsErrorDetected) {
-        corsErrorDetected = true;
-        console.log(`[Flasher] CORS error detected, will use proxy on next retry`);
-      }
-      
-      // Don't retry on 404
-      if (message.includes("404")) {
+
+      // Don't retry on definitive HTTP failures
+      if (message.includes("404") || message.includes("403")) {
         break;
       }
-      
+
       // Retry on network/timeout errors
       if (attempt < MAX_RETRIES && (message.includes("Failed to fetch") || message.includes("timeout") || message.includes("AbortError") || message.includes("Network"))) {
         const waitSeconds = attempt * 2;
@@ -215,7 +209,7 @@ export async function downloadFirmware(
         await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
         continue;
       }
-      
+
       break;
     }
   }
@@ -229,9 +223,7 @@ export async function downloadFirmware(
   console.error(`[Flasher] Download failed after ${MAX_RETRIES} attempts: ${message}`);
   
   // Provide more specific error messages
-  if (corsErrorDetected) {
-    throw new Error("Download blocked by CORS policy: Firmware server blocks browser downloads. Try: 1) Use a different device/network, 2) Download locally and upload manually, or 3) Contact support.");
-  } else if (message.includes("Failed to fetch")) {
+  if (message.includes("Failed to fetch")) {
     throw new Error("Download failed: Unable to reach the firmware server. This may be a network issue (check your internet) or the server is unavailable. Tried 3 times.");
   } else if (message.includes("NetworkError")) {
     throw new Error("Download network error: Check your internet connection. Tried 3 times. Note: Your device/serial connection is fine - this is a download/internet issue.");

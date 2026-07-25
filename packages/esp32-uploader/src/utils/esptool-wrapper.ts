@@ -13,6 +13,23 @@ export interface FlashOptions {
   onVerified?: () => void;
 }
 
+/**
+ * esptool-js expects firmware data as a "binary string" where each character's
+ * code point is one byte (0–255), and reads it via bstr.charCodeAt(i). Passing
+ * a Uint8Array/ArrayBuffer triggers "bstr.charCodeAt is not a function".
+ * Build the string in chunks to avoid call-stack limits on large firmware.
+ */
+function toBinaryString(bytes: Uint8Array): string {
+  const CHUNK = 0x8000;
+  let result = "";
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    result += String.fromCharCode(
+      ...(bytes.subarray(i, i + CHUNK) as unknown as number[])
+    );
+  }
+  return result;
+}
+
 // Flash start addresses differ by chip family (ROM bootloader location)
 const FLASH_ADDRESS_MAP: Record<string, number> = {
   ESP32: 0x1000,
@@ -49,6 +66,7 @@ export async function flashFirmwareWithESPTool(
     const esp = new ESPLoader({
       transport,
       baudrate,
+      romBaudrate: baudrate,
       terminal: {
         clean: () => {},
         writeLine: (data: string) => options?.onLog?.(`[esptool] ${data}`),
@@ -74,7 +92,8 @@ export async function flashFirmwareWithESPTool(
     options?.onLog?.("[esptool] Flash ID read successfully");
 
     const flashAddress = FLASH_ADDRESS_MAP[chipFamily] ?? 0x1000;
-    const firmwareBytes = new Uint8Array(firmware);
+    // esptool-js wants a binary string here, not a typed array.
+    const firmwareData = toBinaryString(new Uint8Array(firmware));
 
     options?.onLog?.(
       `[esptool] Writing ${firmware.byteLength} bytes at 0x${flashAddress.toString(16)}...`
@@ -90,7 +109,7 @@ export async function flashFirmwareWithESPTool(
 
     await Promise.race([
       esp.writeFlash({
-        fileArray: [{ data: firmwareBytes, address: flashAddress }],
+        fileArray: [{ data: firmwareData, address: flashAddress }],
         flashSize: "keep",
         flashMode: "keep",
         flashFreq: "keep",

@@ -2,9 +2,9 @@
 
 import { CopyOutlined, ExportOutlined, PlayCircleOutlined, EditOutlined, SaveOutlined } from "@ant-design/icons";
 import { Button } from "@nexus-tools/ui";
-import { RefObject } from "react";
+import { type RefObject } from "react";
 
-import { CodeEditor, CodeEditorHandle } from "./code-editor";
+import { CodeEditor, type CodeEditorHandle } from "./code-editor";
 
 interface CodePanelProps {
   code: string;

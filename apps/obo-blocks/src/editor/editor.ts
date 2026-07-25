@@ -1,4 +1,4 @@
-import * as Blockly from "blockly/core";
+import type * as Blockly from "blockly/core";
 
 export const insertPythonSnippet = (code: string) => {
   const currentCode = localStorage.getItem("pythonCode");

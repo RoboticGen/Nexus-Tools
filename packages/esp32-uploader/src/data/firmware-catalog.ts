@@ -23,11 +23,11 @@ export const FIRMWARE_CATALOG: FirmwareBoard[] = [
     downloads: [
       {
         version: "1.28.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC-20260406-v1.28.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC-20260406-v1.28.0.bin",
       },
       {
         version: "1.27.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC-20251209-v1.27.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC-20251209-v1.27.0.bin",
       },
     ],
   },
@@ -39,11 +39,11 @@ export const FIRMWARE_CATALOG: FirmwareBoard[] = [
     downloads: [
       {
         version: "1.28.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC_S2-20260406-v1.28.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC_S2-20260406-v1.28.0.bin",
       },
       {
         version: "1.27.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC_S2-20251209-v1.27.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC_S2-20251209-v1.27.0.bin",
       },
     ],
   },
@@ -55,11 +55,11 @@ export const FIRMWARE_CATALOG: FirmwareBoard[] = [
     downloads: [
       {
         version: "1.28.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC_S3-20260406-v1.28.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC_S3-20260406-v1.28.0.bin",
       },
       {
         version: "1.27.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC_S3-20251209-v1.27.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC_S3-20251209-v1.27.0.bin",
       },
     ],
   },
@@ -71,11 +71,11 @@ export const FIRMWARE_CATALOG: FirmwareBoard[] = [
     downloads: [
       {
         version: "1.28.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC_C2-20260406-v1.28.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC_C2-20260406-v1.28.0.bin",
       },
       {
         version: "1.27.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC_C2-20251209-v1.27.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC_C2-20251209-v1.27.0.bin",
       },
     ],
   },
@@ -87,11 +87,11 @@ export const FIRMWARE_CATALOG: FirmwareBoard[] = [
     downloads: [
       {
         version: "1.28.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC_C3-20260406-v1.28.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC_C3-20260406-v1.28.0.bin",
       },
       {
         version: "1.27.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC_C3-20251209-v1.27.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC_C3-20251209-v1.27.0.bin",
       },
     ],
   },
@@ -103,11 +103,11 @@ export const FIRMWARE_CATALOG: FirmwareBoard[] = [
     downloads: [
       {
         version: "1.28.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC_C6-20260406-v1.28.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC_C6-20260406-v1.28.0.bin",
       },
       {
         version: "1.27.0",
-        url: "/firmware/resources/firmware/ESP32_GENERIC_C6-20251209-v1.27.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP32_GENERIC_C6-20251209-v1.27.0.bin",
       },
     ],
   },
@@ -119,11 +119,11 @@ export const FIRMWARE_CATALOG: FirmwareBoard[] = [
     downloads: [
       {
         version: "1.28.0",
-        url: "/firmware/resources/firmware/ESP8266_GENERIC-20260406-v1.28.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP8266_GENERIC-20260406-v1.28.0.bin",
       },
       {
         version: "1.27.0",
-        url: "/firmware/resources/firmware/ESP8266_GENERIC-20251209-v1.27.0.bin",
+        url: "https://micropython.org/resources/firmware/ESP8266_GENERIC-20251209-v1.27.0.bin",
       },
     ],
   },

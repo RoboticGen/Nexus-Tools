@@ -10,22 +10,15 @@ interface ESP32ContextValue {
   // Connection state
   serialPort: any | null;
   isConnected: boolean;
-  
+
   // Actions
   setSerialPort: (port: any | null) => void;
   setIsConnected: (connected: boolean) => void;
-  
+
   // Notifications
   showError: (message: string) => void;
   showSuccess: (message: string) => void;
   showStatus: (message: string) => void;
-  clearNotification: () => void;
-  
-  // Current notification
-  notification: {
-    type: "error" | "success" | "status" | null;
-    message: string;
-  };
 }
 
 const ESP32Context = createContext<ESP32ContextValue | undefined>(undefined);
@@ -61,10 +54,6 @@ export function ESP32Provider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const clearNotification = useCallback(() => {
-    // Ant Design notifications auto-dismiss, no need to clear
-  }, []);
-
   return (
     <ESP32Context.Provider
       value={{
@@ -75,8 +64,6 @@ export function ESP32Provider({ children }: { children: ReactNode }) {
         showError,
         showSuccess,
         showStatus,
-        clearNotification,
-        notification: { type: null, message: "" },
       }}
     >
       {children}

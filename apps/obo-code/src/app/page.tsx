@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import { notification } from "antd";
 
+
+import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
-import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
+import { notification } from "antd";
+import { useState, useCallback, useEffect, useRef } from "react";
 
-import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle } from "@nexus-tools/esp32-uploader";
-import { ESP32OutputPanel } from "@/components/esp32-output-panel";
+import { ESP32OutputPanel, type ESP32OutputPanelHandle } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
 import { TurtleWorkspace } from "@/components/turtle-workspace";
 import { usePythonRunner } from "@/hooks/use-python-runner";
+
+import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
 import "@/styles/sidebar.css";
 
 const DEFAULT_CODE = `import turtle
@@ -28,12 +30,12 @@ for x in range(360):
 export default function Home() {
   const [code, setCode] = useState(DEFAULT_CODE);
   const [background, setBackground] = useState<string>("No-Background");
-  const [isDeviceConnected, setIsDeviceConnected] = useState(false);
+  const [, setIsDeviceConnected] = useState(false);
   const [serialPort, setSerialPort] = useState<SerialPort | null>(null);
   const [activeEditorFileName, setActiveEditorFileName] = useState<string | null>(null);
   const [fileManagerExpanded, setFileManagerExpanded] = useState(true);
   const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
-  const outputPanelRef = useRef<{ connectToDevice?: () => void; resetConnection?: () => void }>(null);
+  const outputPanelRef = useRef<ESP32OutputPanelHandle>(null);
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
   const fileManagerRef = useRef<DeviceFileManagerSidebarHandle>(null);
 
@@ -62,10 +64,6 @@ export default function Home() {
     setActiveEditorFileName(filename);
   }, []);
 
-  const handleUpload = useCallback(() => {
-    showNotification("File uploaded successfully!");
-  }, [showNotification]);
-
   const handleConnect = useCallback(() => {
     outputPanelRef.current?.connectToDevice?.();
   }, []);
@@ -91,16 +89,12 @@ export default function Home() {
     }
   }, [serialPort, showNotification]);
 
-  const { runCode, stopCode, isRunning, isLoading, output, clearOutput } = usePythonRunner({
+  const { runCode, stopCode, isRunning, output, clearOutput } = usePythonRunner({
     onError: (error) => showNotification(error),
     onSuccess: () => {},
   });
 
   const handleRun = useCallback(() => {
-    if (isLoading) {
-      showNotification("Python engine is loading, please wait...");
-      return;
-    }
     if (!code.trim()) {
       showNotification("No code to run");
       return;
@@ -110,7 +104,7 @@ export default function Home() {
       return;
     }
     runCode(code);
-  }, [code, isLoading, isRunning, runCode, showNotification]);
+  }, [code, isRunning, runCode, showNotification]);
 
   const handleStop = useCallback(() => {
     if (!isRunning) {
@@ -219,7 +213,6 @@ export default function Home() {
             output={output}
             onClear={handleClear}
             onStop={handleStop}
-            isRunning={isRunning}
             code={code}
             onStatusUpdate={showNotification}
             onError={showNotification}

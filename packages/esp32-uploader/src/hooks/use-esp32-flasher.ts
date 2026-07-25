@@ -12,6 +12,7 @@ import {
   filterFirmwaresByChip,
   downloadFirmware,
   verifyFirmwareChecksum,
+  calculateSHA256,
   translateFlasherError,
   estimateFlashTime,
 } from "../utils/flasher-helper";
@@ -240,8 +241,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     try {
       if (state.customFirmwareBinary) {
         updateStatus("Using local firmware file...", "idle");
-        setState((prev) => ({ ...prev, progress: 100 }));
-        options?.onProgressUpdate?.(100);
         addLog(
           `Loaded local firmware: ${state.customFirmwareName ?? "local"} (${state.customFirmwareBinary.byteLength} bytes)`
         );
@@ -260,6 +259,16 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
         updateStatus("Verifying firmware integrity...", "idle");
         const isValid = await verifyFirmwareChecksum(binary, state.selectedFirmware.checksumSha256);
         if (!isValid) throw new Error("Firmware checksum mismatch - file may be corrupted");
+        addLog("Checksum verified against catalog SHA256");
+      } else {
+        // No catalog hash available — log the computed SHA256 so the user can
+        // cross-check it against micropython.org before flashing.
+        try {
+          const sha = await calculateSHA256(binary);
+          addLog(`Downloaded SHA256: ${sha}`);
+        } catch {
+          // Hashing is best-effort; never block a flash on it.
+        }
       }
 
       addLog(`Downloaded: ${binary.byteLength} bytes`);
@@ -427,7 +436,7 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
       const isRecoveryMode = state.isRecoveryMode;
 
       try {
-        setState((prev) => ({ ...prev, operationLog: [], error: null }));
+        setState((prev) => ({ ...prev, operationLog: [], error: null, progress: 0 }));
         addLog("=== Starting flash process ===");
 
         // Step 1: Download firmware

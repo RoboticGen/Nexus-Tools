@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useCallback, useRef, useEffect, ChangeEvent } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, ChangeEvent } from "react";
 import { Button, Select, Progress, Tabs } from "antd";
 import {
   ThunderboltOutlined,
@@ -36,31 +36,6 @@ export function ESP32Flasher({
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const {
-    state,
-    detectChip,
-
-    getCompatibleFirmwares,
-    selectFirmware,
-    setLocalFirmware,
-    clearLocalFirmware,
-    startFlashing,
-    cancelFlashing,
-    resetDevice,
-  } = useESP32Flasher(serialPort, {
-    onStatusUpdate: (msg) => {
-      addLog(msg, "info");
-      onStatusUpdate?.(msg);
-    },
-    onError: (msg) => {
-      addLog(msg, "error");
-      onError?.(msg);
-    },
-    onProgressUpdate: () => {
-      // Progress updates handled via state
-    },
-  });
-
   // ── Logging ────────────────────────────────────────────────────────────
 
   const addLog = useCallback((message: string, type: FlashLog["type"] = "info") => {
@@ -71,6 +46,37 @@ export function ESP32Flasher({
       return updated.length > MAX_LOG_LINES ? updated.slice(-MAX_LOG_LINES) : updated;
     });
   }, []);
+
+  // Memoize the options object so the hook's callbacks keep stable identities
+  // across renders (otherwise effects depending on them re-run every render).
+  const flasherOptions = useMemo(
+    () => ({
+      onStatusUpdate: (msg: string) => {
+        addLog(msg, "info");
+        onStatusUpdate?.(msg);
+      },
+      onError: (msg: string) => {
+        addLog(msg, "error");
+        onError?.(msg);
+      },
+      onProgressUpdate: () => {
+        // Progress updates handled via state
+      },
+    }),
+    [addLog, onStatusUpdate, onError]
+  );
+
+  const {
+    state,
+    detectChip,
+    enterRecoveryMode,
+    getCompatibleFirmwares,
+    selectFirmware,
+    setLocalFirmware,
+    clearLocalFirmware,
+    startFlashing,
+    resetDevice,
+  } = useESP32Flasher(serialPort, flasherOptions);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -89,14 +95,15 @@ export function ESP32Flasher({
   }, [serialPort, isConnected, detectChip, addLog]);
 
   useEffect(() => {
-    // Only auto-detect once when connected, don't keep retrying if detection fails
+    // Only auto-detect once when connected, don't keep retrying if detection fails.
+    // handleDetectChip is now stable (options are memoized), so it's safe in deps.
     if (serialPort && isConnected && !state.chipInfo && state.phase !== "detecting") {
       const timer = setTimeout(() => {
         handleDetectChip();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [serialPort, isConnected]); // Removed handleDetectChip from deps to prevent infinite loop
+  }, [serialPort, isConnected, state.chipInfo, state.phase, handleDetectChip]);
 
   // ── UI State Helpers ───────────────────────────────────────────────────
 
@@ -158,7 +165,38 @@ export function ESP32Flasher({
                 {/* Connected but no chip */}
                 {isConnected && !state.chipInfo && (
                   <div className="flasher__message">
-                    <p>Detecting device...</p>
+                    <p>
+                      {state.phase === "detecting"
+                        ? "Detecting device..."
+                        : "Could not detect the device automatically."}
+                    </p>
+                    {state.phase !== "detecting" && (
+                      <div style={{ marginTop: "8px" }}>
+                        <Button size="small" onClick={handleDetectChip} style={{ marginRight: "8px" }}>
+                          Retry detection
+                        </Button>
+                        <div style={{ marginTop: "8px", fontSize: "0.75rem", color: "#666" }}>
+                          If the device has crashed or missing firmware, enter recovery mode and
+                          flash directly via the ROM bootloader:
+                        </div>
+                        <div style={{ marginTop: "6px", display: "flex", gap: "8px", alignItems: "center" }}>
+                          <Select
+                            placeholder="Select chip family"
+                            style={{ width: "160px" }}
+                            onChange={(value) => enterRecoveryMode(value)}
+                            options={[
+                              { label: "ESP32", value: "ESP32" },
+                              { label: "ESP32-S2", value: "ESP32-S2" },
+                              { label: "ESP32-S3", value: "ESP32-S3" },
+                              { label: "ESP32-C3", value: "ESP32-C3" },
+                              { label: "ESP32-C6", value: "ESP32-C6" },
+                              { label: "ESP32-H2", value: "ESP32-H2" },
+                            ]}
+                          />
+                          <span style={{ fontSize: "0.75rem", color: "#999" }}>Recovery mode</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -310,10 +348,11 @@ export function ESP32Flasher({
                         <Button
                           danger
                           icon={<StopOutlined />}
-                          onClick={() => cancelFlashing()}
+                          disabled
+                          title="Flashing is in progress and cannot be safely interrupted"
                           size="large"
                         >
-                          Cancel
+                          Flashing… (cannot interrupt)
                         </Button>
                       )}
                     </div>

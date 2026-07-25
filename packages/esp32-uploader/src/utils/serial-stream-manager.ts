@@ -472,28 +472,43 @@ print(f"UID={uid}")
       throw new Error("Serial stream manager not initialized");
     }
 
-    // Use raw REPL with extended timeout (erase can take 10+ seconds)
+    // Use raw REPL with extended timeout (erase can take 10+ seconds).
+    // Recursively deletes files AND directories. Exceptions are NOT swallowed:
+    // any failure propagates to the REPL stderr so result.error is populated
+    // and we abort instead of flashing over a partially-erased filesystem.
+    // "Erase complete" only prints if the whole walk finished without error.
     const code = `
 import os
-import machine
+
+def _rmtree(path):
+    for entry in os.listdir(path):
+        full = path.rstrip('/') + '/' + entry
+        if os.stat(full)[0] & 0x4000:
+            _rmtree(full)
+            os.rmdir(full)
+        else:
+            os.remove(full)
+
 print("Erasing flash...")
-# Erase filesystem
-try:
-  for f in os.listdir('/'):
-    try:
-      if f != 'sys':
-        os.remove(f) if os.stat(f)[0] & 0x4000 == 0 else None
-    except:
-      pass
-except:
-  pass
+for entry in os.listdir('/'):
+    if entry == 'sys':
+        continue
+    full = '/' + entry
+    if os.stat(full)[0] & 0x4000:
+        _rmtree(full)
+        os.rmdir(full)
+    else:
+        os.remove(full)
 print("Erase complete")
 `.trim();
 
     const result = await this.executeRawREPL(code, 15000);
 
-    if (result.error && !result.error.includes("completed")) {
+    if (result.error) {
       throw new Error(`Flash erase failed: ${result.error}`);
+    }
+    if (!result.output.includes("Erase complete")) {
+      throw new Error("Flash erase did not complete — filesystem may be partially erased");
     }
   }
 

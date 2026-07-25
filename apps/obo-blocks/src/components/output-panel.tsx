@@ -28,8 +28,8 @@ export function OutputPanel({
   onConnectionStatusChange,
 }: OutputPanelProps) {
   const [activeTab, setActiveTab] = useState<string>("output");
-  const [replReady, setReplReady] = useState(false);
-  const [autoDetecting, setAutoDetecting] = useState(false);
+  const [, setReplReady] = useState(false);
+  const [, setAutoDetecting] = useState(false);
   const autoDetectionTriggeredRef = useRef(false);
   const fileManagerRefreshRef = useRef<(() => void) | null>(null);
 
@@ -52,13 +52,11 @@ export function OutputPanel({
   }, [onStatusUpdate, onError]);
 
   const {
-    selectedDevice,
     isMounted,
     isConnected,
     serialPort,
     isFlashing,
     espSupported,
-    connectionError,
     connectToDevice,
     resetConnection,
     saveFileToDevice,

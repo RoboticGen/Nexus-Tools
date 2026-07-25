@@ -1,15 +1,16 @@
 "use client";
 
-import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle } from "@nexus-tools/esp32-uploader";
+import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
+import { notification } from "antd";
 import dynamic from "next/dynamic";
 import { useState, useCallback, useEffect, useRef } from "react";
-import { notification } from "antd";
 
-import { ESP32OutputPanel } from "@/components/esp32-output-panel";
+import { ESP32OutputPanel, type ESP32OutputPanelHandle } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
 import { useBlocklyHandlers } from "@/hooks/use-blockly-handlers";
 import { useEditorHandlers } from "@/hooks/use-editor-handlers";
+
 import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
 
 const BlocklyEditor = dynamic(
@@ -24,13 +25,13 @@ export default function Home() {
   const [code, setCode] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [isDeviceConnected, setIsDeviceConnected] = useState(false);
+  const [, setIsDeviceConnected] = useState(false);
   const [serialPort, setSerialPort] = useState<SerialPort | null>(null);
   const [activeEditorFileName, setActiveEditorFileName] = useState<string | null>(null);
   const [fileManagerExpanded, setFileManagerExpanded] = useState(true);
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
   const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
-  const outputPanelRef = useRef<{ connectToDevice?: () => void; resetConnection?: () => void }>(null);
+  const outputPanelRef = useRef<ESP32OutputPanelHandle>(null);
   const fileManagerRef = useRef<DeviceFileManagerSidebarHandle>(null);
 
   const { copyTextToClipboard, downloadPythonFile } = useEditorHandlers();
@@ -86,10 +87,6 @@ export default function Home() {
       setActiveEditorFileName(filename);
     }
   }, []);
-
-  const handleUpload = useCallback(() => {
-    showNotification("File uploaded successfully!");
-  }, [showNotification]);
 
   const handleConnect = useCallback(() => {
     outputPanelRef.current?.connectToDevice?.();

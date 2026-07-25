@@ -1,7 +1,8 @@
 import { Inter } from "next/font/google";
 
-import type { Metadata, Viewport } from "next";
 import { Providers } from "./providers";
+
+import type { Metadata, Viewport } from "next";
 
 import "@/styles/globals.css";
 import "antd/dist/reset.css";
