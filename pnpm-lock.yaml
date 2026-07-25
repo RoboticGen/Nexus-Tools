@@ -181,6 +181,9 @@ importers:
       '@ant-design/icons':
         specifier: ^5.2.0
         version: 5.6.1(react-dom@18.3.1)(react@18.3.1)
+      '@nexus-tools/esp32-uploader':
+        specifier: workspace:*
+        version: link:../../packages/esp32-uploader
       '@nexus-tools/event-executor':
         specifier: workspace:*
         version: link:../../packages/event-executor
@@ -199,6 +202,12 @@ importers:
       '@nexus-tools/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      antd:
+        specifier: ^5.11.0
+        version: 5.29.3(react-dom@18.3.1)(react@18.3.1)
+      esp-web-tools:
+        specifier: ^10.2.1
+        version: 10.2.1
       next:
         specifier: 14.1.0
         version: 14.1.0(react-dom@18.3.1)(react@18.3.1)
