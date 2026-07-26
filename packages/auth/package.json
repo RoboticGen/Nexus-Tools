@@ -23,8 +23,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@auth/core": "^0.34.0",
-    "@auth/nextjs": "^0.0.0-380f8d56",
     "next-auth": "^4.24.0"
   },
   "devDependencies": {

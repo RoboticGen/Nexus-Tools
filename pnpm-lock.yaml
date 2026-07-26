@@ -79,7 +79,7 @@ importers:
         version: 14.1.0(react-dom@18.3.1)(react@18.3.1)
       next-auth:
         specifier: ^4.24.0
-        version: 4.24.14(@auth/core@0.34.3)(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
+        version: 4.24.14(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -155,7 +155,7 @@ importers:
         version: 14.1.0(react-dom@18.3.1)(react@18.3.1)
       next-auth:
         specifier: ^4.24.0
-        version: 4.24.14(@auth/core@0.34.3)(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
+        version: 4.24.14(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -213,7 +213,7 @@ importers:
         version: 14.1.0(react-dom@18.3.1)(react@18.3.1)
       next-auth:
         specifier: ^4.24.0
-        version: 4.24.14(@auth/core@0.34.3)(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
+        version: 4.24.14(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -254,18 +254,12 @@ importers:
 
   packages/auth:
     dependencies:
-      '@auth/core':
-        specifier: ^0.34.0
-        version: 0.34.3
-      '@auth/nextjs':
-        specifier: ^0.0.0-380f8d56
-        version: 0.0.0-380f8d56(next@14.1.0)
       next:
         specifier: ^14.0.0
         version: 14.1.0(react-dom@18.3.1)(react@18.3.1)
       next-auth:
         specifier: ^4.24.0
-        version: 4.24.14(@auth/core@0.34.3)(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
+        version: 4.24.14(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -467,7 +461,7 @@ importers:
         version: 5.29.3(react-dom@18.3.1)(react@18.3.1)
       next-auth:
         specifier: ^4.24.0
-        version: 4.24.14(@auth/core@0.34.3)(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
+        version: 4.24.14(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
     devDependencies:
       '@nexus-tools/eslint-config':
         specifier: workspace:*
@@ -504,7 +498,7 @@ importers:
         version: link:../auth
       next-auth:
         specifier: ^4.24.0
-        version: 4.24.14(@auth/core@0.34.3)(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
+        version: 4.24.14(next@14.1.0)(react-dom@18.3.1)(react@18.3.1)
     devDependencies:
       '@nexus-tools/eslint-config':
         specifier: workspace:*
@@ -619,56 +613,6 @@ packages:
       '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-tokenizer': 3.0.4
       lru-cache: 10.4.3
-    dev: false
-
-  /@auth/core@0.0.0-380f8d56:
-    resolution: {integrity: sha512-V3nVwrFE6PRTkNv7QVBeiwIYuJ7EgTeQDyUslPQvYTvlwwwpfsp1M7fUFGP0ZVQVfR/BkdqRcTFM3Te2/Nuzjw==}
-    peerDependencies:
-      nodemailer: ^6.8.0
-    peerDependenciesMeta:
-      nodemailer:
-        optional: true
-    dependencies:
-      '@panva/hkdf': 1.2.1
-      cookie: 0.5.0
-      jose: 4.15.9
-      oauth4webapi: 2.17.0
-      preact: 10.11.3
-      preact-render-to-string: 5.2.3(preact@10.11.3)
-    dev: false
-
-  /@auth/core@0.34.3:
-    resolution: {integrity: sha512-jMjY/S0doZnWYNV90x0jmU3B+UcrsfGYnukxYrRbj0CVvGI/MX3JbHsxSrx2d4mbnXaUsqJmAcDfoQWA6r0lOw==}
-    peerDependencies:
-      '@simplewebauthn/browser': ^9.0.1
-      '@simplewebauthn/server': ^9.0.2
-      nodemailer: ^7
-    peerDependenciesMeta:
-      '@simplewebauthn/browser':
-        optional: true
-      '@simplewebauthn/server':
-        optional: true
-      nodemailer:
-        optional: true
-    dependencies:
-      '@panva/hkdf': 1.2.1
-      '@types/cookie': 0.6.0
-      cookie: 0.6.0
-      jose: 5.10.0
-      oauth4webapi: 2.17.0
-      preact: 10.11.3
-      preact-render-to-string: 5.2.3(preact@10.11.3)
-    dev: false
-
-  /@auth/nextjs@0.0.0-380f8d56(next@14.1.0):
-    resolution: {integrity: sha512-5fNAu5BENcoaYh+U/YI3Qs93ZZjL//++P5OSp4aCr5/jF42hZL5ZfbLRoYiq763h4mfQWAE6DElEHUtewkYoBA==}
-    peerDependencies:
-      next: ^13.3.0
-    dependencies:
-      '@auth/core': 0.0.0-380f8d56
-      next: 14.1.0(react-dom@18.3.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - nodemailer
     dev: false
 
   /@babel/runtime@7.28.6:
@@ -1641,10 +1585,6 @@ packages:
     dev: false
     optional: true
 
-  /@types/cookie@0.6.0:
-    resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
-    dev: false
-
   /@types/json-schema@7.0.15:
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
     dev: false
@@ -2397,16 +2337,6 @@ packages:
 
   /concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
-
-  /cookie@0.5.0:
-    resolution: {integrity: sha512-YZ3GUyn/o8gfKJlnlX7g7xq4gyO6OSuhGPKaaGssGB2qgDUS0gPgtTvoyZLTt9Ab6dC4hfc9dV5arkvc/OCmrw==}
-    engines: {node: '>= 0.6'}
-    dev: false
-
-  /cookie@0.6.0:
-    resolution: {integrity: sha512-U71cyTamuh1CRNCfpGY6to28lxvNwPG4Guz/EVjgf3Jmzv0vlDp1atT9eS5dDjMYHucpHbWns6Lwf3BKz6svdw==}
-    engines: {node: '>= 0.6'}
-    dev: false
 
   /cookie@0.7.2:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
@@ -3644,10 +3574,6 @@ packages:
     resolution: {integrity: sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==}
     dev: false
 
-  /jose@5.10.0:
-    resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
-    dev: false
-
   /js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
@@ -3905,7 +3831,7 @@ packages:
   /natural-compare@1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
 
-  /next-auth@4.24.14(@auth/core@0.34.3)(next@14.1.0)(react-dom@18.3.1)(react@18.3.1):
+  /next-auth@4.24.14(next@14.1.0)(react-dom@18.3.1)(react@18.3.1):
     resolution: {integrity: sha512-YRz6xFDXKUwiXSMMChbrBEWyFktZ1qZXEgeSHQQ3nsy08B4c/xLk6REeutRsIFwkjY/1+ShHnu07DN3JeJguig==}
     peerDependencies:
       '@auth/core': 0.34.3
@@ -3919,7 +3845,6 @@ packages:
       nodemailer:
         optional: true
     dependencies:
-      '@auth/core': 0.34.3
       '@babel/runtime': 7.28.6
       '@panva/hkdf': 1.2.1
       cookie: 0.7.2
@@ -3984,10 +3909,6 @@ packages:
 
   /nwsapi@2.2.23:
     resolution: {integrity: sha512-7wfH4sLbt4M0gCDzGE6vzQBo0bfTKjU7Sfpqy/7gs1qBfYz2vEJH6vXcBKpO3+6Yu1telwd0t9HpyOoLEQQbIQ==}
-    dev: false
-
-  /oauth4webapi@2.17.0:
-    resolution: {integrity: sha512-lbC0Z7uzAFNFyzEYRIC+pkSVvDHJTbEW+dYlSBAlCYDe6RxUkJ26bClhk8ocBZip1wfI9uKTe0fm4Ib4RHn6uQ==}
     dev: false
 
   /oauth@0.9.15:
@@ -4277,15 +4198,6 @@ packages:
       source-map-js: 1.2.1
     dev: true
 
-  /preact-render-to-string@5.2.3(preact@10.11.3):
-    resolution: {integrity: sha512-aPDxUn5o3GhWdtJtW0svRC2SS/l8D9MAgo2+AWml+BhDImb27ALf04Q2d+AHqUUOc6RdSXFIBVa2gxzgMKgtZA==}
-    peerDependencies:
-      preact: '>=10'
-    dependencies:
-      preact: 10.11.3
-      pretty-format: 3.8.0
-    dev: false
-
   /preact-render-to-string@5.2.6(preact@10.29.1):
     resolution: {integrity: sha512-JyhErpYOvBV1hEPwIxc/fHWXPfnEGdRKxc8gFdAZ7XV4tlzyzG847XAyEZqoDnynP88akM4eaHcSOzNcLWFguw==}
     peerDependencies:
@@ -4293,10 +4205,6 @@ packages:
     dependencies:
       preact: 10.29.1
       pretty-format: 3.8.0
-    dev: false
-
-  /preact@10.11.3:
-    resolution: {integrity: sha512-eY93IVpod/zG3uMF22Unl8h9KkrcKIRs2EGar8hwLZZDU1lkjph303V9HZBwufh2s736U6VXuhD109LYqPoffg==}
     dev: false
 
   /preact@10.29.1:
