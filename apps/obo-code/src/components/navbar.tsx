@@ -2,26 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { buildKeycloakLogoutUrl } from "@nexus-tools/auth";
 import { signOut, useSession } from "next-auth/react";
 
 export function Navbar() {
   const { data: session } = useSession();
-  const keycloakUrl = process.env.NEXT_PUBLIC_KEYCLOAK_URL || "https://auth.roboticgen.co";
-  const realm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM || "roboticgen";
-  const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || "obo-nexus";
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
-    const postLogout = `${window.location.origin}/login`;
-    const logoutUrl = new URL(
-      `${keycloakUrl}/realms/${realm}/protocol/openid-connect/logout`
-    );
-    logoutUrl.searchParams.set("post_logout_redirect_uri", postLogout);
-    logoutUrl.searchParams.set("client_id", clientId);
-    if (session?.idToken) {
-      logoutUrl.searchParams.set("id_token_hint", session.idToken);
-    }
-    window.location.assign(logoutUrl.toString());
+    const logoutUrl = buildKeycloakLogoutUrl({
+      origin: window.location.origin,
+      idToken: session?.idToken,
+    });
+    window.location.assign(logoutUrl);
   };
 
   return (

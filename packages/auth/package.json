@@ -15,10 +15,23 @@
     "./types": {
       "types": "./src/types.ts",
       "default": "./src/types.ts"
+    },
+    "./middleware": {
+      "types": "./src/middleware.ts",
+      "default": "./src/middleware.ts"
+    },
+    "./next-auth": {
+      "types": "./src/next-auth.ts",
+      "default": "./src/next-auth.ts"
+    },
+    "./logout": {
+      "types": "./src/logout.ts",
+      "default": "./src/logout.ts"
     }
   },
   "scripts": {
     "build": "tsc",
+    "test": "pnpm run build && node --test test/**/*.test.mjs",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
