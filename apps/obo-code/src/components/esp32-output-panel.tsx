@@ -1,7 +1,7 @@
 "use client";
 
 import { DeleteOutlined, StopOutlined, LinkOutlined, DisconnectOutlined } from "@ant-design/icons";
-import { useESP32Uploader, ESP32REPL, type SerialPort } from "@nexus-tools/esp32-uploader";
+import { useESP32Uploader, ESP32REPL, ESP32Flasher, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { Button as UIButton } from "@nexus-tools/ui";
 import { Tabs, Space, Button } from "antd";
 import { useState, useMemo, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
@@ -93,7 +93,8 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     connectToDevice,
     resetConnection,
     saveFileToDevice,
-  } = useESP32Uploader({ 
+    connectionError,
+  } = useESP32Uploader({
     code, 
     onStatusUpdate, 
     onError,
@@ -173,7 +174,7 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
             }}>
               <strong>Web Serial API not available</strong>
               <br />
-              This browser doesn't support Web Serial API. Please use Chrome, Edge, or Opera on HTTPS or localhost.
+              This browser doesn&apos;t support Web Serial API. Please use Chrome, Edge, or Opera on HTTPS or localhost.
             </div>
           )}
           {espSupported !== false && (
