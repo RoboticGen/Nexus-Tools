@@ -93,7 +93,8 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     connectToDevice,
     resetConnection,
     saveFileToDevice,
-  } = useESP32Uploader({ 
+    connectionError,
+  } = useESP32Uploader({
     code, 
     onStatusUpdate, 
     onError,
