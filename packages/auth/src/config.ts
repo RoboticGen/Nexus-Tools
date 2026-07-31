@@ -2,18 +2,43 @@ import type { NextAuthOptions } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 import type { NextAuthSession } from "./types";
 
+function required(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} env var is required`);
+  }
+  return value;
+}
+
+export interface PublicKeycloakConfig {
+  keycloakUrl: string;
+  realm: string;
+  clientId: string;
+}
+
+/**
+ * Keycloak connection details needed by client components (e.g. RP-initiated
+ * logout). These are NEXT_PUBLIC_* vars inlined at build time, so a missing
+ * value must fail as soon as this module is evaluated rather than silently
+ * falling back to production.
+ */
+export function getPublicKeycloakConfig(): PublicKeycloakConfig {
+  return {
+    keycloakUrl: required("NEXT_PUBLIC_KEYCLOAK_URL"),
+    realm: required("NEXT_PUBLIC_KEYCLOAK_REALM"),
+    clientId: required("NEXT_PUBLIC_KEYCLOAK_CLIENT_ID"),
+  };
+}
+
 /**
  * Get NextAuth configuration for Keycloak OAuth provider
- * Environment variables should be set: KEYCLOAK_URL, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET, KEYCLOAK_REALM, NEXTAUTH_URL
+ * Environment variables must be set: KEYCLOAK_URL, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET, KEYCLOAK_REALM, NEXTAUTH_URL
  */
 export function getAuthConfig(): NextAuthOptions {
-  const keycloakUrl = process.env.KEYCLOAK_URL || "https://auth.roboticgen.co";
-  const realm = process.env.KEYCLOAK_REALM || "roboticgen";
-  const clientId = process.env.KEYCLOAK_CLIENT_ID || "obo-nexus";
-  const clientSecret = process.env.KEYCLOAK_CLIENT_SECRET;
-  if (!clientSecret) {
-    throw new Error("KEYCLOAK_CLIENT_SECRET env var is required");
-  }
+  const keycloakUrl = required("KEYCLOAK_URL");
+  const realm = required("KEYCLOAK_REALM");
+  const clientId = required("KEYCLOAK_CLIENT_ID");
+  const clientSecret = required("KEYCLOAK_CLIENT_SECRET");
   const nextAuthUrl = process.env.NEXTAUTH_URL || "http://localhost:3001";
 
   // Log configuration for debugging (development only)
