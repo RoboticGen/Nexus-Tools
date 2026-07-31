@@ -17,8 +17,8 @@ export default withAuth(
           return true;
         }
 
-        // For all other routes, require authentication
-        return !!token;
+        // For all other routes, require authentication with a valid (non-errored) token
+        return !!token && !token.error;
       },
     },
     pages: {
