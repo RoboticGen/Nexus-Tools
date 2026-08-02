@@ -6,7 +6,7 @@ export default function UnauthorizedPage() {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-slate-100 to-slate-50">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-linear-to-b from-slate-100 to-slate-50">
       <div className="w-full max-w-md space-y-8 text-center">
         <div>
           <h1 className="text-6xl font-bold text-slate-900">401</h1>
