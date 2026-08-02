@@ -1,15 +1,15 @@
 "use client";
 
 import { SessionProvider } from "@nexus-tools/ui";
-import { ConfigProvider } from "antd";
 import React from "react";
+
+import { Toaster } from "@/components/ui/sonner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <ConfigProvider>
-        {children}
-      </ConfigProvider>
+      {children}
+      <Toaster />
     </SessionProvider>
   );
 }

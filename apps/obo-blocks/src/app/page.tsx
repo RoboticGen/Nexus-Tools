@@ -2,12 +2,13 @@
 
 import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
-import { notification } from "antd";
 import dynamic from "next/dynamic";
 import { useState, useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 import { ESP32OutputPanel, type ESP32OutputPanelHandle } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
+import { WorkspaceLayout, WorkspaceColumn } from "@/components/ui/workspace-layout";
 import { useBlocklyHandlers } from "@/hooks/use-blockly-handlers";
 import { useEditorHandlers } from "@/hooks/use-editor-handlers";
 
@@ -28,7 +29,7 @@ export default function Home() {
   const [, setIsDeviceConnected] = useState(false);
   const [serialPort, setSerialPort] = useState<SerialPort | null>(null);
   const [activeEditorFileName, setActiveEditorFileName] = useState<string | null>(null);
-  const [fileManagerExpanded, setFileManagerExpanded] = useState(true);
+  const [, setFileManagerExpanded] = useState(true);
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
   const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
   const outputPanelRef = useRef<ESP32OutputPanelHandle>(null);
@@ -37,12 +38,7 @@ export default function Home() {
   const { copyTextToClipboard, downloadPythonFile } = useEditorHandlers();
 
   const showNotification = useCallback((message: string, type: "success" | "error" | "info" = "info") => {
-    notification[type]({
-      message: type === "success" ? "Success" : type === "error" ? "Error" : "Info",
-      description: message,
-      duration: 2,
-      placement: "topRight",
-    });
+    toast[type](message);
   }, []);
 
   const {
@@ -133,22 +129,35 @@ export default function Home() {
   );
 
   return (
-    <div className="app-container">
-      <Navbar />
-
+    <WorkspaceLayout
+      header={<Navbar />}
+      sidebar={
+        <DeviceFileManagerSidebar
+          ref={fileManagerRef}
+          serialPort={serialPort}
+          isConnected={serialPort !== null}
+          activeFileName={activeEditorFileName}
+          onError={showNotification}
+          onOpenFileInEditor={handleOpenFileInEditor}
+          onExpandChange={setFileManagerExpanded}
+          onConnect={handleConnect}
+          onDisconnect={handleDisconnect}
+        />
+      }
+    >
       {isClient && (
-        <div
-          className={`main-layout main-content-with-file-manager${!fileManagerExpanded ? " file-manager-collapsed" : ""} ${isEditing ? "editing-mode" : ""}`}
-        >
-          <div className="blockly-section">
-            <BlocklyEditor
-              onCodeChange={handleCodeChange}
-              onEditToggle={handleEditToggleWrapper}
-              showNotification={showNotification}
-            />
-          </div>
+        <>
+          {!isEditing && (
+            <WorkspaceColumn grow={3}>
+              <BlocklyEditor
+                onCodeChange={handleCodeChange}
+                onEditToggle={handleEditToggleWrapper}
+                showNotification={showNotification}
+              />
+            </WorkspaceColumn>
+          )}
 
-          <div className="panels-section">
+          <WorkspaceColumn grow={2}>
             <SharedCodePanel
               code={code}
               isEditing={isEditing}
@@ -164,9 +173,9 @@ export default function Home() {
               codeEditorRef={codeEditorRef}
             />
 
-            <ESP32OutputPanel 
+            <ESP32OutputPanel
               ref={outputPanelRef}
-              onClear={handleClearTerminal} 
+              onClear={handleClearTerminal}
               onStop={handleStopCode}
               code={code}
               onStatusUpdate={showNotification}
@@ -178,21 +187,9 @@ export default function Home() {
               onConnectionStatusChange={setIsDeviceConnected}
               onSerialPortChange={setSerialPort}
             />
-          </div>
-        </div>
+          </WorkspaceColumn>
+        </>
       )}
-
-      <DeviceFileManagerSidebar
-        ref={fileManagerRef}
-        serialPort={serialPort}
-        isConnected={serialPort !== null}
-        activeFileName={activeEditorFileName}
-        onError={showNotification}
-        onOpenFileInEditor={handleOpenFileInEditor}
-        onExpandChange={setFileManagerExpanded}
-        onConnect={handleConnect}
-        onDisconnect={handleDisconnect}
-      />
-    </div>
+    </WorkspaceLayout>
   );
 }

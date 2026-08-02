@@ -2,6 +2,8 @@
 
 import { signOut, useSession } from "next-auth/react";
 
+import { AppHeader } from "@/components/ui/app-header";
+
 export function Navbar() {
   const { data: session } = useSession();
   const keycloakUrl = process.env.NEXT_PUBLIC_KEYCLOAK_URL || "https://auth.roboticgen.co";
@@ -23,48 +25,52 @@ export function Navbar() {
   };
 
   return (
-    <nav className="nav-bar">
-      <img
-        id="obo-blocks-logo"
-        className="obo-blocks-logo"
-        alt="Obo Blocks Logo"
-        src="/obo_blocks.webp"
-      />
-      <div className="nav-bar-actions">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="logout-button"
-          aria-label="Log out"
-          title="Log out"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            className="logout-icon"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+    <AppHeader
+      brand={
+        <img
+          id="obo-blocks-logo"
+          className="obo-blocks-logo"
+          alt="Obo Blocks Logo"
+          src="/obo_blocks.webp"
+        />
+      }
+      actions={
+        <>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="logout-button"
+            aria-label="Log out"
+            title="Log out"
           >
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <path d="M16 17l5-5-5-5" />
-            <path d="M21 12H9" />
-          </svg>
-        </button>
-        <a
-          href="https://roboticgenacademy.com/"
-          aria-label="Roboticgen Academy"
-        >
-          <img
-            id="roboticgen-academy-logo"
-            alt="Roboticgen Academy Logo"
-            className="logo"
-            src="/academyLogo.webp"
-          />
-        </a>
-      </div>
-    </nav>
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="logout-icon"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <path d="M16 17l5-5-5-5" />
+              <path d="M21 12H9" />
+            </svg>
+          </button>
+          <a
+            href="https://roboticgenacademy.com/"
+            aria-label="Roboticgen Academy"
+          >
+            <img
+              id="roboticgen-academy-logo"
+              alt="Roboticgen Academy Logo"
+              className="logo"
+              src="/academyLogo.webp"
+            />
+          </a>
+        </>
+      }
+    />
   );
 }
