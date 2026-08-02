@@ -1,11 +1,20 @@
 "use client";
 
-import { DeleteOutlined, StopOutlined, LinkOutlined, DisconnectOutlined } from "@ant-design/icons";
-import { useESP32Uploader, ESP32REPL, type SerialPort } from "@nexus-tools/esp32-uploader";
-import { Button as UIButton } from "@nexus-tools/ui";
-import { Tabs, Space, Button } from "antd";
+import {
+  useESP32Uploader,
+  useESP32REPL,
+  useESP32Flasher,
+  serialStreamManager,
+  type SerialPort,
+} from "@nexus-tools/esp32-uploader";
+import { Trash2, Square as StopIcon } from "lucide-react";
 import { useState, useMemo, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 
+import { Button } from "@/components/ui/button";
+import { FirmwareFlasher, type FlasherOption, type FlasherState } from "@/components/ui/firmware-flasher";
+import { OutputPanel, type OutputPanelTab } from "@/components/ui/output-panel";
+import { ReplConsole } from "@/components/ui/repl-console";
+import { Toolbar } from "@/components/ui/toolbar";
 
 interface ESP32OutputPanelProps {
   /** Terminal output text (for output tab) */
@@ -39,8 +48,200 @@ export interface ESP32OutputPanelHandle {
   resetConnection: () => void;
 }
 
+const REPL_MAX_LINES = 200;
+
+function trimLines(text: string, maxLines: number): string {
+  const lines = text.split("\n");
+  return lines.length > maxLines ? lines.slice(-maxLines).join("\n") : text;
+}
+
+const RECOVERY_CHIP_FAMILIES: FlasherOption[] = [
+  { id: "ESP32", label: "ESP32" },
+  { id: "ESP32-S2", label: "ESP32-S2" },
+  { id: "ESP32-S3", label: "ESP32-S3" },
+  { id: "ESP32-C3", label: "ESP32-C3" },
+  { id: "ESP32-C6", label: "ESP32-C6" },
+  { id: "ESP32-H2", label: "ESP32-H2" },
+];
+
+/** Interactive REPL tab. Ports ESP32REPL.tsx's connect/run lifecycle onto `ReplConsole`. */
+function ReplTab({
+  serialPort,
+  isConnected: parentConnected,
+}: {
+  serialPort: SerialPort | null;
+  isConnected: boolean;
+}) {
+  const [output, setOutput] = useState("");
+  const [connected, setConnected] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const connectingRef = useRef(false);
+
+  const { connectToREPL, executeCommand, sendCtrlC, sendCtrlD, disconnect, isAwaitingContinuation } =
+    useESP32REPL(serialPort);
+
+  const push = useCallback((text: string) => {
+    setOutput((prev) => trimLines(prev ? `${prev}\n${text}` : text, REPL_MAX_LINES));
+  }, []);
+
+  const doConnect = useCallback(async () => {
+    if (!serialPort || connectingRef.current) return;
+    connectingRef.current = true;
+    try {
+      push("Connecting to REPL…");
+      await connectToREPL();
+      setConnected(true);
+      push("=== REPL Connected ===");
+      push("Ready. Type Python commands below.");
+    } catch (err) {
+      push(`Connection failed: ${err instanceof Error ? err.message : String(err)}`);
+      setConnected(false);
+    } finally {
+      connectingRef.current = false;
+    }
+  }, [serialPort, connectToREPL, push]);
+
+  useEffect(() => {
+    if (serialPort && parentConnected && !connected) doConnect();
+  }, [serialPort, parentConnected, connected]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!parentConnected && connected) {
+      setConnected(false);
+      setOutput("");
+      connectingRef.current = false;
+      disconnect();
+    }
+  }, [parentConnected, connected, disconnect]);
+
+  useEffect(() => () => { disconnect().catch(() => {}); }, [disconnect]);
+
+  const handleSend = useCallback(
+    async (command: string) => {
+      if (!connected || busy) return;
+      setBusy(true);
+      push(`${isAwaitingContinuation ? "..." : ">>>"} ${command}`);
+      try {
+        const result = await executeCommand(command);
+        if (result.output) push(result.output);
+        if (result.error) push(result.error);
+      } catch (err) {
+        push(err instanceof Error ? err.message : String(err));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [connected, busy, executeCommand, isAwaitingContinuation, push]
+  );
+
+  const handleInterrupt = useCallback(() => {
+    sendCtrlC();
+    push("^C");
+  }, [sendCtrlC, push]);
+
+  const handleSoftReset = useCallback(() => {
+    sendCtrlD();
+    push("^D Soft reset");
+  }, [sendCtrlD, push]);
+
+  if (!serialPort) {
+    return <p className="text-muted-foreground text-sm">Connect your ESP32 device to use REPL.</p>;
+  }
+  if (!connected) {
+    return <p className="text-muted-foreground text-sm">Connecting…</p>;
+  }
+
+  return (
+    <ReplConsole
+      output={output}
+      continuation={isAwaitingContinuation}
+      disabled={busy}
+      onSend={handleSend}
+      onInterrupt={handleInterrupt}
+      onSoftReset={handleSoftReset}
+      onClear={() => setOutput("")}
+    />
+  );
+}
+
+/** Firmware flashing tab. Ports ESP32Flasher.tsx's detect/select/flash lifecycle onto `FirmwareFlasher`. */
+function FlasherTab({
+  serialPort,
+  isConnected,
+  onStatusUpdate,
+  onError,
+}: {
+  serialPort: SerialPort | null;
+  isConnected: boolean;
+  onStatusUpdate?: (status: string) => void;
+  onError?: (error: string) => void;
+}) {
+  const flasherOptions = useMemo(
+    () => ({ onStatusUpdate, onError, onProgressUpdate: () => {} }),
+    [onStatusUpdate, onError]
+  );
+
+  const { state, detectChip, enterRecoveryMode, getCompatibleFirmwares, selectFirmware, setLocalFirmware, startFlashing } =
+    useESP32Flasher(serialPort, flasherOptions);
+
+  useEffect(() => {
+    if (serialPort && isConnected && !state.chipInfo && state.phase !== "detecting") {
+      const timer = setTimeout(() => {
+        detectChip();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [serialPort, isConnected, state.chipInfo, state.phase, detectChip]);
+
+  const handleErase = useCallback(async () => {
+    if (!serialPort || !serialStreamManager.isReady()) {
+      onError?.("Serial port not available");
+      return;
+    }
+    try {
+      onStatusUpdate?.("Clearing filesystem... This may take 10-30 seconds");
+      await serialStreamManager.eraseFlash();
+      onStatusUpdate?.("Filesystem cleared");
+    } catch (err) {
+      onError?.(`Flash erase failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }, [serialPort, onStatusUpdate, onError]);
+
+  if (!isConnected) {
+    return <p className="text-muted-foreground text-sm">Connect your device first to access the Flasher.</p>;
+  }
+
+  const compatibleFirmwares = getCompatibleFirmwares();
+  const firmwareOptions: FlasherOption[] = compatibleFirmwares.map((fw) => ({ id: fw.version, label: fw.name }));
+  const flasherState: FlasherState = state.phase === "completed" ? "done" : (state.phase as FlasherState);
+
+  return (
+    <FirmwareFlasher
+      chipFamilies={RECOVERY_CHIP_FAMILIES}
+      selectedChip={state.chipInfo?.chipFamily}
+      onChipChange={(id) => enterRecoveryMode(id)}
+      detectedChip={state.chipInfo?.chipFamily}
+      firmwares={firmwareOptions}
+      selectedFirmware={state.selectedFirmware?.version}
+      onFirmwareChange={(id) => {
+        const fw = compatibleFirmwares.find((f) => f.version === id);
+        if (fw) selectFirmware(fw);
+      }}
+      onFileSelect={async (file) => {
+        const buffer = await file.arrayBuffer();
+        setLocalFirmware(file.name, buffer);
+      }}
+      progress={Math.round(state.progress)}
+      state={flasherState}
+      error={state.error ?? undefined}
+      onErase={handleErase}
+      onFlash={() => startFlashing()}
+    />
+  );
+}
+
 /**
- * Shared ESP32 Output Panel with tabs for Output, Uploader, REPL, and File Manager.
+ * Shared ESP32 Output Panel with tabs for Output, REPL, and Flasher.
  * Used in both obo-code and obo-blocks applications.
  */
 export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPanelProps>(
@@ -60,63 +261,27 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     }: ESP32OutputPanelProps,
     ref
   ) => {
-  const [activeTab, setActiveTab] = useState<string>("output");
-  const [, setReplReady] = useState(false);
-  const [, setAutoDetecting] = useState(false);
-  const autoDetectionTriggeredRef = useRef(false);
+  const [activeTab, setActiveTab] = useState<string>("console");
   const fileManagerRefreshRef = useRef<(() => void) | null>(null);
-
-  const handleConnectionEstablished = useCallback(async (_port: unknown) => {
-    if (autoDetectionTriggeredRef.current) return;
-    autoDetectionTriggeredRef.current = true;
-    
-    try {
-      setAutoDetecting(true);
-      onStatusUpdate?.("Initializing REPL...");
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setReplReady(true);
-      onStatusUpdate?.("ESP32 ready! Files and REPL are now available.");
-    } catch (error) {
-      console.warn("Auto-detection failed:", error);
-      onError?.("Failed to auto-detect ESP32 features");
-    } finally {
-      setAutoDetecting(false);
-    }
-  }, [onStatusUpdate, onError]);
 
   const {
     isMounted,
     isConnected,
     serialPort,
-    isFlashing,
     espSupported,
     connectToDevice,
     resetConnection,
     saveFileToDevice,
-  } = useESP32Uploader({ 
-    code, 
-    onStatusUpdate, 
+  } = useESP32Uploader({
+    code,
+    onStatusUpdate,
     onError,
-    onConnectionEstablished: handleConnectionEstablished 
   });
 
   useImperativeHandle(ref, () => ({
     connectToDevice,
     resetConnection,
   }), [connectToDevice, resetConnection]);
-
-  const canShowAdvancedFeatures = useMemo(() => {
-    return Boolean(espSupported) && Boolean(serialPort);
-  }, [espSupported, serialPort]);
-
-  useEffect(() => {
-    // Only reset REPL state when actually disconnected, not on tab switches
-    if (!isConnected) {
-      autoDetectionTriggeredRef.current = false;
-      setReplReady(false);
-      setAutoDetecting(false);
-    }
-  }, [isConnected]);
 
   // Pass saveFileToDevice function to parent component
   useEffect(() => {
@@ -155,130 +320,66 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     );
   }
 
-  const replTab = (
-    <div className="tab-content-wrapper">
-      {!canShowAdvancedFeatures && (
-        <div style={{ padding: "1rem" }}>
-          <div style={{ fontSize: "0.9rem", marginBottom: "1rem" }}>
-            Connect your device first to access the REPL.
-          </div>
-          <Space style={{ width: "100%" }}>
-            {!isConnected ? (
-              <Button
-                type="primary"
-                icon={<LinkOutlined />}
-                onClick={connectToDevice}
-                disabled={isFlashing}
-                block
-              >
-                Connect Device
-              </Button>
-            ) : (
-              <Button
-                danger
-                icon={<DisconnectOutlined />}
-                onClick={resetConnection}
-                disabled={isFlashing}
-                block
-              >
-                Disconnect
-              </Button>
-            )}
-          </Space>
-        </div>
-      )}
+  const connectionState = isConnected ? "connected" : espSupported ? "disconnected" : "unsupported";
 
-      {canShowAdvancedFeatures && (
-        <>
-          {isFlashing && (
-            <div style={{ padding: "1rem", background: "#fff3cd", borderBottom: "1px solid #ffc107" }}>
-              REPL is disabled during code upload. Please wait for upload to complete.
-            </div>
-          )}
-          <ESP32REPL
-            serialPort={serialPort}
-            isConnected={isConnected}
-            onError={onError}
-          />
-        </>
-      )}
-    </div>
-  );
-
-  const flasherTab = (
-    <div className="tab-content-wrapper">
-      {canShowAdvancedFeatures ? (
-        <ESP32Flasher
-          serialPort={serialPort}
-          isConnected={isConnected}
-          onStatusUpdate={onStatusUpdate}
-          onError={onError}
-        />
-      ) : (
-        <div style={{ padding: "1rem", fontSize: "0.9rem" }}>
-          Connect your device first to access the Flasher.
-        </div>
-      )}
-    </div>
-  );
-
-  const outputTab = (
-    <div className="tab-content-wrapper">
-      <div className="panel-header">
-        <div className="button-group" style={{ display: "flex", gap: "8px" }}>
-          <UIButton
-            icon={<DeleteOutlined />}
-            onClick={onClear}
-            title="Clear Output"
-          >
+  // Kept as a raw, uncontrolled textarea: `@nexus-tools/pyodide-executor`'s
+  // `createTerminalLoader` writes program output straight to
+  // `document.getElementById(terminalId)` as a side effect, bypassing React
+  // state entirely. A `Terminal` component here would silently receive none
+  // of that output.
+  const consoleTab: OutputPanelTab = {
+    id: "console",
+    label: "Output",
+    content: (
+      <div className="flex h-full flex-col overflow-hidden">
+        <Toolbar label="Output actions" size="sm">
+          <Button size="sm" variant="outline" onClick={onClear}>
+            <Trash2 aria-hidden="true" />
             Clear
-          </UIButton>
-          <UIButton
-            icon={<StopOutlined />}
-            onClick={onStop}
-            title="Stop Execution"
-          >
+          </Button>
+          <Button size="sm" variant="outline" onClick={onStop}>
+            <StopIcon aria-hidden="true" />
             Stop
-          </UIButton>
+          </Button>
+        </Toolbar>
+        <div className="flex-1 overflow-hidden p-2">
+          <textarea
+            id={terminalId}
+            className="terminal-output h-full w-full"
+            readOnly
+            rows={10}
+            value={output || ""}
+            defaultValue={output !== undefined ? undefined : ""}
+          />
         </div>
       </div>
-      <div className="terminal-wrapper">
-        <textarea
-          id={terminalId}
-          className="terminal-output"
-          readOnly
-          rows={10}
-          value={output || ""}
-          defaultValue={output !== undefined ? undefined : ""}
-        />
-      </div>
-    </div>
-  );
+    ),
+  };
+
+  const tabs: OutputPanelTab[] = [
+    consoleTab,
+    { id: "repl", label: "REPL", requiresDevice: true },
+    { id: "flasher", label: "Flasher", requiresDevice: true },
+  ];
 
   return (
     <div className={className} id={className}>
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={[
-          {
-            key: "output",
-            label: "Output",
-            children: outputTab,
-          },
-          {
-            key: "repl",
-            label: "REPL",
-            disabled: !canShowAdvancedFeatures,
-            children: replTab,
-          },
-          {
-            key: "flasher",
-            label: "Flasher",
-            disabled: !canShowAdvancedFeatures,
-            children: flasherTab,
-          },
-        ]}
+      <OutputPanel
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        connectionState={connectionState}
+        onConnect={connectToDevice}
+        onDisconnect={resetConnection}
+        replContent={<ReplTab serialPort={serialPort ?? null} isConnected={isConnected} />}
+        flasherContent={
+          <FlasherTab
+            serialPort={serialPort ?? null}
+            isConnected={isConnected}
+            onStatusUpdate={onStatusUpdate}
+            onError={onError}
+          />
+        }
       />
     </div>
   );
