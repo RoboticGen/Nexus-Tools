@@ -1,7 +1,7 @@
 "use client";
 
 import { DeleteOutlined, StopOutlined, LinkOutlined, DisconnectOutlined } from "@ant-design/icons";
-import { useESP32Uploader, ESP32REPL, type SerialPort } from "@nexus-tools/esp32-uploader";
+import { useESP32Uploader, ESP32REPL, ESP32Flasher, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { Button as UIButton } from "@nexus-tools/ui";
 import { Tabs, Space, Button } from "antd";
 import { useState, useMemo, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
