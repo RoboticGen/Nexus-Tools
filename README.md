@@ -148,6 +148,12 @@ Each app has an `.env.example` file. Copy it to `.env.local` and fill in the val
 cp apps/obo-code/.env.example apps/obo-code/.env.local
 ```
 
+Each app also needs Keycloak/NextAuth variables (`KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, and the `NEXT_PUBLIC_KEYCLOAK_*` equivalents) — these are included in each `.env.example`. Two things to know:
+
+- `NEXTAUTH_URL` differs per app since each runs on its own port (obo-code: 3001, obo-blocks: 3002, obo-playground: 3003). Keycloak must have all three `/api/auth/callback/keycloak` URLs registered as valid redirect URIs, and the three `/login` URLs as valid post-logout redirect URIs.
+- The `NEXT_PUBLIC_*` variables are inlined into the client bundle at build time, so they must be set before running `next build`, not just at runtime.
+- `NEXTAUTH_SECRET` is required by NextAuth in production; leaving it unset makes `next build` fail with a `NO_SECRET` error. Generate one with `openssl rand -base64 32`.
+
 ## 📄 License
 
 MIT
