@@ -2,18 +2,60 @@ import type { NextAuthOptions } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 import type { NextAuthSession } from "./types";
 
+function required(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} env var is required`);
+  }
+  return value;
+}
+
+export interface PublicKeycloakConfig {
+  keycloakUrl: string;
+  realm: string;
+  clientId: string;
+}
+
+/**
+ * Keycloak connection details needed by client components (e.g. RP-initiated
+ * logout). These are NEXT_PUBLIC_* vars inlined at build time, so a missing
+ * value must fail as soon as this module is evaluated rather than silently
+ * falling back to production.
+ */
+export function getPublicKeycloakConfig(): PublicKeycloakConfig {
+  const keycloakUrl = process.env.NEXT_PUBLIC_KEYCLOAK_URL;
+  const realm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM;
+  const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID;
+
+  if (!keycloakUrl) throw new Error("NEXT_PUBLIC_KEYCLOAK_URL env var is required");
+  if (!realm) throw new Error("NEXT_PUBLIC_KEYCLOAK_REALM env var is required");
+  if (!clientId) throw new Error("NEXT_PUBLIC_KEYCLOAK_CLIENT_ID env var is required");
+
+  return { keycloakUrl, realm, clientId };
+}
+
 /**
  * Get NextAuth configuration for Keycloak OAuth provider
- * Environment variables should be set: KEYCLOAK_URL, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET, KEYCLOAK_REALM, NEXTAUTH_URL
+ * Environment variables must be set: KEYCLOAK_URL, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET, KEYCLOAK_REALM, NEXTAUTH_URL
  */
 export function getAuthConfig(): NextAuthOptions {
-  const keycloakUrl = process.env.KEYCLOAK_URL || "https://auth.roboticgen.co";
-  const realm = process.env.KEYCLOAK_REALM || "roboticgen";
-  const clientId = process.env.KEYCLOAK_CLIENT_ID || "obo-nexus";
-  const clientSecret = process.env.KEYCLOAK_CLIENT_SECRET;
-  if (!clientSecret) {
-    throw new Error("KEYCLOAK_CLIENT_SECRET env var is required");
+  const keycloakUrl = required("KEYCLOAK_URL");
+  const realm = required("KEYCLOAK_REALM");
+  const clientId = required("KEYCLOAK_CLIENT_ID");
+  const clientSecret = required("KEYCLOAK_CLIENT_SECRET");
+  const nextAuthUrl = process.env.NEXTAUTH_URL || "http://localhost:3001";
+
+  // Log configuration for debugging (development only)
+  if (process.env.NODE_ENV === "development") {
+    console.log("[NextAuth Config]", {
+      keycloakUrl,
+      realm,
+      clientId,
+      nextAuthUrl,
+      callbackUrl: `${nextAuthUrl}/api/auth/callback/keycloak`,
+    });
   }
+
   return {
     debug: process.env.NODE_ENV === "development",
     providers: [

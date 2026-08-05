@@ -1,14 +1,14 @@
 "use client";
 
+import { getPublicKeycloakConfig } from "@nexus-tools/auth";
 import Image from "next/image";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 
+const { keycloakUrl, realm, clientId } = getPublicKeycloakConfig();
+
 export function Navbar() {
   const { data: session } = useSession();
-  const keycloakUrl = process.env.NEXT_PUBLIC_KEYCLOAK_URL || "https://auth.roboticgen.co";
-  const realm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM || "roboticgen";
-  const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || "obo-nexus";
 
   const handleLogout = async () => {
     await signOut({ redirect: false });

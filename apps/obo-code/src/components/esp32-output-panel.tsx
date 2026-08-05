@@ -90,6 +90,7 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     serialPort,
     isFlashing,
     espSupported,
+    connectionError,
     connectToDevice,
     resetConnection,
     saveFileToDevice,
@@ -174,7 +175,7 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
             }}>
               <strong>Web Serial API not available</strong>
               <br />
-              This browser doesn't support Web Serial API. Please use Chrome, Edge, or Opera on HTTPS or localhost.
+              This browser doesn&apos;t support Web Serial API. Please use Chrome, Edge, or Opera on HTTPS or localhost.
             </div>
           )}
           {espSupported !== false && (
