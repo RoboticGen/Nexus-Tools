@@ -1,9 +1,9 @@
 "use client";
 
+import { getPublicKeycloakConfig } from "@nexus-tools/auth";
 import Image from "next/image";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
-import { getPublicKeycloakConfig } from "@nexus-tools/auth";
 
 const { keycloakUrl, realm, clientId } = getPublicKeycloakConfig();
 

@@ -23,11 +23,15 @@ export interface PublicKeycloakConfig {
  * falling back to production.
  */
 export function getPublicKeycloakConfig(): PublicKeycloakConfig {
-  return {
-    keycloakUrl: required("NEXT_PUBLIC_KEYCLOAK_URL"),
-    realm: required("NEXT_PUBLIC_KEYCLOAK_REALM"),
-    clientId: required("NEXT_PUBLIC_KEYCLOAK_CLIENT_ID"),
-  };
+  const keycloakUrl = process.env.NEXT_PUBLIC_KEYCLOAK_URL;
+  const realm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM;
+  const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID;
+
+  if (!keycloakUrl) throw new Error("NEXT_PUBLIC_KEYCLOAK_URL env var is required");
+  if (!realm) throw new Error("NEXT_PUBLIC_KEYCLOAK_REALM env var is required");
+  if (!clientId) throw new Error("NEXT_PUBLIC_KEYCLOAK_CLIENT_ID env var is required");
+
+  return { keycloakUrl, realm, clientId };
 }
 
 /**
