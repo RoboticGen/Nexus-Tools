@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:3003 -o /tmp/obo-pg.html -w \"%{http_code}\\\\n\")",
+      "Bash(sort -t: -k1 -n)",
+      "Bash(xxd)",
+      "Bash(python -c ' *)",
+      "Bash(command -v blender)",
+      "Bash(where blender *)",
+      "Bash(where FBX2glTF)",
+      "Bash(python -c \"import bpy\")",
+      "Bash(mkdir -p fbxout)",
+      "Bash(time /c/Users/muniy/AppData/Local/Temp/claude/d--Roboticgen-Nexus-Tools/8cbdfc92-eeb9-403b-8ee7-567501c50f91/scratchpad/node_modules/fbx2gltf/bin/Windows_NT/FBX2glTF.exe --binary --input 'D:\\\\Roboticgen\\\\Nexus-Tools\\\\apps\\\\obo-playground\\\\public\\\\OBOCAR.fbx' --output /c/Users/muniy/AppData/Local/Temp/claude/d--Roboticgen-Nexus-Tools/8cbdfc92-eeb9-403b-8ee7-567501c50f91/scratchpad/fbxout/obocar)",
+      "Bash(npx --no-install gltfpack -i fbxout/obocar.glb -o fbxout/obocar.compressed.glb -cc)",
+      "Bash(cp \"/c/Users/muniy/AppData/Local/Temp/claude/d--Roboticgen-Nexus-Tools/8cbdfc92-eeb9-403b-8ee7-567501c50f91/scratchpad/fbxout/obocar.compressed.glb\" \"/d/Roboticgen/Nexus-Tools/apps/obo-playground/public/obocar.glb\" *)",
+      "Bash(pnpm --filter obo-playground run type-check)",
+      "Bash(npm pack *)",
+      "Bash(CORE=\"/d/Roboticgen/Nexus-Tools/node_modules/.pnpm/@babylonjs+core@7.54.3/node_modules/@babylonjs/core\" 2>/dev/null)",
+      "Bash(find /d/Roboticgen/Nexus-Tools/node_modules/.pnpm/@babylonjs+core@7.54.3/node_modules/@babylonjs/core -iname *hingeConstraint* -o -iname *physicsConstraint*)",
+      "Bash(find /d/Roboticgen/Nexus-Tools/node_modules/.pnpm/@babylonjs+core@7.54.3/node_modules/@babylonjs/core -iname *havokPlugin*)",
+      "Bash(node -e \"console.log\\(require.resolve\\('@babylonjs/core/Meshes/transformNode.js'\\)\\)\")",
+      "Bash(./node_modules/.bin/next build *)",
+      "Bash(./node_modules/.bin/tsc --noEmit --project tsconfig.json)",
+      "Bash(curl -sL \"https://cdn.babylonjs.com/meshopt_decoder.js\" -o \"/d/Roboticgen/Nexus-Tools/apps/obo-playground/public/meshopt_decoder.js\" -w \"HTTP %{http_code}, size %{size_download} bytes\\\\n\")",
+      "Bash(./node_modules/.bin/next lint *)",
+      "Bash(npx --no-install gltfpack --help)",
+      "Bash(node_modules/.bin/gltfpack --help)",
+      "Bash(node_modules/.bin/gltfpack)",
+      "Bash(node_modules/.bin/gltfpack -h)",
+      "Bash(node_modules/.bin/gltfpack -i fbxout/obocar.glb -o fbxout/obocar.kn.glb -cc -kn -km)",
+      "Bash(cp \"/c/Users/muniy/AppData/Local/Temp/claude/d--Roboticgen-Nexus-Tools/8cbdfc92-eeb9-403b-8ee7-567501c50f91/scratchpad/fbxout/obocar.kn.glb\" \"/d/Roboticgen/Nexus-Tools/apps/obo-playground/public/obocar.glb\" *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\muniy\\AppData\\Local\\Temp\\claude\\d--Roboticgen-Nexus-Tools\\8cbdfc92-eeb9-403b-8ee7-567501c50f91\\scratchpad\\fbxout"
+    ]
+  }
+}

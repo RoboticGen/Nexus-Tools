@@ -1,7 +1,7 @@
 "use client";
 
 import { DeleteOutlined, StopOutlined, LinkOutlined, DisconnectOutlined } from "@ant-design/icons";
-import { useESP32Uploader, ESP32REPL, ESP32FileManager, ESP32Flasher } from "@nexus-tools/esp32-uploader";
+import { useESP32Uploader, ESP32REPL, ESP32Flasher, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { Button as UIButton } from "@nexus-tools/ui";
 import { Tabs, Space, Button } from "antd";
 import { useState, useMemo, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
@@ -52,7 +52,6 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
       code = "",
       onStatusUpdate,
       onError,
-      onOpenFileInEditor,
       onSaveFileToDevice,
       onConnectionStatusChange,
       onSerialPortChange,
@@ -62,8 +61,8 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     ref
   ) => {
   const [activeTab, setActiveTab] = useState<string>("output");
-  const [replReady, setReplReady] = useState(false);
-  const [autoDetecting, setAutoDetecting] = useState(false);
+  const replReadyRef = useRef(false);
+  const autoDetectingRef = useRef(false);
   const autoDetectionTriggeredRef = useRef(false);
   const fileManagerRefreshRef = useRef<(() => void) | null>(null);
 
@@ -72,21 +71,20 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     autoDetectionTriggeredRef.current = true;
     
     try {
-      setAutoDetecting(true);
+      autoDetectingRef.current = true;
       onStatusUpdate?.("Initializing REPL...");
       await new Promise(resolve => setTimeout(resolve, 500));
-      setReplReady(true);
+      replReadyRef.current = true;
       onStatusUpdate?.("ESP32 ready! Files and REPL are now available.");
     } catch (error) {
       console.warn("Auto-detection failed:", error);
       onError?.("Failed to auto-detect ESP32 features");
     } finally {
-      setAutoDetecting(false);
+      autoDetectingRef.current = false;
     }
   }, [onStatusUpdate, onError]);
 
   const {
-    selectedDevice,
     isMounted,
     isConnected,
     serialPort,
@@ -118,8 +116,8 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
     // Only reset REPL state when actually disconnected, not on tab switches
     if (!isConnected) {
       autoDetectionTriggeredRef.current = false;
-      setReplReady(false);
-      setAutoDetecting(false);
+      replReadyRef.current = false;
+      autoDetectingRef.current = false;
     }
   }, [isConnected]);
 
@@ -176,7 +174,7 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
             }}>
               <strong>Web Serial API not available</strong>
               <br />
-              This browser doesn't support Web Serial API. Please use Chrome, Edge, or Opera on HTTPS or localhost.
+              This browser doesn&apos;t support Web Serial API. Please use Chrome, Edge, or Opera on HTTPS or localhost.
             </div>
           )}
           {espSupported !== false && (
@@ -346,3 +344,5 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
   );
   }
 );
+
+ESP32OutputPanel.displayName = "ESP32OutputPanel";

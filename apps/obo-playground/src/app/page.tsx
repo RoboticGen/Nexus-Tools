@@ -1,14 +1,16 @@
 "use client";
 
+import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { SharedCodePanel } from "@nexus-tools/ui";
-import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle } from "@nexus-tools/esp32-uploader";
-import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
 import { notification } from "antd";
 import { useCallback, useRef, useState } from "react";
 
-import { ESP32OutputPanel } from "@/components/esp32-output-panel";
+import { ESP32OutputPanel, type ESP32OutputPanelHandle } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
+import { Simulation3D } from "@/components/simulation-3d";
 import { useObocarRunner } from "@/hooks/use-obocar-runner";
+
+import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
 import "@/styles/sidebar.css";
 
 const DEFAULT_CODE = `from obocar import OboCar
@@ -31,7 +33,7 @@ export default function Home() {
   const [activeEditorFileName, setActiveEditorFileName] = useState<string | null>(null);
   const [fileManagerExpanded, setFileManagerExpanded] = useState(true);
   const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
-  const outputPanelRef = useRef<{ connectToDevice?: () => void; resetConnection?: () => void }>(null);
+  const outputPanelRef = useRef<ESP32OutputPanelHandle>(null);
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
   const fileManagerRef = useRef<DeviceFileManagerSidebarHandle>(null);
 
@@ -44,7 +46,7 @@ export default function Home() {
     });
   }, []);
 
-  const { runCode, stopCode, isRunning, output, clearOutput } = useObocarRunner({
+  const { runCode, stopCode, isRunning, output, clearOutput, events } = useObocarRunner({
     workerUrl: "/worker.js",
     onError: (error: string) => showNotification(error, "error"),
   });
@@ -175,7 +177,7 @@ export default function Home() {
               <p className="simulation-panel-title">Simulation</p>
             </div>
             <div className="simulation-panel-body">
-              <p className="simulation-placeholder">Simulation view coming soon</p>
+              <Simulation3D events={events} />
             </div>
           </div>
         </div>

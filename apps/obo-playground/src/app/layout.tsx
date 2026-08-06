@@ -1,7 +1,5 @@
 import { Inter } from "next/font/google";
 
-import { LogoutButton } from "@/components/logout-button";
-
 import { Providers } from "./providers";
 
 import type { Metadata } from "next";
@@ -23,13 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Providers>
-          <header className="playground-nav">
-            <span className="playground-title">OBO Playground</span>
-            <LogoutButton />
-          </header>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
