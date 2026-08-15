@@ -2,7 +2,11 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+
+import { useVersionHistory } from "@/hooks/use-version-history";
+
 import type { ConversationMessage } from "@/agent/types";
+
 import "./chat-panel.css";
 
 interface ChatMessage {
@@ -11,29 +15,33 @@ interface ChatMessage {
   sender: "user" | "bot";
   timestamp: Date;
   isJson?: boolean;
-  showAcceptReject?: boolean;
+  /** Set on the bot message that owns a generated code version. */
+  versionId?: number;
+  /** True once the owned version has been undone. */
+  discarded?: boolean;
+  /** True when the message sits after the active version, so it is out of the agent's context. */
+  orphaned?: boolean;
+  /** Locally generated note (restore/undo); never counted as conversation. */
+  isSystemNote?: boolean;
+  userMessageId?: number; // Link to the user message that prompted this response
 }
 
 interface ChatPanelProps {
   onImportJson?: (jsonString: string) => boolean;
+  /** Applies a previously generated workspace JSON (same effect as import, different notification). */
+  onRestoreJson?: (jsonString: string) => boolean;
+  /** Reads the workspace as it stands right now, used as a version's parent snapshot. */
+  onGetWorkspaceJson?: () => string | null;
   onConvertPython?: (pythonCode: string) => Promise<string | null>;
   currentCode?: string;
-  onCreatePendingImport?: (jsonString: string) => void;
-  onAutoAcceptPending?: () => void;
-  onAcceptImport?: () => void;
-  onRejectImport?: () => void;
-  onBackupBeforeQuestion?: () => void;
 }
 
 export function ChatPanel({
   onImportJson,
+  onRestoreJson,
+  onGetWorkspaceJson,
   onConvertPython,
   currentCode,
-  onCreatePendingImport,
-  onAutoAcceptPending,
-  onAcceptImport,
-  onRejectImport,
-  onBackupBeforeQuestion,
 }: ChatPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -53,8 +61,10 @@ export function ChatPanel({
   const [size, setSize] = useState({ width: 350, height: 460 });
   const [isResizing, setIsResizing] = useState(false);
   const [selectedMode, setSelectedMode] = useState<"agent" | "ask">("agent");
-  const [showAcceptReject, setShowAcceptReject] = useState(false);
   const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+
+  const { activeVersionId, pushVersion, getVersion, restoreVersion, discardVersion } =
+    useVersionHistory();
 
   const chatRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -191,15 +201,11 @@ export function ChatPanel({
     const trimmed = input.trim();
     if (!trimmed) return;
 
-    // Backup the current workspace BEFORE asking the question
-    if (onBackupBeforeQuestion) {
-      onBackupBeforeQuestion();
-    }
-
-    // Auto-accept any pending import before processing new message
-    if (onAutoAcceptPending) {
-      onAutoAcceptPending();
-    }
+    // Snapshot the state this turn branches off from. Whatever the agent
+    // produces stays applied unless the user undoes it, so these are only
+    // needed to make the new version undoable later.
+    const parentJson = onGetWorkspaceJson?.() ?? null;
+    const parentHistory = conversationHistory;
 
     const userMessage: ChatMessage = {
       id: Date.now(),
@@ -269,6 +275,8 @@ export function ChatPanel({
           ? "💡 Question Agent"
           : undefined;
 
+      const isCodeGeneration = agentKind === "code_generation" || agentKind === "code_completion";
+
       setMessages((prev) => [
         ...prev,
         {
@@ -276,18 +284,22 @@ export function ChatPanel({
           text: agentLabel ? `[${agentLabel}]\n\n${reply}` : reply,
           sender: "bot",
           timestamp: new Date(),
+          userMessageId: userMessage.id,
         },
       ]);
 
-      // Update multi-turn conversation history
-      setConversationHistory((prev) => [
-        ...prev,
+      // This exchange joins the context immediately, for questions and code
+      // generation alike. A code version snapshots it so restoring that version
+      // later can rewind the context to exactly this point.
+      const historyAfter: ConversationMessage[] = [
+        ...parentHistory,
         { role: "user", parts: [{ text: trimmed }] },
         { role: "model", parts: [{ text: reply }] },
-      ]);
+      ];
+      setConversationHistory(historyAfter);
 
       // ── Code generation: auto-convert Python → blocks ──────
-      if ((agentKind === "code_generation" || agentKind === "code_completion") && data.pythonCode && onConvertPython) {
+      if (isCodeGeneration && data.pythonCode && onConvertPython) {
         const convertingId = Date.now() + 3;
         setMessages((prev) => [
           ...prev,
@@ -320,9 +332,17 @@ export function ChatPanel({
                 ]);
               } else if (onImportJson) {
                 const success = onImportJson(jsonResult);
-                if (success && onCreatePendingImport) {
-                  onCreatePendingImport(jsonResult);
-                }
+                const versionId = success
+                  ? pushVersion({
+                      id: Date.now() + 5,
+                      label: trimmed,
+                      json: jsonResult,
+                      parentJson,
+                      history: historyAfter,
+                      parentHistory,
+                    }).id
+                  : undefined;
+
                 setMessages((prev) => [
                   ...prev,
                   {
@@ -332,12 +352,9 @@ export function ChatPanel({
                       : "Code was generated but the workspace could not be updated. Please try again.",
                     sender: "bot",
                     timestamp: new Date(),
-                    showAcceptReject: success,
+                    versionId,
                   },
                 ]);
-                if (success) {
-                  setShowAcceptReject(true);
-                }
               }
             } catch { /* not an error object */ }
           } else {
@@ -378,7 +395,93 @@ export function ChatPanel({
     } finally {
       setIsLoading(false);
     }
-  }, [input, conversationHistory, currentCode, onImportJson, onConvertPython, onCreatePendingImport, onAutoAcceptPending, onAcceptImport, onRejectImport, onBackupBeforeQuestion]);
+  }, [
+    input,
+    conversationHistory,
+    currentCode,
+    selectedMode,
+    onImportJson,
+    onConvertPython,
+    onGetWorkspaceJson,
+    pushVersion,
+  ]);
+
+  /** Appends a locally generated note that never enters the agent's context. */
+  const appendNote = useCallback((text: string) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now(), text, sender: "bot", timestamp: new Date(), isSystemNote: true },
+    ]);
+  }, []);
+
+  /**
+   * Flags every real message after `versionId`'s message as out of context.
+   * Messages added afterwards start fresh, so jumping forward to a newer
+   * version simply re-runs this and clears the flags it no longer needs.
+   */
+  const markContextUpTo = useCallback((versionId: number, includeOwner = false) => {
+    setMessages((prev) => {
+      const targetIndex = prev.findIndex((m) => m.versionId === versionId);
+      if (targetIndex < 0) return prev;
+      return prev.map((m, i) => {
+        if (m.isSystemNote) return m;
+        const orphaned = includeOwner ? i >= targetIndex : i > targetIndex;
+        return m.orphaned === orphaned ? m : { ...m, orphaned };
+      });
+    });
+  }, []);
+
+  /** Make an earlier generation current again: workspace, context and all. */
+  const handleRestoreVersion = useCallback(
+    (versionId: number) => {
+      const version = getVersion(versionId);
+      if (!version) return;
+
+      // Only move the pointer once the blocks are actually back, so a failed
+      // load can't leave the panel claiming a version it never applied.
+      const applied = (onRestoreJson ?? onImportJson)?.(version.json) ?? false;
+      if (!applied) {
+        appendNote("⚠️ Could not restore that version — the workspace was left unchanged.");
+        return;
+      }
+
+      restoreVersion(versionId);
+      setConversationHistory(version.history);
+      markContextUpTo(versionId);
+      appendNote(
+        `↺ Restored the blocks from **${version.timestamp.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}** ("${version.label}"). Anything after it is out of context — we'll continue from here.`
+      );
+    },
+    [getVersion, restoreVersion, onRestoreJson, onImportJson, markContextUpTo, appendNote]
+  );
+
+  /** Throw the current generation away and fall back to what preceded it. */
+  const handleDiscardVersion = useCallback(
+    (versionId: number) => {
+      const version = getVersion(versionId);
+      if (!version) return;
+
+      // An empty parent means the workspace had no blocks before this version;
+      // loading "{}" is what clears it back to that state.
+      const applied = (onRestoreJson ?? onImportJson)?.(version.parentJson ?? "{}") ?? false;
+      if (!applied) {
+        appendNote("⚠️ Could not revert those blocks — the workspace was left unchanged.");
+        return;
+      }
+
+      setConversationHistory(version.parentHistory);
+      markContextUpTo(versionId, true);
+      discardVersion(versionId);
+      setMessages((prev) =>
+        prev.map((m) => (m.versionId === versionId ? { ...m, discarded: true } : m))
+      );
+      appendNote("↶ Reverted to the blocks from before that request.");
+    },
+    [getVersion, discardVersion, onRestoreJson, onImportJson, markContextUpTo, appendNote]
+  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -443,8 +546,12 @@ export function ChatPanel({
 
       {/* Messages area */}
       <div className="chat-messages">
-        {messages.map((msg) => (
-          <div key={msg.id}>
+        {messages.map((msg) => {
+          const version = msg.versionId !== undefined ? getVersion(msg.versionId) : null;
+          const isActiveVersion = version !== null && version.id === activeVersionId;
+
+          return (
+          <div key={msg.id} className={msg.orphaned ? "chat-entry-orphaned" : undefined}>
             <div
               className={`chat-message ${msg.sender === "user" ? "chat-message-user" : "chat-message-bot"}`}
             >
@@ -464,32 +571,38 @@ export function ChatPanel({
                 </span>
               </div>
             </div>
-            {msg.showAcceptReject && showAcceptReject && (
-              <div className="chat-accept-reject-buttons">
-                <button
-                  className="accept-btn"
-                  onClick={() => {
-                    onAcceptImport?.();
-                    setShowAcceptReject(false);
-                  }}
-                  title="Accept and keep the imported code"
-                >
-                  ✓ Accept
-                </button>
-                <button
-                  className="reject-btn"
-                  onClick={() => {
-                    onRejectImport?.();
-                    setShowAcceptReject(false);
-                  }}
-                  title="Reject and revert to previous code"
-                >
-                  ✕ Reject
-                </button>
+            {msg.discarded && !version && (
+              <div className="chat-version-actions">
+                <span className="version-badge version-badge-discarded">↶ Reverted</span>
+              </div>
+            )}
+            {version && (
+              <div className="chat-version-actions">
+                {isActiveVersion ? (
+                  <>
+                    <span className="version-badge">✓ In your workspace</span>
+                    <button
+                      className="reject-btn"
+                      onClick={() => handleDiscardVersion(version.id)}
+                      title="Undo these blocks and go back to what came before"
+                    >
+                      ✕ Undo
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="restore-btn"
+                    onClick={() => handleRestoreVersion(version.id)}
+                    title="Put these blocks back in the workspace and continue from here"
+                  >
+                    ↺ Use this version
+                  </button>
+                )}
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 

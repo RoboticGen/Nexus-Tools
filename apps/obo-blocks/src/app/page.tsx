@@ -10,7 +10,6 @@ import { Notification } from "@/components/notification";
 import { OutputPanel } from "@/components/output-panel";
 import { useBlocklyHandlers } from "@/hooks/use-blockly-handlers";
 import { useEditorHandlers } from "@/hooks/use-editor-handlers";
-import { useImportManager } from "@/hooks/use-import-manager";
 import { convertPythonToBlocks } from "@/python-to-blocks";
 
 const BlocklyEditor = dynamic(
@@ -28,15 +27,6 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
 
   const { copyTextToClipboard, downloadPythonFile } = useEditorHandlers();
-
-  // Import manager for handling backup and restore
-  const {
-    backupCurrentWorkspace,
-    createPendingImport,
-    acceptImport,
-    rejectImport,
-    autoAcceptPending,
-  } = useImportManager();
 
   // Refs to hold the workspace functions registered by BlocklyEditor
   const importerRef = useRef<((jsonString: string) => boolean) | null>(null);
@@ -71,21 +61,36 @@ export default function Home() {
 
   const handleChatImportJson = useCallback(
     (jsonString: string): boolean => {
-      // Backup is already done in handleBackupBeforeQuestion before the question is sent
-      // Now we just need to import the JSON and create a pending import
-
       if (importerRef.current) {
         const success = importerRef.current(jsonString);
         if (success) {
           showNotification("Workspace imported from chat");
-          // Create pending import for accept/reject
-          createPendingImport(jsonString);
         }
         return success;
       }
       return false;
     },
-    [createPendingImport, showNotification]
+    [showNotification]
+  );
+
+  /** Puts a previously generated version back into the workspace. */
+  const handleChatRestoreJson = useCallback(
+    (jsonString: string): boolean => {
+      const restore = restoreRef.current ?? importerRef.current;
+      if (!restore) {
+        showNotification("⚠️ Workspace is not ready yet");
+        return false;
+      }
+      const success = restore(jsonString);
+      showNotification(success ? "↺ Blocks restored" : "⚠️ Failed to restore those blocks");
+      return success;
+    },
+    [showNotification]
+  );
+
+  const handleGetWorkspaceJson = useCallback(
+    () => exportCurrentJsonRef.current?.() ?? null,
+    []
   );
 
   const handleConvertPython = useCallback(
@@ -100,45 +105,6 @@ export default function Home() {
     },
     []
   );
-
-  const handleAcceptImport = useCallback(() => {
-    acceptImport();
-    showNotification("✅ Changes accepted!");
-  }, [acceptImport, showNotification]);
-
-  const handleRejectImport = useCallback(() => {
-    const backupJson = rejectImport();
-    if (backupJson) {
-      console.log("Rejecting import, restoring backup:", backupJson);
-      if (restoreRef.current) {
-        const restored = restoreRef.current(backupJson);
-        if (restored) {
-          showNotification("↶ Changes reverted");
-        } else {
-          showNotification("⚠️ Failed to restore previous state");
-          console.error("Restore function returned false");
-        }
-      } else {
-        showNotification("⚠️ Restore function not available");
-        console.error("restoreRef.current is not set");
-      }
-    } else {
-      showNotification("⚠️ No backup to restore");
-      console.error("rejectImport() returned null");
-    }
-  }, [rejectImport, showNotification]);
-
-  const handleAutoAcceptPending = useCallback(() => {
-    autoAcceptPending();
-  }, [autoAcceptPending]);
-
-  const handleBackupBeforeQuestion = useCallback(() => {
-    const currentJson = exportCurrentJsonRef.current?.();
-    if (currentJson) {
-      backupCurrentWorkspace(currentJson);
-      console.log("Backed up workspace before question");
-    }
-  }, [backupCurrentWorkspace]);
 
   const {
     handleEditToggle,
@@ -180,13 +146,10 @@ export default function Home() {
       <Notification message={notification} />
       <ChatPanel
         onImportJson={handleChatImportJson}
+        onRestoreJson={handleChatRestoreJson}
+        onGetWorkspaceJson={handleGetWorkspaceJson}
         onConvertPython={handleConvertPython}
         currentCode={code}
-        onCreatePendingImport={handleChatImportJson}
-        onAutoAcceptPending={handleAutoAcceptPending}
-        onAcceptImport={handleAcceptImport}
-        onRejectImport={handleRejectImport}
-        onBackupBeforeQuestion={handleBackupBeforeQuestion}
       />
       <Navbar />
 

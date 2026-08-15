@@ -1,9 +1,65 @@
-.chat-accept-reject-buttons {
+.chat-version-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
   justify-content: center;
-  padding: 12px 0;
+  padding: 8px 0 12px;
   animation: slideUp 0.3s ease-out;
+}
+
+/* Marks the generation currently applied to the workspace. */
+.version-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: #2ea878;
+  background: rgba(69, 189, 152, 0.14);
+  border: 1px solid rgba(69, 189, 152, 0.35);
+  white-space: nowrap;
+}
+
+.version-badge-discarded {
+  color: #d63450;
+  background: rgba(239, 71, 111, 0.12);
+  border-color: rgba(239, 71, 111, 0.3);
+}
+
+/* Older generations stay restorable for as long as the conversation lives. */
+.restore-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #3f6fd8;
+  background: rgba(63, 111, 216, 0.1);
+  border: 1px solid rgba(63, 111, 216, 0.4);
+}
+
+.restore-btn:hover {
+  background: rgba(63, 111, 216, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(63, 111, 216, 0.25);
+}
+
+.restore-btn:active {
+  transform: translateY(0);
+}
+
+/*
+ * Messages that sit after the restored version. They stay in the transcript
+ * for reference but no longer reach the agent, so they read as inactive.
+ */
+.chat-entry-orphaned {
+  opacity: 0.45;
+  filter: grayscale(0.35);
+  transition: opacity 0.2s ease;
+}
+
+.chat-entry-orphaned:hover {
+  opacity: 0.75;
 }
 
 @keyframes slideUp {
