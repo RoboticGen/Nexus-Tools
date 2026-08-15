@@ -1,3 +1,61 @@
+/* ==========================================================
+   Unfolding out of the avatar
+
+   transform-origin is set inline from the anchor placement, so these
+   keyframes scale toward whatever point the character occupies.
+   ========================================================== */
+
+.chat-panel.is-unfolding {
+  animation: chat-unfold 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.chat-panel.is-folding {
+  animation: chat-fold 0.19s ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes chat-unfold {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes chat-fold {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-panel.is-unfolding,
+  .chat-panel.is-folding {
+    animation-duration: 0.01s;
+  }
+}
+
+/*
+ * Below 480px globals.css pins the panel to the bottom of the screen, so the
+ * anchor-derived origin no longer points anywhere near the avatar.
+ */
+@media screen and (max-width: 480px) {
+  .chat-panel {
+    transform-origin: bottom center !important;
+  }
+}
+
 .chat-version-actions {
   display: flex;
   gap: 8px;

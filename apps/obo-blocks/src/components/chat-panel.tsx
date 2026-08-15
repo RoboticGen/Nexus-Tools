@@ -3,7 +3,10 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 
+import { useChatAnchor, AVATAR_SIZE } from "@/hooks/use-chat-anchor";
 import { useVersionHistory } from "@/hooks/use-version-history";
+
+import { ChatAvatar, type AvatarMood } from "./chat-avatar";
 
 import type { ConversationMessage } from "@/agent/types";
 
@@ -55,70 +58,71 @@ export function ChatPanel({
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [position, setPosition] = useState({ x: -1, y: -1 });
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isClosing, setIsClosing] = useState(false);
   const [size, setSize] = useState({ width: 350, height: 460 });
   const [isResizing, setIsResizing] = useState(false);
   const [selectedMode, setSelectedMode] = useState<"agent" | "ask">("agent");
+  const [reaction, setReaction] = useState<AvatarMood | null>(null);
   const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+  const reactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { activeVersionId, pushVersion, getVersion, restoreVersion, discardVersion } =
     useVersionHistory();
 
+  // The avatar is the anchor; the panel's position is derived from it.
+  const { avatarPos, isDragging, startDrag, placement, ready } = useChatAnchor(
+    size.width,
+    size.height
+  );
+
   const chatRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
-
-  // Set default position on mount (bottom-right corner)
-  useEffect(() => {
-    if (position.x === -1 && position.y === -1) {
-      setPosition({
-        x: window.innerWidth - 380,
-        y: window.innerHeight - 520,
-      });
-    }
-  }, [position]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Drag handlers
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (!chatRef.current) return;
-      setIsDragging(true);
-      setDragOffset({
-        x: e.clientX - position.x,
-        y: e.clientY - position.y,
-      });
-      e.preventDefault();
+  useEffect(
+    () => () => {
+      if (reactionTimerRef.current) clearTimeout(reactionTimerRef.current);
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     },
-    [position]
+    []
   );
 
-  useEffect(() => {
-    if (!isDragging) return;
+  /** Play a one-off reaction pose, then settle back to the live state. */
+  const react = useCallback((mood: AvatarMood, holdMs = 2200) => {
+    if (reactionTimerRef.current) clearTimeout(reactionTimerRef.current);
+    setReaction(mood);
+    reactionTimerRef.current = setTimeout(() => setReaction(null), holdMs);
+  }, []);
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 360));
-      const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - 100));
-      setPosition({ x: newX, y: newY });
-    };
+  // A momentary reaction wins; otherwise the pose tracks what is happening now.
+  const mood: AvatarMood =
+    reaction ?? (isLoading ? "thinking" : input.trim() ? "typing" : "idle");
 
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
+  /** Unfold and fold the panel, letting the closing animation finish first. */
+  const togglePanel = useCallback(() => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    if (isOpen) {
+      setIsClosing(true);
+      closeTimerRef.current = setTimeout(() => {
+        setIsOpen(false);
+        setIsClosing(false);
+      }, 190);
+    } else {
+      setIsClosing(false);
+      setIsOpen(true);
+    }
+  }, [isOpen]);
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDragging, dragOffset]);
+  const handleAvatarPointerDown = useCallback(
+    (e: React.PointerEvent) => startDrag(e, togglePanel),
+    [startDrag, togglePanel]
+  );
 
   // ── Resize handlers ────────────────────────────────────────────────────────
   const MIN_W = 280;
@@ -160,42 +164,6 @@ export function ChatPanel({
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isResizing]);
-
-  // Touch drag handlers
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      if (!chatRef.current) return;
-      const touch = e.touches[0];
-      setIsDragging(true);
-      setDragOffset({
-        x: touch.clientX - position.x,
-        y: touch.clientY - position.y,
-      });
-    },
-    [position]
-  );
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleTouchMove = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      const newX = Math.max(0, Math.min(touch.clientX - dragOffset.x, window.innerWidth - 360));
-      const newY = Math.max(0, Math.min(touch.clientY - dragOffset.y, window.innerHeight - 100));
-      setPosition({ x: newX, y: newY });
-    };
-
-    const handleTouchEnd = () => {
-      setIsDragging(false);
-    };
-
-    window.addEventListener("touchmove", handleTouchMove, { passive: false });
-    window.addEventListener("touchend", handleTouchEnd);
-    return () => {
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [isDragging, dragOffset]);
 
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
@@ -355,6 +323,7 @@ export function ChatPanel({
                     versionId,
                   },
                 ]);
+                if (success) react("result");
               }
             } catch { /* not an error object */ }
           } else {
@@ -404,6 +373,7 @@ export function ChatPanel({
     onConvertPython,
     onGetWorkspaceJson,
     pushVersion,
+    react,
   ]);
 
   /** Appends a locally generated note that never enters the agent's context. */
@@ -448,6 +418,7 @@ export function ChatPanel({
       restoreVersion(versionId);
       setConversationHistory(version.history);
       markContextUpTo(versionId);
+      react("accept");
       appendNote(
         `↺ Restored the blocks from **${version.timestamp.toLocaleTimeString([], {
           hour: "2-digit",
@@ -455,7 +426,7 @@ export function ChatPanel({
         })}** ("${version.label}"). Anything after it is out of context — we'll continue from here.`
       );
     },
-    [getVersion, restoreVersion, onRestoreJson, onImportJson, markContextUpTo, appendNote]
+    [getVersion, restoreVersion, onRestoreJson, onImportJson, markContextUpTo, appendNote, react]
   );
 
   /** Throw the current generation away and fall back to what preceded it. */
@@ -475,12 +446,13 @@ export function ChatPanel({
       setConversationHistory(version.parentHistory);
       markContextUpTo(versionId, true);
       discardVersion(versionId);
+      react("reject");
       setMessages((prev) =>
         prev.map((m) => (m.versionId === versionId ? { ...m, discarded: true } : m))
       );
       appendNote("↶ Reverted to the blocks from before that request.");
     },
-    [getVersion, discardVersion, onRestoreJson, onImportJson, markContextUpTo, appendNote]
+    [getVersion, discardVersion, onRestoreJson, onImportJson, markContextUpTo, appendNote, react]
   );
 
   const handleKeyDown = useCallback(
@@ -493,42 +465,40 @@ export function ChatPanel({
     [handleSend]
   );
 
-  // Floating toggle button when chat is closed
-  if (!isOpen) {
-    return (
-      <button
-        className="chat-toggle-btn"
-        onClick={() => setIsOpen(true)}
-        title="Open Chat"
-        style={{
-          position: "fixed",
-          bottom: "1.5rem",
-          right: "1.5rem",
-        }}
-      >
-        <i className="fa fa-comment" />
-      </button>
-    );
-  }
+  // Nothing is placeable until the viewport has been measured on the client.
+  if (!ready) return null;
 
   return (
+    <>
+      <ChatAvatar
+        mood={mood}
+        isOpen={isOpen}
+        isDragging={isDragging}
+        size={AVATAR_SIZE}
+        x={avatarPos.x}
+        y={avatarPos.y}
+        onPointerDown={handleAvatarPointerDown}
+      />
+
+      {(isOpen || isClosing) && (
     <div
-      className="chat-panel"
+      className={`chat-panel ${isClosing ? "is-folding" : "is-unfolding"} open-${placement.side} open-${placement.vertical}`}
       ref={chatRef}
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
+        left: `${placement.x}px`,
+        top: `${placement.y}px`,
         width: `${size.width}px`,
         height: `${size.height}px`,
+        // Aimed at the avatar, so the panel appears to unfold out of it.
+        transformOrigin: `${placement.originX}px ${placement.originY}px`,
         cursor: isDragging ? "grabbing" : "default",
       }}
     >
-      {/* Draggable header */}
+      {/* Dragging the header moves the avatar, so the pair travels together */}
       <div
         className="chat-header"
         ref={headerRef}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
+        onPointerDown={startDrag}
         style={{ cursor: isDragging ? "grabbing" : "grab" }}
       >
         <div className="chat-header-left">
@@ -537,7 +507,7 @@ export function ChatPanel({
         </div>
         <button
           className="chat-close-btn"
-          onClick={() => setIsOpen(false)}
+          onClick={togglePanel}
           title="Close Chat"
         >
           <i className="fa fa-xmark" />
@@ -645,5 +615,7 @@ export function ChatPanel({
         onMouseDown={handleResizeMouseDown}
       />
     </div>
+      )}
+    </>
   );
 }
