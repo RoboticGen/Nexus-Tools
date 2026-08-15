@@ -14,12 +14,13 @@
  * Nodes mutate the state in place and set state.currentNode to the next node.
  */
 
-import { createInitialState, type GraphState } from "./state";
-import type { ConversationMessage } from "./types";
-import { runRouterNode } from "./router";
-import { runQuestionAgentNode } from "./question-agent";
 import { runCodeGenAgentNode } from "./code-gen-agent";
 import { runHistoryNode } from "./history-assistant";
+import { runQuestionAgentNode } from "./question-agent";
+import { runRouterNode } from "./router";
+import { createInitialState, type GraphState } from "./state";
+
+import type { ConversationMessage } from "./types";
 
 // ─── Node registry ─────────────────────────────────────────────────────────────
 
@@ -61,6 +62,7 @@ export async function runGraph(
     if (!nodeFn) {
       // Unknown node — this is a bug in the graph definition
       state.error = `Unknown node: "${state.currentNode}"`;
+      state.errorKind = "internal";
       state.currentNode = "end";
       break;
     }
@@ -75,10 +77,10 @@ export async function runGraph(
         // Code was already generated — use it and show code generation message
         state.reply = state.agentOutputs.code_generation;
         state.routedTo = "code_generation";
-      } else {
-        // Error occurred before code generation —show appropriate message
-        state.reply = `Request limit exceeded or connection interrupted. Please try again.`;
       }
+      // Otherwise leave `reply` unset. Promoting the failure to a reply would
+      // dress it up as agent output, and the chat panel would label it with the
+      // agent that failed — the API surfaces it as an error instead.
       state.currentNode = "end";
     }
   }
@@ -89,8 +91,8 @@ export async function runGraph(
       state.reply = state.agentOutputs.code_generation;
       state.routedTo = "code_generation";
     } else {
-      state.error = "Request limit exceeded. Please try again.";
-      state.reply = state.error;
+      state.error = `Graph exceeded MAX_STEPS (${MAX_STEPS}) without reaching "end"`;
+      state.errorKind = "rate_limit";
     }
   }
 

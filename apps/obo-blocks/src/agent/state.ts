@@ -5,6 +5,7 @@
  * as it passes through nodes: Router → QuestionAgent | CodeGenAgent.
  */
 
+import type { AgentErrorKind } from "./errors";
 import type { ConversationMessage } from "./types";
 
 // ─── Node identifiers ─────────────────────────────────────────────────────────
@@ -60,8 +61,14 @@ export interface GraphState {
    */
   pythonCode?: string;
 
-  /** Any unrecoverable error message */
+  /**
+   * Detailed failure text for the server log. Names internals, so it is never
+   * sent to the client — see `errorKind` for what the user is told.
+   */
   error?: string;
+
+  /** Sanitised classification of `error`, used to pick a user-facing message. */
+  errorKind?: AgentErrorKind;
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────

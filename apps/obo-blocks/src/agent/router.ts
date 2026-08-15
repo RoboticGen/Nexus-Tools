@@ -11,6 +11,9 @@
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+
+import { classifyError } from "./errors";
+
 import type { GraphState, RoutedAgent } from "./state";
 
 const ROUTER_PROMPT = `You are a routing assistant for OBO Blocks, a visual block-based Python/MicroPython coding editor.
@@ -99,6 +102,7 @@ export async function runRouterNode(state: GraphState): Promise<GraphState> {
   } catch (err) {
     state.nodeStatuses["router"] = "error";
     state.error = `Router error: ${err instanceof Error ? err.message : String(err)}`;
+    state.errorKind = classifyError(err);
     state.currentNode = "end";
   }
 

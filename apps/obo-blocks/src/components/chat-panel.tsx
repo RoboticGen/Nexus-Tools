@@ -29,6 +29,16 @@ interface ChatMessage {
   userMessageId?: number; // Link to the user message that prompted this response
 }
 
+/*
+ * User-facing failure text. Anything technical — node names, exception
+ * messages, converter output — goes to console.error instead, so the panel
+ * never reads like a stack trace.
+ */
+const FALLBACK_ERROR = "Something went wrong while I was working on that. Please try again.";
+const BLOCKS_ERROR =
+  "I wrote the code, but couldn't turn it into blocks. Try rephrasing what you'd like to build.";
+const OFFLINE_ERROR = "I couldn't reach the assistant. Check your connection and try again.";
+
 interface ChatPanelProps {
   onImportJson?: (jsonString: string) => boolean;
   /** Applies a previously generated workspace JSON (same effect as import, different notification). */
@@ -194,9 +204,10 @@ export function ChatPanel({
           id: Date.now() + 1,
           text: success
             ? "JSON detected and imported to workspace successfully!"
-            : "That didn't look like a valid Blockly workspace JSON. Please check the format and try again.",
+            : "That doesn't look like a workspace I can open. Please check the file and try again.",
           sender: "bot",
           timestamp: new Date(),
+          isSystemNote: !success,
         };
         setMessages((prev) => [...prev, botMessage]);
       }, 400);
@@ -223,10 +234,20 @@ export function ChatPanel({
       setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
 
       if (data.error && !data.reply) {
+        // The server already sanitised this; show it as the assistant speaking,
+        // with no agent label attached — a failure is not an agent's output.
+        console.error("[chat] /api/chat returned an error:", data);
         setMessages((prev) => [
           ...prev,
-          { id: Date.now() + 2, text: `Error: ${data.error}`, sender: "bot", timestamp: new Date() },
+          {
+            id: Date.now() + 2,
+            text: data.error || FALLBACK_ERROR,
+            sender: "bot",
+            timestamp: new Date(),
+            isSystemNote: true,
+          },
         ]);
+        react("reject", 1600);
         return;
       }
 
@@ -234,14 +255,14 @@ export function ChatPanel({
       const agentKind: string | undefined = data.agent; // "question" | "code_generation"
 
       // Show the text reply with a subtle agent label
-      const agentLabel =
-        agentKind === "code_generation"
-          ? "🛠️ Code Generation Agent"
-          : agentKind === "code_completion"
-          ? "🔧 Code Completion Agent"
-          : agentKind === "question"
-          ? "💡 Question Agent"
-          : undefined;
+      // const agentLabel =
+      //   agentKind === "code_generation"
+      //     ? "🛠️ Code Generation Agent"
+      //     : agentKind === "code_completion"
+      //     ? "🔧 Code Completion Agent"
+      //     : agentKind === "question"
+      //     ? "💡 Question Agent"
+      //     : undefined;
 
       const isCodeGeneration = agentKind === "code_generation" || agentKind === "code_completion";
 
@@ -249,7 +270,7 @@ export function ChatPanel({
         ...prev,
         {
           id: Date.now() + 2,
-          text: agentLabel ? `[${agentLabel}]\n\n${reply}` : reply,
+          text: reply,
           sender: "bot",
           timestamp: new Date(),
           userMessageId: userMessage.id,
@@ -289,15 +310,18 @@ export function ChatPanel({
             try {
               const parsed = JSON.parse(jsonResult);
               if (parsed.error) {
+                console.error("[chat] Python → blocks conversion error:", parsed.error);
                 setMessages((prev) => [
                   ...prev,
                   {
                     id: Date.now() + 4,
-                    text: `Block conversion error: ${parsed.error}`,
+                    text: BLOCKS_ERROR,
                     sender: "bot",
                     timestamp: new Date(),
+                    isSystemNote: true,
                   },
                 ]);
+                react("reject", 1600);
               } else if (onImportJson) {
                 const success = onImportJson(jsonResult);
                 const versionId = success
@@ -317,50 +341,60 @@ export function ChatPanel({
                     id: Date.now() + 4,
                     text: success
                       ? "✅ Code imported as blocks in your workspace!"
-                      : "Code was generated but the workspace could not be updated. Please try again.",
+                      : BLOCKS_ERROR,
                     sender: "bot",
                     timestamp: new Date(),
                     versionId,
+                    isSystemNote: !success,
                   },
                 ]);
-                if (success) react("result");
+                react(success ? "result" : "reject", success ? 2200 : 1600);
               }
             } catch { /* not an error object */ }
           } else {
+            console.error("[chat] Python → blocks conversion returned no result");
             setMessages((prev) => [
               ...prev,
               {
                 id: Date.now() + 4,
-                text: "Code was generated but block conversion returned no result.",
+                text: BLOCKS_ERROR,
                 sender: "bot",
                 timestamp: new Date(),
+                isSystemNote: true,
               },
             ]);
+            react("reject", 1600);
           }
         } catch (convErr) {
+          console.error("[chat] Python → blocks conversion failed:", convErr);
           setMessages((prev) => prev.filter((m) => m.id !== convertingId));
           setMessages((prev) => [
             ...prev,
             {
               id: Date.now() + 4,
-              text: `Block conversion failed: ${convErr instanceof Error ? convErr.message : String(convErr)}`,
+              text: BLOCKS_ERROR,
               sender: "bot",
               timestamp: new Date(),
+              isSystemNote: true,
             },
           ]);
+          react("reject", 1600);
         }
       }
     } catch (err) {
+      console.error("[chat] Request to /api/chat failed:", err);
       setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 2,
-          text: `Failed to reach assistant: ${err instanceof Error ? err.message : String(err)}`,
+          text: OFFLINE_ERROR,
           sender: "bot",
           timestamp: new Date(),
+          isSystemNote: true,
         },
       ]);
+      react("reject", 1600);
     } finally {
       setIsLoading(false);
     }

@@ -12,7 +12,10 @@
  */
 
 import { GoogleGenerativeAI, type ChatSession } from "@google/generative-ai";
+
+import { classifyError } from "./errors";
 import { KNOWLEDGE_BASE } from "./knowledge";
+
 import type { GraphState } from "./state";
 
 const GENERATION_SYSTEM_INSTRUCTION = `You are OBO Blocks Code Generator — an AI embedded in a visual block-based MicroPython coding editor.
@@ -164,6 +167,7 @@ export async function runCodeGenAgentNode(
     state.error = `Code gen agent error: ${
       err instanceof Error ? err.message : String(err)
     }`;
+    state.errorKind = classifyError(err);
     state.currentNode = "end";
   }
 

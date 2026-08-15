@@ -7,6 +7,8 @@
 
 import { GoogleGenerativeAI, type ChatSession } from "@google/generative-ai";
 
+import { classifyError } from "./errors";
+
 import type { GraphState } from "./state";
 
 
@@ -44,7 +46,7 @@ export async function runHistoryNode(
   state.nodeStatuses["history_agent"] = "running";
 
   try {
-    let historySummary ="\n\n**Conversation history:**\n" + state.history.map(m => `- ${m.role}: ${m.parts.map(p => p.text).join(" ")}`).join("\n");
+    const historySummary ="\n\n**Conversation history:**\n" + state.history.map(m => `- ${m.role}: ${m.parts.map(p => p.text).join(" ")}`).join("\n");
     console.log("History Agent - system instruction:", historySummary);
 
     const genAI = getGenAI();
@@ -79,6 +81,7 @@ export async function runHistoryNode(
     state.error = `History agent error: ${
       err instanceof Error ? err.message : String(err)
     }`;
+    state.errorKind = classifyError(err);
     state.currentNode = "end";
   }
 

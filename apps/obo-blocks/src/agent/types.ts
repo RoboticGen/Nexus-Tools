@@ -36,5 +36,11 @@ export interface ChatResponse {
    * draw the blocks automatically in the workspace.
    */
   pythonCode?: string;
+  /** Code was produced even though a later step failed. Informational only. */
+  isFallback?: boolean;
+  /**
+   * A message written for the user. Never contains node names, stack traces or
+   * provider text — those stay in the server log.
+   */
   error?: string;
 }

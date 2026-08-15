@@ -6,7 +6,10 @@
  */
 
 import { GoogleGenerativeAI, type ChatSession } from "@google/generative-ai";
+
+import { classifyError } from "./errors";
 import { KNOWLEDGE_BASE } from "./knowledge";
+
 import type { GraphState } from "./state";
 
 const SYSTEM_INSTRUCTION = `You are OBO Blocks Assistant — an AI helper embedded in a visual block-based MicroPython coding editor (Blockly).
@@ -67,6 +70,7 @@ export async function runQuestionAgentNode(
     state.error = `Question agent error: ${
       err instanceof Error ? err.message : String(err)
     }`;
+    state.errorKind = classifyError(err);
     state.currentNode = "end";
   }
 
