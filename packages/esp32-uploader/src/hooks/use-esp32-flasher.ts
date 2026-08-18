@@ -4,7 +4,6 @@
  */
 
 import { useState, useCallback, useRef } from "react";
-import { notification } from "antd";
 import { serialStreamManager } from "../utils/serial-stream-manager";
 import { flashFirmwareWithESPTool } from "../utils/esptool-wrapper";
 import {
@@ -457,11 +456,12 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
         if (!flashSuccess) return;
 
         addLog("=== Flash process completed successfully ===");
-        notification.success({
-          message: "Flash Complete",
-          description: `Successfully flashed ${state.selectedFirmware.name}`,
-          placement: "topRight",
-        });
+        // Reported through the existing status callback rather than an antd
+        // toast, so the package stays headless and the app renders it with
+        // whatever design system it is on.
+        options?.onStatusUpdate?.(
+          `Successfully flashed ${state.selectedFirmware.name}`
+        );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         reportError(`Unexpected error: ${message}`);

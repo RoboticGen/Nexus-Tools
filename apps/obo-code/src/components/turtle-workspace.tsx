@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 
+import { TurtlePanel } from "@/components/ui/turtle-panel";
+
 interface TurtleWorkspaceProps {
   background: string;
   onBackgroundChange: (bg: string) => void;
@@ -12,10 +14,12 @@ const BACKGROUNDS: Record<string, string | null> = {
   maze: "/images/maze.png",
 };
 
-export function TurtleWorkspace({
-  background,
-  onBackgroundChange,
-}: TurtleWorkspaceProps) {
+const BACKGROUND_OPTIONS = [
+  { id: "No-Background", label: "No Background" },
+  { id: "maze", label: "Maze" },
+];
+
+export function TurtleWorkspace({ background, onBackgroundChange }: TurtleWorkspaceProps) {
   const backgroundStyle = useMemo(() => {
     const bgImage = BACKGROUNDS[background];
     if (!bgImage) return {};
@@ -28,26 +32,22 @@ export function TurtleWorkspace({
   }, [background]);
 
   return (
-    <div className="turtle-panel">
-      <div className="panel-header">
-        <span className="panel-title">Turtle Workspace</span>
-        <div className="button-group">
-          <select
-            className="background-select"
-            value={background}
-            onChange={(e) => onBackgroundChange(e.target.value)}
-          >
-            {Object.keys(BACKGROUNDS).map((bg) => (
-              <option key={bg} value={bg}>
-                {bg === "No-Background" ? "No Background" : bg}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div id="turtle-canvas" className="turtle-canvas" style={backgroundStyle}>
-        {/* Brython turtle will render SVG here */}
-      </div>
-    </div>
+    <TurtlePanel
+      title="Turtle Workspace"
+      backgrounds={BACKGROUND_OPTIONS}
+      activeBackground={background}
+      onBackgroundChange={onBackgroundChange}
+    >
+      {/*
+        Brython injects raw <svg>/<canvas> into this node at runtime, outside
+        React — hence the arbitrary-variant centring rather than styling a
+        child component. The `id` is Brython's mount target: don't rename it.
+      */}
+      <div
+        id="turtle-canvas"
+        style={backgroundStyle}
+        className="relative min-h-0 w-full flex-1 overflow-auto [&_canvas]:mx-auto [&_canvas]:block [&_svg]:mx-auto [&_svg]:block"
+      />
+    </TurtlePanel>
   );
 }

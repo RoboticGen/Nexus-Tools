@@ -8,6 +8,12 @@ const nextConfig = {
   images: {
     remotePatterns: [],
   },
+  // NOTE: `dev`/`build` pass `--webpack` on purpose. Next 16 runs Turbopack by
+  // default, which ignores the `webpack` hook below entirely — silently, and
+  // the only symptom is a ChunkLoadError partway through flashing a real
+  // device, which no build or type-check can catch. Turbopack has no
+  // equivalent of `parser.dynamicImportMode` yet, so moving off webpack needs
+  // that rule replaced and re-verified against actual ESP32 hardware first.
   webpack: (config) => {
     // esptool-js lazily `import()`s its per-chip ROM target modules
     // (lib/targets/esp32.js, etc.) at flash time. Next/webpack splits each

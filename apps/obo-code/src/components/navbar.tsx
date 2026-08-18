@@ -1,10 +1,18 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 
-export function Navbar() {
+import { AppHeader } from "@/components/ui/app-header";
+import { Button } from "@/components/ui/button";
+import { ConnectionStatus, type ConnectionState } from "@/components/ui/connection-status";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+
+interface NavbarProps {
+  connectionState?: ConnectionState;
+}
+
+export function Navbar({ connectionState = "disconnected" }: NavbarProps) {
   const { data: session } = useSession();
   const keycloakUrl = process.env.NEXT_PUBLIC_KEYCLOAK_URL || "https://auth.roboticgen.co";
   const realm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM || "roboticgen";
@@ -25,53 +33,23 @@ export function Navbar() {
   };
 
   return (
-    <nav className="navbar">
-      <Image
-        src="/images/OboCode.webp"
-        alt="Obo Code Logo"
-        width={263}
-        height={45}
-        className="obo-logo"
-        priority
-      />
-      <div className="navbar-actions">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="logout-button"
-          aria-label="Log out"
-          title="Log out"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <path d="M16 17l5-5-5-5" />
-            <path d="M21 12H9" />
-          </svg>
-        </button>
-        <Link
-          href="https://roboticgenacademy.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Roboticgen Academy"
-        >
-          <Image
-            src="/images/academyLogo.webp"
-            alt="Roboticgen Academy Logo"
-            width={125}
-            height={37}
-            className="academy-logo"
-          />
-        </Link>
-      </div>
-    </nav>
+    <AppHeader
+      brand={
+        // eslint-disable-next-line @next/next/no-img-element -- fixed-height brand mark, not a content image; next/image's remote-optimization pipeline adds nothing here.
+        <img src="/images/OboCode.webp" alt="Obo Code" className="h-8 object-contain" />
+      }
+      actions={
+        <>
+          {connectionState === "connected" && (
+            <ConnectionStatus state="connected" label="ESP32 connected" readOnly />
+          )}
+          <ThemeToggle />
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <LogOut aria-hidden="true" />
+            Log out
+          </Button>
+        </>
+      }
+    />
   );
 }

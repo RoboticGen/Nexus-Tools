@@ -1,18 +1,19 @@
 /**
  * ESP32 Uploader Package
- * Shared package for ESP32 code uploading functionality
+ *
+ * Headless: hooks, serial transport, firmware catalog and types — no UI, no
+ * styles, no design-system dependency. The antd-based components that used to
+ * live here (ESP32Uploader, ESP32UploaderSidebar, ESP32REPL, ESP32Flasher,
+ * ESP32FileManager, DeviceFileManagerSidebar, ESP32Provider) are gone: every
+ * consuming app now renders these hooks through its own design-system
+ * components, which is why nothing imported them any more.
+ *
+ * That also removes antd from the dependency graph of everything that touches
+ * a serial port. Legacy `esp32.css` is still published under the "./styles"
+ * subpath for apps not yet migrated, but is deliberately NOT imported here —
+ * doing so shipped unlayered CSS into every consumer and overrode whatever
+ * design system they were on.
  */
-
-// Styles
-import './styles';
-
-// Components
-export { ESP32Uploader, ESP32UploaderSidebar, ESP32REPL, ESP32FileManager, ESP32Flasher, DeviceFileManagerSidebar } from "./components";
-export type { ESP32UploaderProps } from "./components";
-export type { DeviceFileManagerSidebarProps, DeviceFileManagerSidebarHandle } from "./components";
-
-// Context
-export { ESP32Provider, useESP32Context } from "./contexts/ESP32Context";
 
 // Hooks
 export { useESP32Uploader } from "./hooks/use-esp32-uploader";

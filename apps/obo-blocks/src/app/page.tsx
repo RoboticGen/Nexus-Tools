@@ -1,11 +1,12 @@
 "use client";
 
-import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle, type SerialPort } from "@nexus-tools/esp32-uploader";
+import { serialStreamManager, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
 import dynamic from "next/dynamic";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
+import { DeviceFileManager, type DeviceFileManagerHandle } from "@/components/device-file-manager";
 import { ESP32OutputPanel, type ESP32OutputPanelHandle } from "@/components/esp32-output-panel";
 import { Navbar } from "@/components/navbar";
 import { WorkspaceLayout, WorkspaceColumn } from "@/components/ui/workspace-layout";
@@ -33,7 +34,7 @@ export default function Home() {
   const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
   const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
   const outputPanelRef = useRef<ESP32OutputPanelHandle>(null);
-  const fileManagerRef = useRef<DeviceFileManagerSidebarHandle>(null);
+  const fileManagerRef = useRef<DeviceFileManagerHandle>(null);
 
   const { copyTextToClipboard, downloadPythonFile } = useEditorHandlers();
 
@@ -132,7 +133,7 @@ export default function Home() {
     <WorkspaceLayout
       header={<Navbar />}
       sidebar={
-        <DeviceFileManagerSidebar
+        <DeviceFileManager
           ref={fileManagerRef}
           serialPort={serialPort}
           isConnected={serialPort !== null}

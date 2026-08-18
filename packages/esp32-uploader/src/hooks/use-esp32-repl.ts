@@ -7,7 +7,6 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { notification } from "antd";
 import { serialStreamManager } from "../utils/serial-stream-manager";
 
 interface REPLResult {
@@ -31,16 +30,11 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
     message: string,
     description: string
   ) => {
-    if (options?.onNotification) {
-      options.onNotification(type, message, description);
-    } else {
-      notification[type]({
-        message,
-        description,
-        duration: 2,
-        placement: "topRight",
-      });
-    }
+    // Notification is the consumer's concern: this package is headless now, so
+    // it reports and the app decides how to surface it. The previous fallback
+    // rendered an antd toast, which forced every consumer to ship antd (and to
+    // ship antd's CSS) just to call a serial hook.
+    options?.onNotification?.(type, message, description);
   }, [options]);
 
   // ── Connect to REPL ────────────────────────────────────────────────────
