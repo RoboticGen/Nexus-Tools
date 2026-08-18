@@ -24,19 +24,24 @@ import {
 } from "@nexus-tools/micropython-esp32";
 import * as Blockly from "blockly";
 import "blockly/blocks";
+import { Download, Upload } from "lucide-react";
 import { useEffect, useRef, useCallback } from "react";
 
+import { BlocklyPanel } from "@/components/ui/blockly-panel";
+import { Button } from "@/components/ui/button";
 import { useEditorHandlers } from "@/hooks/use-editor-handlers";
 
 interface BlocklyEditorProps {
   onCodeChange: (code: string) => void;
   onEditToggle?: (isEditing: boolean) => void;
   showNotification: (message: string) => void;
+  className?: string;
 }
 
 export function BlocklyEditor({
   onCodeChange,
   showNotification,
+  className,
 }: BlocklyEditorProps) {
   const blocklyDivRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.Workspace | null>(null);
@@ -265,24 +270,28 @@ export function BlocklyEditor({
   }, [handleImportJson]);
 
   return (
-    <div className="blocky-editor">
-      <div className="button-row">
-        <p className="code-title">Visual Blocks</p>
-        <div className="button-group">
-          <button className="button" onClick={handleImportClick}>
-            <i className="fa fa-file-import" style={{ paddingRight: "2px" }} />
-            <span>Import</span>
-          </button>
-          <button className="button" onClick={handleExportJson}>
-            <i
-              className="fa fa-file-export"
-              style={{ paddingRight: "4px" }}
-            />
-            <span>Export</span>
-          </button>
-        </div>
-      </div>
-      <div className="editor" ref={blocklyDivRef} />
-    </div>
+    <BlocklyPanel
+      className={className}
+      actions={
+        <>
+          <Button size="sm" variant="outline" onClick={handleImportClick} title="Import workspace JSON">
+            <Upload aria-hidden="true" />
+            Import
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleExportJson} title="Export workspace JSON">
+            <Download aria-hidden="true" />
+            Export
+          </Button>
+        </>
+      }
+    >
+      {/*
+        Blockly measures this element on inject, so it needs real dimensions
+        rather than the percentage heights the old `.editor` rule used — the
+        ResizeObserver above is what waits for them. `min-h-0` keeps the flex
+        parent from refusing to shrink it below its content.
+      */}
+      <div ref={blocklyDivRef} className="h-full min-h-0 w-full overflow-hidden" />
+    </BlocklyPanel>
   );
 }

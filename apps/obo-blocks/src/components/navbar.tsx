@@ -1,10 +1,18 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 
 import { AppHeader } from "@/components/ui/app-header";
+import { Button } from "@/components/ui/button";
+import { ConnectionStatus, type ConnectionState } from "@/components/ui/connection-status";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
-export function Navbar() {
+interface NavbarProps {
+  connectionState?: ConnectionState;
+}
+
+export function Navbar({ connectionState = "disconnected" }: NavbarProps) {
   const { data: session } = useSession();
   const keycloakUrl = process.env.NEXT_PUBLIC_KEYCLOAK_URL || "https://auth.roboticgen.co";
   const realm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM || "roboticgen";
@@ -27,48 +35,19 @@ export function Navbar() {
   return (
     <AppHeader
       brand={
-        <img
-          id="obo-blocks-logo"
-          className="obo-blocks-logo"
-          alt="Obo Blocks Logo"
-          src="/obo_blocks.webp"
-        />
+        // eslint-disable-next-line @next/next/no-img-element -- fixed-height brand mark, not a content image; next/image's remote-optimization pipeline adds nothing here.
+        <img src="/obo_blocks.webp" alt="Obo Blocks" className="h-8 object-contain" />
       }
       actions={
         <>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="logout-button"
-            aria-label="Log out"
-            title="Log out"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              className="logout-icon"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <path d="M16 17l5-5-5-5" />
-              <path d="M21 12H9" />
-            </svg>
-          </button>
-          <a
-            href="https://roboticgenacademy.com/"
-            aria-label="Roboticgen Academy"
-          >
-            <img
-              id="roboticgen-academy-logo"
-              alt="Roboticgen Academy Logo"
-              className="logo"
-              src="/academyLogo.webp"
-            />
-          </a>
+          {connectionState === "connected" && (
+            <ConnectionStatus state="connected" label="ESP32 connected" readOnly />
+          )}
+          <ThemeToggle />
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <LogOut aria-hidden="true" />
+            Log out
+          </Button>
         </>
       }
     />

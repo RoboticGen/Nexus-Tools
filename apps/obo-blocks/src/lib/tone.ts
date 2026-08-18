@@ -1,3 +1,14 @@
+/**
+ * Maps domain values onto the tone scale.
+ *
+ * The tone CSS lives in the theme (`[data-tone]` / `[data-appearance]`); this
+ * is the layer that decides *which* tone a given status, grade or Airtable
+ * colour deserves. Keeping the decision here rather than in each feature is
+ * the point: obo-nexus grew 13 separate status-to-Tailwind-class maps because
+ * there was nowhere shared to put one.
+ */
+
+/** Semantic weight of a value, not a hue. `brand` is for neutral emphasis. */
 export type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'brand'
 
 /** How much visual weight to give it. */

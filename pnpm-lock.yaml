@@ -35,9 +35,6 @@ importers:
 
   apps/obo-blocks:
     dependencies:
-      '@ant-design/icons':
-        specifier: ^5.2.0
-        version: 5.6.1(react-dom@19.2.8)(react@19.2.8)
       '@nexus-tools/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -65,9 +62,6 @@ importers:
       '@nexus-tools/utils':
         specifier: workspace:*
         version: link:../../packages/utils
-      antd:
-        specifier: ^5.11.0
-        version: 5.29.3(react-dom@19.2.8)(react@19.2.8)
       blockly:
         specifier: ^12.3.1
         version: 12.3.1
@@ -443,6 +437,12 @@ importers:
       '@nexus-tools/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
       typescript:
         specifier: ^5.3.0
         version: 5.9.3

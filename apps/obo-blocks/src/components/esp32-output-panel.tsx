@@ -12,9 +12,8 @@ import { useState, useMemo, useCallback, useRef, useEffect, forwardRef, useImper
 
 import { Button } from "@/components/ui/button";
 import { FirmwareFlasher, type FlasherOption, type FlasherState } from "@/components/ui/firmware-flasher";
-import { OutputPanel, type OutputPanelTab } from "@/components/ui/output-panel";
+import { OutputPanel } from "@/components/ui/output-panel";
 import { ReplConsole } from "@/components/ui/repl-console";
-import { Toolbar } from "@/components/ui/toolbar";
 
 interface ESP32OutputPanelProps {
   /** Terminal output text (for output tab) */
@@ -39,8 +38,6 @@ interface ESP32OutputPanelProps {
   onSerialPortChange?: (serialPort: SerialPort | null) => void;
   /** Custom CSS class name */
   className?: string;
-  /** ID for the output terminal textarea */
-  terminalId?: string;
 }
 
 export interface ESP32OutputPanelHandle {
@@ -241,8 +238,14 @@ function FlasherTab({
 }
 
 /**
- * Shared ESP32 Output Panel with tabs for Output, REPL, and Flasher.
- * Used in both obo-code and obo-blocks applications.
+ * ESP32 output panel with tabs for Output, REPL, and Flasher, built on the
+ * design system's `OutputPanel` chrome and driven by the headless
+ * `useESP32REPL`/`useESP32Flasher` hooks from `@nexus-tools/esp32-uploader`.
+ *
+ * That package used to ship its own antd-based `ESP32REPL`/`ESP32Flasher`
+ * components; this file is the design-system replacement for them, and they
+ * have since been deleted from the package along with its antd dependency.
+ * Same shape as `DeviceFileManager`: hooks in, design-system UI out.
  */
 export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPanelProps>(
   (
@@ -256,12 +259,14 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
       onSaveFileToDevice,
       onConnectionStatusChange,
       onSerialPortChange,
-      className = "output",
-      terminalId = "terminal-output",
+      className,
     }: ESP32OutputPanelProps,
     ref
   ) => {
-  const [activeTab, setActiveTab] = useState<string>("console");
+  // Must be one of OutputPanel's own tab ids ("output" | "repl" | "flasher").
+  // A value it doesn't render — this was "console" — selects nothing and
+  // leaves the panel body blank, since Radix mounts only the matching tab.
+  const [activeTab, setActiveTab] = useState<string>("output");
   const fileManagerRefreshRef = useRef<(() => void) | null>(null);
 
   const {
@@ -312,27 +317,22 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
 
   if (!isMounted) {
     return (
-      <div className={className} id={className}>
-        <div style={{ padding: "1rem", textAlign: "center" }}>
-          Loading ESP32 tools...
-        </div>
+      <div className={className}>
+        <p className="text-muted-foreground p-4 text-center text-sm">Loading ESP32 tools...</p>
       </div>
     );
   }
 
   const connectionState = isConnected ? "connected" : espSupported ? "disconnected" : "unsupported";
 
-  // Kept as a raw, uncontrolled textarea: `@nexus-tools/pyodide-executor`'s
-  // `createTerminalLoader` writes program output straight to
-  // `document.getElementById(terminalId)` as a side effect, bypassing React
-  // state entirely. A `Terminal` component here would silently receive none
-  // of that output.
-  const consoleTab: OutputPanelTab = {
-    id: "console",
-    label: "Output",
-    content: (
-      <div className="flex h-full flex-col overflow-hidden">
-        <Toolbar label="Output actions" size="sm">
+  return (
+    <OutputPanel
+      className={className}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      output={output}
+      outputActions={
+        <>
           <Button size="sm" variant="outline" onClick={onClear}>
             <Trash2 aria-hidden="true" />
             Clear
@@ -341,47 +341,21 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
             <StopIcon aria-hidden="true" />
             Stop
           </Button>
-        </Toolbar>
-        <div className="flex-1 overflow-hidden p-2">
-          <textarea
-            id={terminalId}
-            className="terminal-output h-full w-full"
-            readOnly
-            rows={10}
-            value={output || ""}
-            defaultValue={output !== undefined ? undefined : ""}
-          />
-        </div>
-      </div>
-    ),
-  };
-
-  const tabs: OutputPanelTab[] = [
-    consoleTab,
-    { id: "repl", label: "REPL", requiresDevice: true },
-    { id: "flasher", label: "Flasher", requiresDevice: true },
-  ];
-
-  return (
-    <div className={className} id={className}>
-      <OutputPanel
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        connectionState={connectionState}
-        onConnect={connectToDevice}
-        onDisconnect={resetConnection}
-        replContent={<ReplTab serialPort={serialPort ?? null} isConnected={isConnected} />}
-        flasherContent={
-          <FlasherTab
-            serialPort={serialPort ?? null}
-            isConnected={isConnected}
-            onStatusUpdate={onStatusUpdate}
-            onError={onError}
-          />
-        }
-      />
-    </div>
+        </>
+      }
+      connectionState={connectionState}
+      onConnect={connectToDevice}
+      onDisconnect={resetConnection}
+      replContent={<ReplTab serialPort={serialPort ?? null} isConnected={isConnected} />}
+      flasherContent={
+        <FlasherTab
+          serialPort={serialPort ?? null}
+          isConnected={isConnected}
+          onStatusUpdate={onStatusUpdate}
+          onError={onError}
+        />
+      }
+    />
   );
   }
 );

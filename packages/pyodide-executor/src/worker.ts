@@ -82,6 +82,9 @@ self.onmessage = async function (event: MessageEvent) {
   }
 };
 
+// `self.onerror` is handed `Event | string`, so `.message` only exists on the
+// ErrorEvent branch. Reading it unguarded was a standing type error in this
+// file — the package's own `type-check` had never been run against it.
 self.onerror = function (event) {
-  console.error(event.message || event);
+  console.error(typeof event === 'string' ? event : (event as ErrorEvent).message || event);
 };

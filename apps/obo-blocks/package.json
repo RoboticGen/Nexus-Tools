@@ -12,7 +12,6 @@
     "clean": "rimraf .next .turbo node_modules"
   },
   "dependencies": {
-    "@ant-design/icons": "^5.2.0",
     "@nexus-tools/auth": "workspace:*",
     "@nexus-tools/blockly-python-generator": "workspace:*",
     "@nexus-tools/esp32-uploader": "workspace:*",
@@ -22,7 +21,6 @@
     "@nexus-tools/types": "workspace:*",
     "@nexus-tools/ui": "workspace:*",
     "@nexus-tools/utils": "workspace:*",
-    "antd": "^5.11.0",
     "blockly": "^12.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

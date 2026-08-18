@@ -10,5 +10,13 @@
 // Core loader and worker management
 export { PyodideLoader, createTerminalLoader, type PyodideLoaderOptions } from './loader';
 
+// React hook
+export { usePyodideRunner } from './use-pyodide-runner';
+
 // Type definitions
-export type { WorkerMessage, WorkerResponse } from './types';
+export type {
+  WorkerMessage,
+  WorkerResponse,
+  UsePyodideRunnerOptions,
+  UsePyodideRunnerResult,
+} from './types';

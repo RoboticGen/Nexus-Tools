@@ -1,5 +1,16 @@
+import { usePyodideRunner } from "@nexus-tools/pyodide-executor";
 import { useCallback } from "react";
 
+/**
+ * Editor/toolbar actions for the obo-blocks workspace.
+ *
+ * Python output used to travel outside React entirely: `src/pyodide/loader.ts`
+ * appended it to `document.getElementById("terminal-output").value`, and
+ * `handleClearTerminal` reached for the same node to reset it. That made the
+ * output invisible to any component rendering `output` as a prop, which is what
+ * the design system's `OutputPanel` does. `usePyodideRunner` owns the worker
+ * and the output state now, so both are ordinary React values.
+ */
 export function useBlocklyHandlers(
   code: string,
   _isEditing: boolean,
@@ -7,6 +18,10 @@ export function useBlocklyHandlers(
   copyTextToClipboard: (text: string) => Promise<void>,
   downloadPythonFile: (content: string, filename: string) => void
 ) {
+  const { runCode, stopCode, isRunning, output, clearOutput } = usePyodideRunner({
+    onError: showNotification,
+  });
+
   const handleEditToggle = useCallback(
     (editing: boolean) => {
       showNotification(editing ? "Editing enabled" : "Editing disabled");
@@ -37,51 +52,19 @@ export function useBlocklyHandlers(
       showNotification("No code to run");
       return;
     }
-    if (typeof window !== "undefined") {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const workerModule = require("@/pyodide/loader");
-        const workerInstance = workerModule.getWorker();
-        if (workerInstance) {
-          workerInstance.postMessage({ code: code, command: "run" });
-          showNotification("Code execution started");
-        } else {
-          showNotification("Worker is not available");
-        }
-      } catch (err) {
-        console.error("Error running code:", err);
-        showNotification(`Error: ${err}`);
-      }
-    }
-  }, [code, showNotification]);
+    runCode(code);
+    showNotification("Code execution started");
+  }, [code, runCode, showNotification]);
 
   const handleClearTerminal = useCallback(() => {
-    const terminal = document.getElementById(
-      "terminal-output"
-    ) as HTMLTextAreaElement;
-    if (terminal) {
-      terminal.value = "Python 3.10\n>>> ";
-    }
+    clearOutput();
     showNotification("Terminal cleared");
-  }, [showNotification]);
+  }, [clearOutput, showNotification]);
 
   const handleStopCode = useCallback(() => {
-    if (typeof window !== "undefined") {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const workerModule = require("@/pyodide/loader");
-        if (
-          workerModule.stopWorker &&
-          typeof workerModule.stopWorker === "function"
-        ) {
-          workerModule.stopWorker();
-        }
-      } catch (err) {
-        console.error("Error stopping code:", err);
-      }
-    }
+    stopCode();
     showNotification("Code execution stopped");
-  }, [showNotification]);
+  }, [stopCode, showNotification]);
 
   return {
     handleEditToggle,
@@ -90,5 +73,7 @@ export function useBlocklyHandlers(
     handleRunCode,
     handleClearTerminal,
     handleStopCode,
+    isRunning,
+    output,
   };
 }
