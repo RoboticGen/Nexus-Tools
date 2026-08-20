@@ -1,17 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@nexus-tools/ui", "@nexus-tools/utils", "@nexus-tools/types", "@nexus-tools/auth"],
-  experimental: {
-    optimizePackageImports: ["@nexus-tools/ui"],
-  },
+  transpilePackages: [
+    "@nexus-tools/auth",
+    "@nexus-tools/blockly-python-generator",
+    "@nexus-tools/design-system",
+    "@nexus-tools/esp32-uploader",
+    "@nexus-tools/micropython-esp32",
+    "@nexus-tools/monaco-editor",
+    "@nexus-tools/pyodide-executor",
+  ],
+  // `dev`/`build` pass `--webpack` on purpose: Next 16 defaults to Turbopack, which silently ignores the hook below, and the only symptom is a ChunkLoadError mid-flash on real hardware.
   webpack: (config) => {
-    // esptool-js lazily `import()`s its per-chip ROM target modules
-    // (lib/targets/esp32.js, etc.) at flash time. Next/webpack splits each
-    // into a separate async chunk that is fetched mid-flash; a stale or
-    // missing chunk then fails the flash with a ChunkLoadError. Force these
-    // dynamic imports to bundle eagerly into the parent chunk so no runtime
-    // chunk fetch is needed once flashing has started.
+    // esptool-js lazily `import()`s per-chip ROM targets at flash time; bundling them eagerly avoids a runtime chunk fetch once flashing has started.
     config.module.rules.push({
       test: /esptool-js[\\/]lib[\\/]esploader\.js$/,
       parser: { dynamicImportMode: "eager" },

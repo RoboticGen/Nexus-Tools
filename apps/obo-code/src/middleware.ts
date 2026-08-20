@@ -1,31 +1,17 @@
-import { NextResponse } from "next/server";
-import { withAuth } from "next-auth/middleware";
+import { authMiddleware } from "@nexus-tools/auth/middleware";
 
-// Apply auth to all routes except public ones
-export default withAuth(
-  function middleware() {
-    // If user is not authenticated, withAuth will handle the redirect
-    // based on the pages.signIn config
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        // Allow public routes
-        const publicRoutes = ["/login", "/api/auth", "/unauthorized"];
-        if (publicRoutes.some((route) => req.nextUrl.pathname.startsWith(route))) {
-          return true;
-        }
+/*
+  Next statically analyses this file, so both exports have to be literals here
+  rather than `export … from` re-exports of the shared package:
 
-        // For all other routes, require authentication
-        return !!token;
-      },
-    },
-    pages: {
-      signIn: "/login",
-    },
-  }
-);
+  - the default export must be recognisable as a function, or the build fails
+    with "must export a function";
+  - `config.matcher` is read from the AST, and a re-exported array is invisible
+    to it — which would leave every route unprotected.
+
+  The behaviour still lives once, in `@nexus-tools/auth/middleware`.
+*/
+export default authMiddleware;
 
 export const config = {
   matcher: ["/((?!_next|favicon.ico|api/auth).*)"],

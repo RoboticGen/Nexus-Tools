@@ -1,16 +1,7 @@
 import { usePyodideRunner } from "@nexus-tools/pyodide-executor";
 import { useCallback } from "react";
 
-/**
- * Editor/toolbar actions for the obo-blocks workspace.
- *
- * Python output used to travel outside React entirely: `src/pyodide/loader.ts`
- * appended it to `document.getElementById("terminal-output").value`, and
- * `handleClearTerminal` reached for the same node to reset it. That made the
- * output invisible to any component rendering `output` as a prop, which is what
- * the design system's `OutputPanel` does. `usePyodideRunner` owns the worker
- * and the output state now, so both are ordinary React values.
- */
+/** Editor/toolbar actions for the obo-blocks workspace. Python output used to travel outside React entirely: `src/pyodide/loader.ts` appended it to `document.getElementById("terminal-output").value`, and `handleClearTerminal` reached for the same node to reset it. */
 export function useBlocklyHandlers(
   code: string,
   _isEditing: boolean,

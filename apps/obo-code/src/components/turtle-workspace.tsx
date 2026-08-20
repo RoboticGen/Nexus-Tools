@@ -1,8 +1,7 @@
 "use client";
 
+import { TurtlePanel } from "@nexus-tools/design-system/components/ui/turtle-panel";
 import { useMemo } from "react";
-
-import { TurtlePanel } from "@/components/ui/turtle-panel";
 
 interface TurtleWorkspaceProps {
   background: string;

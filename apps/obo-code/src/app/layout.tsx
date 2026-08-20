@@ -1,7 +1,6 @@
-import { cookies } from "next/headers";
+import { THEME_STORAGE_KEY } from "@nexus-tools/design-system/lib/theme";
 import { Inter } from "next/font/google";
-
-import { THEME_STORAGE_KEY } from "@/lib/theme";
+import { cookies } from "next/headers";
 
 import { Providers } from "./providers";
 
@@ -68,8 +67,6 @@ export default async function RootLayout({
     <html lang="en" className={theme === "dark" ? "dark" : undefined}>
       <head>
         <meta name="msvalidate.01" content="F880277201EB0168D24B534ADC14C549" />
-        {/* Preload fonts to prevent FOUC */}
-        <link rel="preload" as="font" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
         {/* Preload images */}
         <link rel="preload" as="image" href="/images/OboCode.webp" />
       </head>

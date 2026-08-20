@@ -1,20 +1,20 @@
 "use client";
 
-import { serialStreamManager, type SerialPort } from "@nexus-tools/esp32-uploader";
-import { useState, useCallback, useEffect, useRef } from "react";
-import { toast } from "sonner";
-
-import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor";
-import { DeviceFileManager, type DeviceFileManagerHandle } from "@/components/device-file-manager";
-import { ESP32OutputPanel, type ESP32OutputPanelHandle } from "@/components/esp32-output-panel";
-import { Navbar } from "@/components/navbar";
-import { TurtleWorkspace } from "@/components/turtle-workspace";
+import { CodeEditor, type CodeEditorHandle } from "@nexus-tools/design-system/components/code-editor";
+import { DeviceFileManager, type DeviceFileManagerHandle } from "@nexus-tools/design-system/components/device-file-manager";
+import { ESP32OutputPanel, type ESP32OutputPanelHandle } from "@nexus-tools/design-system/components/esp32-output-panel";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import { WorkspaceLayout, WorkspaceColumn } from "@/components/ui/workspace-layout";
+} from "@nexus-tools/design-system/components/ui/resizable";
+import { WorkspaceLayout, WorkspaceColumn } from "@nexus-tools/design-system/components/ui/workspace-layout";
+import { WorkspaceNavbar } from "@nexus-tools/design-system/components/workspace-navbar";
+import { serialStreamManager, type SerialPort } from "@nexus-tools/esp32-uploader";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
+
+import { TurtleWorkspace } from "@/components/turtle-workspace";
 import { usePythonRunner } from "@/hooks/use-python-runner";
 
 const DEFAULT_CODE = `import turtle
@@ -49,7 +49,6 @@ export default function Home() {
     toast[type](message);
   }, []);
 
-  // Callback to open file in code editor (from file manager)
   const handleOpenFileInEditor = useCallback((filename: string, content: string) => {
     codeEditorRef.current?.openFileInTab(filename, content);
     setActiveEditorFileName(filename);
@@ -140,7 +139,6 @@ export default function Home() {
         if (saveFileToDeviceRef.current) {
           await saveFileToDeviceRef.current(filename, content);
           showNotification(`Saved ${filename} to device`, "success");
-          // Refresh file manager after save
           fileManagerRef.current?.refreshFiles();
         } else {
           showNotification("Device not connected");
@@ -178,7 +176,7 @@ export default function Home() {
 
   return (
     <WorkspaceLayout
-      header={<Navbar connectionState={isDeviceConnected ? "connected" : "disconnected"} />}
+      header={<WorkspaceNavbar title="Obo Code" logoSrc="/images/OboCode.webp" connectionState={isDeviceConnected ? "connected" : "disconnected"} />}
       sidebar={
         <DeviceFileManager
           ref={fileManagerRef}
@@ -207,6 +205,7 @@ export default function Home() {
         <ResizablePanelGroup direction="vertical" className="gap-2">
           <ResizablePanel defaultSize={62} minSize={20}>
             <CodeEditor
+                  defaultFileName="test.py"
               ref={codeEditorRef}
               code={code}
               onChange={setCode}
