@@ -1,6 +1,4 @@
-/**
- * React Hook for Skulpt Python Execution
- */
+/** React Hook for Skulpt Python Execution */
 
 "use client";
 

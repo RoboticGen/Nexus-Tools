@@ -1,17 +1,6 @@
-/**
- * Serial Stream Manager — Single Source of Truth
- *
- * All serial communication MUST go through this singleton.
- * It holds the only reader/writer pair and provides:
- *  - Operation queue (prevents "stream is locked" errors)
- *  - Raw REPL mode for reliable command execution
- *  - Listener system for REPL output streaming
- *  - Proper cleanup and error recovery
- */
+// All serial traffic must go through this singleton: it holds the only reader/writer pair, and a queue that serialises operations so they cannot produce "stream is locked".
 
 import { REPL_CONTROL } from "../constants/esp32";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 export type PortMode = "idle" | "repl" | "busy";
 
@@ -25,8 +14,6 @@ type QueuedOperation = {
   label: string;
 };
 
-// ─── Manager ─────────────────────────────────────────────────────────────────
-
 class SerialStreamManager {
   private port: any = null;
   private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
@@ -34,21 +21,15 @@ class SerialStreamManager {
   private encoder = new TextEncoder();
   private decoder = new TextDecoder();
 
-  // Background reader state
   private isReading = false;
   private listeners: Set<(data: string) => void> = new Set();
 
-  // Operation queue
   private operationQueue: QueuedOperation[] = [];
   private isProcessing = false;
 
-  // Initialization guard
   private initPromise: Promise<void> | null = null;
 
-  // Current mode
   private _mode: PortMode = "idle";
-
-  // ── Public Getters ───────────────────────────────────────────────────────
 
   get mode(): PortMode {
     return this._mode;
@@ -62,20 +43,12 @@ class SerialStreamManager {
     return this.port;
   }
 
-  // ── Initialization ───────────────────────────────────────────────────────
-
-  /**
-   * Initialize with a serial port. Safe to call multiple times — only runs
-   * once per port. If a different port is provided, cleans up the old one
-   * first.
-   */
+  /** Idempotent per port; a different port tears the old one down first. */
   async initialize(serialPort: any): Promise<void> {
-    // Already initialized with this exact port
     if (this.port === serialPort && this.isReady()) {
       return;
     }
 
-    // Deduplicate concurrent calls
     if (this.initPromise) {
       return this.initPromise;
     }
@@ -89,7 +62,6 @@ class SerialStreamManager {
   }
 
   private async _initialize(serialPort: any): Promise<void> {
-    // Switching ports — tear down old one
     if (this.port && this.port !== serialPort) {
       await this.cleanup();
     }
@@ -104,7 +76,6 @@ class SerialStreamManager {
       this.reader = serialPort.readable.getReader();
       this.writer = serialPort.writable.getWriter();
     } catch (err) {
-      // Clean up partial locks
       this.releaseLocks();
       const msg = err instanceof Error ? err.message : String(err);
       throw new Error(`Failed to acquire stream locks: ${msg}`);
@@ -114,13 +85,7 @@ class SerialStreamManager {
     this.startBackgroundReader();
   }
 
-  // ── Background Reader ────────────────────────────────────────────────────
-
-  /**
-   * Continuously reads from the serial port and broadcasts to listeners.
-   * This is the ONLY place `reader.read()` is called during normal
-   * operation.
-   */
+  /** The only place `reader.read()` is called during normal operation. */
   private async startBackgroundReader(): Promise<void> {
     if (this.isReading) return;
     this.isReading = true;
@@ -132,7 +97,6 @@ class SerialStreamManager {
 
         if (value) {
           const text = this.decoder.decode(value, { stream: true });
-          // Broadcast to all registered listeners
           for (const listener of this.listeners) {
             try {
               listener(text);
@@ -149,12 +113,7 @@ class SerialStreamManager {
     }
   }
 
-  // ── Listener Management ──────────────────────────────────────────────────
-
-  /**
-   * Register a listener that receives every chunk of data from the device.
-   * Returns an unsubscribe function. Always call it when done.
-   */
+  /** Returns an unsubscribe function; always call it when done. */
   addListener(callback: (data: string) => void): () => void {
     this.listeners.add(callback);
     return () => {
@@ -162,22 +121,13 @@ class SerialStreamManager {
     };
   }
 
-  // ── Low-level Write ──────────────────────────────────────────────────────
-
-  /**
-   * Write raw bytes. Only call this from within a queued operation.
-   */
+  /** Only call from within a queued operation. */
   private async write(data: string): Promise<void> {
     if (!this.writer) throw new Error("Writer not available");
     await this.writer.write(this.encoder.encode(data));
   }
 
-  // ── Queued Operation Execution ───────────────────────────────────────────
-
-  /**
-   * Schedule an operation. Operations run sequentially — no two operations
-   * can overlap, which prevents all "stream is locked" errors.
-   */
+  /** Operations run sequentially; overlapping them is what produces "stream is locked". */
   enqueue<T>(label: string, operation: () => Promise<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.operationQueue.push({
@@ -211,19 +161,7 @@ class SerialStreamManager {
     this.isProcessing = false;
   }
 
-  // ── Raw REPL Command Execution ───────────────────────────────────────────
-
-  /**
-   * Execute a MicroPython command using Raw REPL mode.
-   *
-   * Raw REPL protocol:
-   *   1. Ctrl-A  → Enter raw REPL (device sends "raw REPL; CTRL-B to exit\r\n>")
-   *   2. Send code (the Python source)
-   *   3. Ctrl-D  → Execute (device sends "OK" then stdout then \x04 then stderr then \x04)
-   *   4. Ctrl-B  → Back to normal REPL
-   *
-   * This is the RELIABLE way to execute commands — no echo, no prompts in output.
-   */
+  /** Raw REPL: Ctrl-A enter, code, Ctrl-D execute, Ctrl-B exit. Unlike the normal REPL this returns no echo or prompts in the output. */
   async executeRawREPL(code: string, timeout = 8000): Promise<RawREPLResult> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
@@ -234,7 +172,6 @@ class SerialStreamManager {
       this._mode = "busy";
 
       try {
-        // Collect all data during this operation
         let buffer = "";
         const onData = (data: string) => {
           buffer += data;
@@ -242,22 +179,18 @@ class SerialStreamManager {
         const unsub = this.addListener(onData);
 
         try {
-          // Step 1: Interrupt anything running + enter raw REPL
           buffer = "";
           await this.write(REPL_CONTROL.CTRL_C);
           await delay(50);
           await this.write(REPL_CONTROL.CTRL_A);
-          // 6s timeout: a freshly-flashed device can print several seconds of boot
-          // output before the Raw REPL prompt appears.
+          // 6s: a freshly-flashed device prints seconds of boot output before the Raw REPL prompt.
           await waitFor(() => buffer.includes(">"), 6000);
           buffer = "";
 
-          // Step 2: Send code + Ctrl-D to execute
           await this.write(code);
           await this.write(REPL_CONTROL.CTRL_D);
 
-          // Step 3: Wait for the two \x04 markers that frame output and error
-          // Protocol: "OK" <stdout> \x04 <stderr> \x04
+          // Wait for the two \x04 markers framing stdout and stderr.
           await waitFor(() => {
             const okIdx = buffer.indexOf("OK");
             if (okIdx === -1) return false;
@@ -269,10 +202,8 @@ class SerialStreamManager {
             return second04 !== -1;
           }, timeout);
 
-          // Step 4: Parse output
           const result = parseRawREPLResponse(buffer);
 
-          // Step 5: Return to normal REPL
           await this.write(REPL_CONTROL.CTRL_B);
           await delay(50);
 
@@ -286,12 +217,7 @@ class SerialStreamManager {
     });
   }
 
-  // ── Simple Write Operation (for REPL keystrokes) ─────────────────────────
-
-  /**
-   * Send data to the device without waiting for a structured response.
-   * Useful for REPL interactive input (typing commands, Ctrl-C, etc.)
-   */
+  /** Fire-and-forget write, for interactive REPL keystrokes. */
   async sendData(data: string): Promise<void> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
@@ -302,14 +228,7 @@ class SerialStreamManager {
     });
   }
 
-  // ── Interactive REPL Command Execution ──────────────────────────────────
-
-  /**
-   * Execute a command in normal REPL and wait until the next prompt appears.
-   *
-   * Keeping the full command lifecycle inside one queued operation prevents
-   * file-manager raw REPL operations from interleaving mid-command.
-   */
+  /** One queued operation for the whole lifecycle, so file-manager raw-REPL work cannot interleave mid-command. */
   async executeREPLCommand(
     command: string,
     timeout = 4000,
@@ -330,14 +249,12 @@ class SerialStreamManager {
       const unsub = this.addListener(onData);
 
       try {
-        // Interrupt running code before a fresh command, but allow callers
-        // to skip this in continuation mode ("... " prompt).
+        // Skipped in continuation mode ("... " prompt), where an interrupt would abandon the partial statement.
         if (options?.interruptBeforeCommand !== false) {
           await this.write(REPL_CONTROL.CTRL_C);
           await delay(50);
         }
 
-        // Ignore cleanup noise and capture only this command's response.
         buffer = "";
         await this.write(command + "\r\n");
 
@@ -350,8 +267,6 @@ class SerialStreamManager {
     });
   }
 
-  // ── Cleanup ──────────────────────────────────────────────────────────────
-
   private releaseLocks(): void {
     if (this.reader) {
       try { this.reader.releaseLock(); } catch { /* already released */ }
@@ -363,9 +278,7 @@ class SerialStreamManager {
     }
   }
 
-  /**
-   * Tear down all resources. Call when disconnecting from the device.
-   */
+  /** Call when disconnecting from the device. */
   async cleanup(): Promise<void> {
     this.isReading = false;
     this._mode = "idle";
@@ -380,12 +293,7 @@ class SerialStreamManager {
     this.port = null;
   }
 
-  // ── Flasher Operations ───────────────────────────────────────────────────
-
-  /**
-   * Detect ESP32 chip information via Raw REPL.
-   * Returns chip ID, family, and revision.
-   */
+  /** Chip id, family and revision, via Raw REPL. */
   async detectChip(): Promise<{ chipId: string; chipFamily: string; revision: number }> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
@@ -411,7 +319,6 @@ print(f"UID={uid}")
       throw new Error(`Failed to detect chip: ${result.error}`);
     }
 
-    // Parse output
     const output = result.output || "";
     const sysnameMatch = output.match(/SYSNAME=(\S+)/);
     const machineMatch = output.match(/MACHINE=(\S+)/);
@@ -444,9 +351,7 @@ print(f"UID={uid}")
     };
   }
 
-  /**
-   * Get MicroPython firmware version currently on device.
-   */
+  /** MicroPython firmware version currently on the device. */
   async getFirmwareVersion(): Promise<string> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
@@ -463,20 +368,13 @@ print(f"UID={uid}")
     return versionMatch ? versionMatch[1] : "Unknown";
   }
 
-  /**
-   * Erase entire flash storage on ESP32.
-   * WARNING: This removes all files, including boot scripts.
-   */
+  /** Erases all files including boot scripts. */
   async eraseFlash(): Promise<void> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
     }
 
-    // Use raw REPL with extended timeout (erase can take 10+ seconds).
-    // Recursively deletes files AND directories. Exceptions are NOT swallowed:
-    // any failure propagates to the REPL stderr so result.error is populated
-    // and we abort instead of flashing over a partially-erased filesystem.
-    // "Erase complete" only prints if the whole walk finished without error.
+    // Extended timeout: a recursive walk can take 10+ seconds. Exceptions must NOT be swallowed — a partial erase we then flash over is the failure mode this guards.
     const code = `
 import os
 
@@ -512,10 +410,7 @@ print("Erase complete")
     }
   }
 
-  /**
-   * Soft reset the ESP32 device.
-   * Resets the MicroPython interpreter without power cycling.
-   */
+  /** Resets the MicroPython interpreter without power cycling. */
   async softReset(): Promise<void> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
@@ -527,17 +422,13 @@ print("Erase complete")
     });
   }
 
-  /**
-   * Hard reset by controlling DTR/RTS lines if available.
-   * Falls back to soft reset if hardware lines aren't accessible.
-   */
+  /** Uses DTR/RTS if the platform exposes them, else falls back to soft reset. */
   async hardReset(): Promise<void> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
     }
 
     try {
-      // Try to use DTR/RTS if available
       if (this.port?.setSignals) {
         await this.port.setSignals({ dataTerminalReady: false });
         await delay(100);
@@ -554,16 +445,11 @@ print("Erase complete")
   }
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Wait until `condition()` returns true, checking every 20 ms.
- * Throws on timeout with detailed error message.
- */
+/** Polls `condition()` every 20 ms; throws on timeout. */
 function waitFor(condition: () => boolean, timeout: number): Promise<void> {
   return new Promise((resolve, reject) => {
     const start = Date.now();
@@ -582,12 +468,7 @@ function waitFor(condition: () => boolean, timeout: number): Promise<void> {
   });
 }
 
-/**
- * Parse the raw REPL response buffer.
- *
- * Expected format after "OK":
- *   <stdout>\x04<stderr>\x04
- */
+/** Raw REPL response after "OK" is `<stdout>\x04<stderr>\x04`. */
 function parseRawREPLResponse(buffer: string): RawREPLResult {
   const okIdx = buffer.indexOf("OK");
   if (okIdx === -1) {
@@ -609,11 +490,8 @@ function parseRawREPLResponse(buffer: string): RawREPLResult {
 
 function hasReplPrompt(buffer: string): boolean {
   const normalized = buffer.replace(/\r/g, "");
-  // Accept both primary and continuation prompts with or without a trailing
-  // space to handle device/firmware formatting differences.
+  // Accepts primary and continuation prompts; the trailing space varies between firmware builds.
   return /(^|\n)(>>>|\.\.\.)(\s|$)/.test(normalized);
 }
-
-// ─── Singleton ───────────────────────────────────────────────────────────────
 
 export const serialStreamManager = new SerialStreamManager();

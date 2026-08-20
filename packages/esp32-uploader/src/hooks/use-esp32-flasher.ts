@@ -1,10 +1,7 @@
-/**
- * ESP32 Flasher Hook
- * Manages firmware flashing state and orchestrates the flashing process.
- */
+/** ESP32 Flasher Hook Manages firmware flashing state and orchestrates the flashing process. */
 
 import { useState, useCallback, useRef } from "react";
-import { serialStreamManager } from "../utils/serial-stream-manager";
+
 import { flashFirmwareWithESPTool } from "../utils/esptool-wrapper";
 import {
   getAvailableFirmwares,
@@ -15,6 +12,8 @@ import {
   translateFlasherError,
   estimateFlashTime,
 } from "../utils/flasher-helper";
+import { serialStreamManager } from "../utils/serial-stream-manager";
+
 import type {
   ChipInfo,
   FirmwareImage,
@@ -22,15 +21,11 @@ import type {
   FlasherPhase,
 } from "../types/esp32";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 interface UseESP32FlasherOptions {
   onStatusUpdate?: (status: string) => void;
   onError?: (error: string) => void;
   onProgressUpdate?: (progress: number) => void;
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getChipFeatures(chipFamily: string): string[] {
   switch (chipFamily) {
@@ -43,8 +38,6 @@ function getChipFeatures(chipFamily: string): string[] {
     default:         return ["WiFi"];
   }
 }
-
-// ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOptions) {
   const [state, setState] = useState<FlasherState>({
@@ -64,9 +57,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
 
   const flashStartTimeRef = useRef<number | null>(null);
 
-
-  // ── Logging ────────────────────────────────────────────────────────────
-
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
     setState((prev) => ({
@@ -74,8 +64,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
       operationLog: [...prev.operationLog.slice(-49), `[${timestamp}] ${message}`],
     }));
   }, []);
-
-  // ── Status Updates ─────────────────────────────────────────────────────
 
   // silent=true: update UI state + log only, do NOT bubble to parent (avoids notification spam during flash)
   const updateStatus = useCallback(
@@ -104,8 +92,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     },
     [options, addLog]
   );
-
-  // ── Detect Chip ────────────────────────────────────────────────────────
 
   const detectChip = useCallback(async (): Promise<ChipInfo | null> => {
     if (!serialPort || !serialStreamManager.isReady()) {
@@ -150,9 +136,7 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     }
   }, [serialPort, updateStatus, reportError, addLog]);
 
-  // ── Recovery Mode ──────────────────────────────────────────────────────
-  // Bypasses REPL-based detection when firmware is crashed/missing.
-  // esptool-js will talk to the ROM bootloader directly during flash.
+  // Bypasses REPL-based detection when firmware is crashed/missing. esptool-js will talk to the ROM bootloader directly during flash.
 
   const enterRecoveryMode = useCallback(
     (chipFamily: string = "ESP32") => {
@@ -175,8 +159,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     },
     [addLog, updateStatus]
   );
-
-  // ── Select Firmware ────────────────────────────────────────────────────
 
   const getCompatibleFirmwares = useCallback((): FirmwareImage[] => {
     if (!state.chipInfo) return getAvailableFirmwares();
@@ -229,8 +211,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     addLog("Cleared local firmware selection");
   }, [addLog]);
 
-  // ── Download Firmware ──────────────────────────────────────────────────
-
   const downloadSelectedFirmware = useCallback(async (): Promise<ArrayBuffer | null> => {
     if (!state.selectedFirmware) {
       reportError("No firmware selected");
@@ -260,8 +240,7 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
         if (!isValid) throw new Error("Firmware checksum mismatch - file may be corrupted");
         addLog("Checksum verified against catalog SHA256");
       } else {
-        // No catalog hash available — log the computed SHA256 so the user can
-        // cross-check it against micropython.org before flashing.
+        // No catalog hash available — log the computed SHA256 so the user can cross-check it against micropython.org before flashing.
         try {
           const sha = await calculateSHA256(binary);
           addLog(`Downloaded SHA256: ${sha}`);
@@ -286,9 +265,7 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     addLog,
   ]);
 
-  // ── Erase Flash (REPL-based filesystem clear) ──────────────────────────
-  // NOTE: This removes user files via MicroPython — it is NOT a full sector
-  // erase. esptool-js erases sectors as it writes (eraseAll: false).
+  // NOTE: This removes user files via MicroPython — it is NOT a full sector erase. esptool-js erases sectors as it writes (eraseAll: false).
 
   const eraseFlash = useCallback(async (): Promise<boolean> => {
     if (!serialPort || !serialStreamManager.isReady()) {
@@ -308,8 +285,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     }
   }, [serialPort, updateStatus, reportError]);
 
-  // ── Flash Firmware ─────────────────────────────────────────────────────
-
   const flashFirmware = useCallback(
     async (binary: ArrayBuffer): Promise<boolean> => {
       if (!serialPort || !state.chipInfo) {
@@ -325,8 +300,7 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
         updateStatus("Releasing serial port for flasher...", "flashing", true);
         addLog("Releasing serial port locks before flash");
 
-        // Release serial manager's reader/writer locks so esptool-js Transport
-        // can take full ownership of the SerialPort.
+        // Release serial manager's reader/writer locks so esptool-js Transport can take full ownership of the SerialPort.
         await serialStreamManager.cleanup();
 
         try {
@@ -407,8 +381,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     [serialPort, state.chipInfo, reportError, updateStatus, options, addLog]
   );
 
-  // ── Reset Device ───────────────────────────────────────────────────────
-
   const resetDevice = useCallback(async (): Promise<void> => {
     if (!serialPort || !serialStreamManager.isReady()) return;
 
@@ -423,8 +395,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
     }
   }, [serialPort, updateStatus, addLog]);
 
-  // ── Complete Flash Workflow ────────────────────────────────────────────
-
   const startFlashing = useCallback(
     async (): Promise<void> => {
       if (!state.selectedFirmware) {
@@ -438,11 +408,9 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
         setState((prev) => ({ ...prev, operationLog: [], error: null, progress: 0 }));
         addLog("=== Starting flash process ===");
 
-        // Step 1: Download firmware
         const binary = await downloadSelectedFirmware();
         if (!binary) return;
 
-        // Step 2: Clear user files via REPL (skip in recovery mode — no firmware to REPL into)
         if (!isRecoveryMode) {
           const ok = await eraseFlash();
           if (!ok) return;
@@ -450,15 +418,12 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
           addLog("Recovery mode: esptool-js will erase sectors during write");
         }
 
-        // Step 3: Flash — MD5 verification happens inside esptool-js session
         // before the chip is reset, so no REPL is needed post-flash.
         const flashSuccess = await flashFirmware(binary);
         if (!flashSuccess) return;
 
         addLog("=== Flash process completed successfully ===");
-        // Reported through the existing status callback rather than an antd
-        // toast, so the package stays headless and the app renders it with
-        // whatever design system it is on.
+        // Reported through the status callback so this package stays headless and the app chooses how to surface it.
         options?.onStatusUpdate?.(
           `Successfully flashed ${state.selectedFirmware.name}`
         );
@@ -477,8 +442,6 @@ export function useESP32Flasher(serialPort: any, options?: UseESP32FlasherOption
       addLog,
     ]
   );
-
-  // ── Cancel Flashing ────────────────────────────────────────────────────
 
   const cancelFlashing = useCallback(async (): Promise<void> => {
     setState((prev) => ({

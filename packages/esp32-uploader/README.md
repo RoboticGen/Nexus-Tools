@@ -1,6 +1,6 @@
 # @nexus-tools/esp32-uploader
 
-A shared package for ESP32 code uploading functionality. This package provides components and utilities for uploading Python/MicroPython code to ESP32 devices via the Web Serial API.
+Headless ESP32 support: hooks, serial transport, firmware catalog and types for talking to ESP32 devices over the Web Serial API. It ships no components and no styles — consumers render these hooks through their own design system.
 
 ## Features
 
@@ -8,22 +8,9 @@ A shared package for ESP32 code uploading functionality. This package provides c
 - **Web Serial API Integration**: Browser-based USB connection to ESP32 devices
 - **MicroPython Upload**: Direct file upload to ESP32 internal filesystem
 - **Persistent Connections**: Reuse connections between uploads for faster workflow
-- **React Components**: Ready-to-use sidebar and modal components
+- **Headless**: React hooks only, so consumers own the UI
 
 ## Usage
-
-### Components
-
-```tsx
-import { ESP32Uploader, ESP32UploaderSidebar } from "@nexus-tools/esp32-uploader";
-
-// Basic uploader component
-<ESP32Uploader 
-  code={pythonCode}
-  onStatusUpdate={(status) => console.log(status)}
-  onError={(error) => console.error(error)}
-/>
-```
 
 ### Hooks
 
@@ -37,13 +24,8 @@ const { uploadCode, connectToDevice, isConnected } = useESP32Uploader({
 });
 ```
 
-### Styles
-
-Import the styles in your CSS:
-
-```css
-@import '@nexus-tools/esp32-uploader/styles';
-```
+`@nexus-tools/design-system` provides the matching UI: `DeviceFileManager` and
+`ESP32OutputPanel` are the adapters that join these hooks to its components.
 
 ## Requirements
 

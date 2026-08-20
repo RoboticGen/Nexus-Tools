@@ -1,7 +1,4 @@
-/**
- * MicroPython ESP32 - Main Export
- * MicroPython code generation and hardware block support for ESP32
- */
+/** MicroPython ESP32 - Main Export MicroPython code generation and hardware block support for ESP32 */
 
 // MicroPython generator (extends Blockly Python generator)
 export { pythonGenerator } from './setup';

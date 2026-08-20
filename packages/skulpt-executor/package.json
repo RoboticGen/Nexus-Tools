@@ -14,11 +14,8 @@
   "scripts": {
     "type-check": "tsc --noEmit"
   },
-  "dependencies": {
-    "@nexus-tools/types": "workspace:*"
-  },
   "devDependencies": {
     "@nexus-tools/typescript-config": "workspace:*",
-    "typescript": "^5.3.0"
+    "typescript": "~6.0.2"
   }
 }

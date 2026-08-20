@@ -9,9 +9,8 @@ function getBlock(type: string) {
 export const pinCategoryFlyout = function (workspace: Blockly.Workspace) {
   const blockList: any[] = [];
 
-  const pinVariables = workspace.getVariablesOfType("Pin");
+  const pinVariables = workspace.getVariableMap().getVariablesOfType("Pin");
 
-  // If no variables exist, show only the creation blocks
   if (pinVariables.length > 0) {
     pinVariables.forEach((variable: any) => {
     const block = document.createElement("block");
@@ -38,9 +37,8 @@ export const pinCategoryFlyout = function (workspace: Blockly.Workspace) {
 export const adcCategoryFlyout = function (workspace: Blockly.Workspace) {
   const blockList: any[] = [];
 
-  const adcVariables = workspace.getVariablesOfType("ADC");
+  const adcVariables = workspace.getVariableMap().getVariablesOfType("ADC");
 
-  // If no variables exist, show only the creation blocks
   if (adcVariables.length > 0) {
     adcVariables.forEach((variable: any) => {
     const block = document.createElement("block");
@@ -67,9 +65,8 @@ export const adcCategoryFlyout = function (workspace: Blockly.Workspace) {
 export const pwmCategoryFlyout = function (workspace: Blockly.Workspace) {
   const blockList: any[] = [];
 
-  const adcVariables = workspace.getVariablesOfType("PWM");
+  const adcVariables = workspace.getVariableMap().getVariablesOfType("PWM");
 
-  // If no variables exist, show only the creation blocks
   if (adcVariables.length > 0) {
     adcVariables.forEach((variable: any) => {
     const block = document.createElement("block");
@@ -99,9 +96,8 @@ export const pwmCategoryFlyout = function (workspace: Blockly.Workspace) {
 export const i2cCategoryFlyout = function (workspace: Blockly.Workspace) {
   const blockList: any[] = [];
 
-  const i2c = workspace.getVariablesOfType("I2C");
+  const i2c = workspace.getVariableMap().getVariablesOfType("I2C");
 
-  // If no variables exist, show only the creation blocks
   if (i2c.length > 0) {
     i2c.forEach((variable: any) => {
     const block = document.createElement("block");

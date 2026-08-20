@@ -2,7 +2,8 @@
 
 import { Editor } from "@monaco-editor/react";
 import { useCallback, useEffect } from "react";
-import { MonacoCodeEditorProps } from "./types";
+
+import { type MonacoCodeEditorProps } from "./types";
 
 export function MonacoCodeEditor({
   code,
@@ -27,8 +28,7 @@ export function MonacoCodeEditor({
     const originalError = console.error;
     const filteredError = (...args: unknown[]) => {
       const message = String(args[0] ?? "");
-      // Only suppress if it's clearly a Monaco cancellation error
-      // Case-insensitive, check stack to ensure it's from Monaco, not app code
+      // Only suppress if it's clearly a Monaco cancellation error Case-insensitive, check stack to ensure it's from Monaco, not app code
       if (/\bcancel(?:ed|ed)?\b/i.test(message)) {
         const stack = (new Error().stack || "").toLowerCase();
         // Only filter if stack trace mentions monaco (prevents filtering unrelated errors)

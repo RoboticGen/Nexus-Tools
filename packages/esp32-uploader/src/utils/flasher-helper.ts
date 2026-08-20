@@ -1,17 +1,10 @@
-/**
- * ESP32 Flasher Helper Utilities
- * Firmware management, error translation, and flasher utilities
- */
+/** ESP32 Flasher Helper Utilities Firmware management, error translation, and flasher utilities */
 
-import type { FirmwareImage, ChipInfo } from "../types/esp32";
 import { FIRMWARE_CATALOG } from "../data/firmware-catalog";
 
-// ─── Firmware Management ────────────────────────────────────────────────────
+import type { FirmwareImage, ChipInfo } from "../types/esp32";
 
-/**
- * Get list of available MicroPython releases for ESP32.
- * Loads from comprehensive firmware catalog based on Thonny IDE data.
- */
+/** Get list of available MicroPython releases for ESP32. Loads from comprehensive firmware catalog based on Thonny IDE data. */
 export function getAvailableFirmwares(): FirmwareImage[] {
   const firmwares: FirmwareImage[] = [];
   const versionReleaseMap: Record<string, string> = {
@@ -44,10 +37,7 @@ export function getAvailableFirmwares(): FirmwareImage[] {
   return firmwares;
 }
 
-/**
- * Filter firmwares suitable for a given chip family.
- * Normalizes chip family names for better matching.
- */
+/** Filter firmwares suitable for a given chip family. Normalizes chip family names for better matching. */
 export function filterFirmwaresByChip(
   firmwares: FirmwareImage[],
   chipFamily: string
@@ -73,9 +63,7 @@ export function filterFirmwaresByChip(
   });
 }
 
-/**
- * Get all available board models for a given chip family.
- */
+/** Get all available board models for a given chip family. */
 export function getBoardsByChipFamily(chipFamily: string) {
   const normalized = chipFamily.toLowerCase();
   return FIRMWARE_CATALOG.filter(
@@ -83,27 +71,20 @@ export function getBoardsByChipFamily(chipFamily: string) {
   );
 }
 
-/**
- * Get firmware URLs for a specific board model.
- */
+/** Get firmware URLs for a specific board model. */
 export function getFirmwaresByBoard(vendor: string, model: string) {
   return FIRMWARE_CATALOG.find(
     (board) => board.vendor === vendor && board.model === model
   );
 }
 
-/**
- * Attempt to fetch firmware from a URL with optional CORS proxy fallback.
- * Private helper function.
- */
+/** Attempt to fetch firmware from a URL with optional CORS proxy fallback. Private helper function. */
 async function fetchFirmwareData(
   url: string,
   useProxy: boolean = false,
   onProgress?: (loaded: number, total: number) => void
 ): Promise<ArrayBuffer> {
-  // External hosts (e.g. micropython.org) don't send CORS headers, so the
-  // browser can't fetch them directly. Route those through the app's own
-  // same-origin server proxy, which fetches the binary server-side.
+  // External hosts (e.g. micropython.org) don't send CORS headers, so the browser can't fetch them directly.
   const fetchUrl = useProxy
     ? `/api/firmware-proxy?url=${encodeURIComponent(url)}`
     : url;
@@ -166,12 +147,7 @@ async function fetchFirmwareData(
   return result.buffer;
 }
 
-/**
- * Download firmware binary from URL with retry logic and CORS proxy fallback.
- * Returns ArrayBuffer of the binary data.
- * Retries up to 3 times with exponential backoff.
- * Falls back to CORS proxy if direct fetch fails with CORS error.
- */
+/** Download firmware binary from URL with retry logic and CORS proxy fallback. Returns ArrayBuffer of the binary data. */
 export async function downloadFirmware(
   url: string,
   onProgress?: (loaded: number, total: number) => void
@@ -179,9 +155,7 @@ export async function downloadFirmware(
   const MAX_RETRIES = 3;
   let lastError: Error | null = null;
 
-  // Absolute http(s) URLs point at external hosts and must go through the
-  // same-origin server proxy (browser CORS blocks a direct fetch). Relative
-  // URLs are same-origin static assets and can be fetched directly.
+  // Absolute http(s) URLs point at external hosts and must go through the same-origin server proxy (browser CORS blocks a direct fetch). Relative URLs are same-origin static assets and can be fetched directly.
   const useProxy = /^https?:\/\//i.test(url);
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -238,10 +212,7 @@ export async function downloadFirmware(
   throw new Error(`Firmware download failed after ${MAX_RETRIES} attempts: ${message}`);
 }
 
-/**
- * Calculate SHA256 checksum of binary data.
- * Returns hex string.
- */
+/** Calculate SHA256 checksum of binary data. Returns hex string. */
 export async function calculateSHA256(
   data: ArrayBuffer
 ): Promise<string> {
@@ -255,9 +226,7 @@ export async function calculateSHA256(
   }
 }
 
-/**
- * Verify firmware checksum if available.
- */
+/** Verify firmware checksum if available. */
 export async function verifyFirmwareChecksum(
   firmware: ArrayBuffer,
   expectedChecksum?: string
@@ -269,8 +238,6 @@ export async function verifyFirmwareChecksum(
   const calculated = await calculateSHA256(firmware);
   return calculated.toLowerCase() === expectedChecksum.toLowerCase();
 }
-
-// ─── Error Translation ──────────────────────────────────────────────────────
 
 export function translateFlasherError(error: unknown): string {
   if (error instanceof Error) {
@@ -325,13 +292,7 @@ export function translateFlasherError(error: unknown): string {
   return "An unknown error occurred during flashing.";
 }
 
-// ─── Backup & Restore ───────────────────────────────────────────────────────
-
-/**
- * Create a backup of current firmware.
- * In production, would read flash memory via esptool commands.
- * For now, this is a placeholder that stores metadata.
- */
+/** Create a backup of current firmware. In production, would read flash memory via esptool commands. */
 export function createBackupMetadata(chipInfo: ChipInfo, firmware: string): object {
   return {
     timestamp: Date.now(),
@@ -342,9 +303,7 @@ export function createBackupMetadata(chipInfo: ChipInfo, firmware: string): obje
   };
 }
 
-/**
- * Format firmware size as human-readable string.
- */
+/** Format firmware size as human-readable string. */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";
 
@@ -355,9 +314,7 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
-/**
- * Format time duration in seconds to human-readable format.
- */
+/** Format time duration in seconds to human-readable format. */
 export function formatDuration(seconds: number): string {
   if (seconds < 60) {
     return `${Math.round(seconds)}s`;
@@ -369,10 +326,7 @@ export function formatDuration(seconds: number): string {
   return `${minutes}m ${remainingSeconds}s`;
 }
 
-/**
- * Calculate estimated flash time based on binary size.
- * Rough estimate: ESP32 flashes at ~500 KB/s
- */
+/** Calculate estimated flash time based on binary size. Rough estimate: ESP32 flashes at ~500 KB/s */
 export function estimateFlashTime(binarySize: number): number {
   const FLASH_SPEED_KBS = 500; // KB/s
   const sizeKB = binarySize / 1024;
@@ -382,10 +336,7 @@ export function estimateFlashTime(binarySize: number): number {
   return estimatedSeconds + 5;
 }
 
-/**
- * Calculate flash progress based on time elapsed vs estimated time.
- * Linear progress estimate (can be improved with real progress from flasher).
- */
+/** Calculate flash progress based on time elapsed vs estimated time. Linear progress estimate (can be improved with real progress from flasher). */
 export function calculateProgress(
   elapsedMs: number,
   estimatedDurationMs: number

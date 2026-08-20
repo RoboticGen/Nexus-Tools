@@ -1,6 +1,4 @@
-/**
- * ESP32 Constants
- */
+/** ESP32 Constants */
 
 import type { ESP32Device, USBFilter, SerialPortOptions } from "../types/esp32";
 

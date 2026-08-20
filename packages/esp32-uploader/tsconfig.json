@@ -1,5 +1,14 @@
 {
   "extends": "@nexus-tools/typescript-config/react-library.json",
-  "include": ["src"],
-  "exclude": ["dist", "build", "node_modules"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  }
 }

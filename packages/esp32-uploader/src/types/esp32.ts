@@ -1,6 +1,4 @@
-/**
- * ESP32 Types and Interfaces
- */
+/** ESP32 Types and Interfaces */
 
 export interface SerialPort {
   readable?: ReadableStream<Uint8Array>;
@@ -49,8 +47,6 @@ export interface USBFilter {
   usbVendorId: number;
   usbProductId?: number;
 }
-
-// ─── Flasher Types ───────────────────────────────────────────────────────────
 
 export interface ChipInfo {
   chipId: string;

@@ -1,12 +1,7 @@
-/**
- * ESP32 File Manager Hook
- * Handles fetching, downloading, viewing, and deleting files on ESP32.
- *
- * All operations use Raw REPL mode via the shared SerialStreamManager
- * for reliable, structured output without prompt/echo contamination.
- */
+/** ESP32 File Manager Hook Handles fetching, downloading, viewing, and deleting files on ESP32. All operations use Raw REPL mode via the shared SerialStreamManager for reliable, structured output without prompt/echo contamination. */
 
 import { useState, useCallback } from "react";
+
 import { serialStreamManager } from "../utils/serial-stream-manager";
 
 interface FileInfo {
@@ -24,8 +19,6 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-
   /** Ensure the stream manager is ready, initialising if needed. */
   const ensureReady = useCallback(async () => {
     if (!serialPort) {
@@ -40,8 +33,6 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
   const escapePath = (p: string): string =>
     p.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 
-  // ── Fetch Files (list directory) ─────────────────────────────────────────
-
   const fetchFiles = useCallback(
     async (path: string = "/"): Promise<void> => {
       setIsLoading(true);
@@ -55,9 +46,7 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
 
           const safePath = escapePath(path);
 
-          // MicroPython script that prints one line per entry:
-          //   name|size|0  (file)
-          //   name|0|1     (directory)
+          // MicroPython script that prints one line per entry: name|size|0 (file) name|0|1 (directory)
           const pythonCode = [
             `import os`,
             `p='${safePath}'`,
@@ -124,7 +113,6 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
             return;
           }
 
-          // Exponential backoff before retry: 500ms, 1s, 2s
           const delayMs = 500 * Math.pow(2, attempt - 1);
           await new Promise(resolve => setTimeout(resolve, delayMs));
           // Continue to next iteration
@@ -133,8 +121,6 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
     },
     [ensureReady],
   );
-
-  // ── Download File ────────────────────────────────────────────────────────
 
   const downloadFile = useCallback(
     async (filename: string): Promise<void> => {
@@ -225,8 +211,6 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
     [ensureReady],
   );
 
-  // ── View File ────────────────────────────────────────────────────────────
-
   const viewFile = useCallback(
     async (filename: string): Promise<string> => {
       const maxRetries = 3;
@@ -273,8 +257,6 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
     },
     [ensureReady],
   );
-
-  // ── Delete File ──────────────────────────────────────────────────────────
 
   const deleteFile = useCallback(
     async (filename: string): Promise<void> => {
@@ -323,8 +305,6 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
     },
     [ensureReady, fetchFiles],
   );
-
-  // ── Refresh ──────────────────────────────────────────────────────────────
 
   const refreshFiles = useCallback(() => {
     fetchFiles("/");

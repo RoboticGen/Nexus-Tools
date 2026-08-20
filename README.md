@@ -12,12 +12,16 @@ nexus-tools/
 │   ├── obo-blocks/        # Next.js app (port 3002)
 │   └── obo-playground/    # Next.js app (port 3003)
 ├── packages/
-│   ├── ui/                # Shared UI components
-│   ├── utils/             # Shared utility functions
-│   ├── types/             # Shared TypeScript types
-│   ├── eslint-config/     # Shared ESLint configurations
-│   ├── typescript-config/ # Shared TypeScript configurations
-│   └── tailwind-config/   # Shared Tailwind CSS configuration
+│   ├── design-system/            # RoboticGen design system: components, theme, palette
+│   ├── auth/                     # NextAuth + Keycloak: config, middleware, routes, session
+│   ├── esp32-uploader/           # Headless ESP32: serial, REPL, file manager, flashing
+│   ├── monaco-editor/            # Monaco wrapper
+│   ├── blockly-python-generator/ # Blocks, generator, theme, toolbox
+│   ├── micropython-esp32/        # MicroPython blocks and flyouts
+│   ├── pyodide-executor/         # Pyodide worker runner (obo-blocks)
+│   ├── skulpt-executor/          # Skulpt runner (obo-code)
+│   ├── eslint-config/            # Shared ESLint configurations
+│   └── typescript-config/        # Shared TypeScript configurations
 ├── turbo.json             # Turborepo configuration
 ├── pnpm-workspace.yaml    # PNPM workspace configuration
 └── package.json           # Root package.json
@@ -83,37 +87,48 @@ pnpm clean         # Clean all build outputs and node_modules
 
 ## 📦 Shared Packages
 
-### @nexus-tools/ui
+### @nexus-tools/design-system
 
-Shared React UI components built with Tailwind CSS.
+The RoboticGen design system. Source-only: consumers compile it through their own
+TypeScript and Tailwind, so an app's `globals.css` must `@source` this package
+alongside importing its theme.
 
 ```tsx
-import { Button, Card, Input } from "@nexus-tools/ui";
+import { Button } from "@nexus-tools/design-system/components/ui/button";
+import { CodeEditor } from "@nexus-tools/design-system/components/code-editor";
 ```
 
-### @nexus-tools/utils
-
-Shared utility functions.
-
-```tsx
-import { capitalize, slugify, formatDate, isValidEmail } from "@nexus-tools/utils";
+```css
+@import 'tailwindcss';
+@import '@nexus-tools/design-system/styles/theme.css';
+@source '../../../../packages/design-system/src/**/*.{ts,tsx}';
 ```
 
-### @nexus-tools/types
+### @nexus-tools/auth
 
-Shared TypeScript type definitions.
+NextAuth + Keycloak. The apps' `middleware.ts`, `[...nextauth]` route, login page
+and firmware proxy are one-line re-exports of this package.
 
 ```tsx
-import type { User, ApiResponse, Theme } from "@nexus-tools/types";
+import { authMiddleware } from "@nexus-tools/auth/middleware";
+import { SessionProvider } from "@nexus-tools/auth/session-provider";
+```
+
+### @nexus-tools/esp32-uploader
+
+Headless ESP32 support — hooks, serial transport, firmware catalog. No UI.
+
+```tsx
+import { useESP32Uploader, serialStreamManager } from "@nexus-tools/esp32-uploader";
 ```
 
 ## 🛠️ Technology Stack
 
 - **Build System**: [Turborepo](https://turbo.build/repo)
 - **Package Manager**: [pnpm](https://pnpm.io/)
-- **Framework**: [Next.js 14](https://nextjs.org/)
+- **Framework**: [Next.js 16](https://nextjs.org/) with React 19
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) (CSS-first, no JS config)
 - **Linting**: [ESLint](https://eslint.org/)
 - **Formatting**: [Prettier](https://prettier.io/)
 
@@ -123,8 +138,8 @@ import type { User, ApiResponse, Theme } from "@nexus-tools/types";
 
 1. **Shared Code**: Place reusable code in `packages/` directory
 2. **App-Specific Code**: Keep application-specific code in `apps/` directory
-3. **Type Safety**: Use shared types from `@nexus-tools/types`
-4. **Consistent Styling**: Use shared UI components from `@nexus-tools/ui`
+3. **Consistent Styling**: Use components from `@nexus-tools/design-system`
+4. **Auth**: Route protection and session handling belong in `@nexus-tools/auth`
 5. **Code Quality**: Run `pnpm lint` and `pnpm type-check` before committing
 
 ### Adding a New Package

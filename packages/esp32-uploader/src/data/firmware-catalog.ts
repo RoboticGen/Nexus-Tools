@@ -1,7 +1,4 @@
-/**
- * MicroPython Firmware Catalog - ESP32 Dev Boards
- * Generic Espressif ESP32 board firmware versions
- */
+/** MicroPython Firmware Catalog - ESP32 Dev Boards Generic Espressif ESP32 board firmware versions */
 
 export interface FirmwareBoard {
   vendor: string;

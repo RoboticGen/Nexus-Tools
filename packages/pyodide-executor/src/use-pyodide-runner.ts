@@ -1,6 +1,4 @@
-/**
- * React Hook for Pyodide Python Execution
- */
+/** React Hook for Pyodide Python Execution */
 
 "use client";
 
@@ -12,21 +10,7 @@ import type { UsePyodideRunnerOptions, UsePyodideRunnerResult } from "./types";
 
 const BANNER = "Python 3.10 \n>>> ";
 
-/**
- * Runs Python in the Pyodide worker and exposes its output as React state.
- *
- * This exists because `createTerminalLoader` — the only way to drive this
- * package before — takes a DOM element id and appends output straight to
- * `document.getElementById(id).value`. That works with a hand-rolled
- * `<textarea>`, but it means the output never enters React, so a design-system
- * `OutputPanel` (which renders `output` as a prop) receives nothing at all.
- *
- * Deliberately mirrors `@nexus-tools/skulpt-executor`'s `usePythonRunner`
- * signature, so obo-blocks and obo-code drive the same panel through the same
- * interface despite running different Python engines.
- *
- * `createTerminalLoader` is kept for any consumer still on the DOM path.
- */
+/** Runs Python in the Pyodide worker and exposes its output as React state. This exists because `createTerminalLoader` — the only way to drive this package before — takes a DOM element id and appends output straight to `document.getElementById(id).value`. */
 export function usePyodideRunner(
   options: UsePyodideRunnerOptions = {}
 ): UsePyodideRunnerResult {
@@ -35,9 +19,7 @@ export function usePyodideRunner(
   const [output, setOutput] = useState(BANNER);
   const loaderRef = useRef<PyodideLoader | null>(null);
 
-  // The worker's callbacks fire outside React's knowledge, so they're read
-  // through refs — re-creating the worker whenever a caller passes a new
-  // inline `onError` would tear down a running program.
+  // The worker's callbacks fire outside React's knowledge, so they're read through refs — re-creating the worker whenever a caller passes a new inline `onError` would tear down a running program.
   const onErrorRef = useRef(onError);
   const onSuccessRef = useRef(onSuccess);
   onErrorRef.current = onError;
@@ -53,8 +35,7 @@ export function usePyodideRunner(
     const loader = new PyodideLoader({
       onOutput: (text) => {
         append(text);
-        // A result message is the worker signalling the program finished; the
-        // post-run state belongs to the caller, not to this stream.
+        // A result message is the worker signalling the program finished; the post-run state belongs to the caller, not to this stream.
         setIsRunning(false);
         onSuccessRef.current?.();
       },
@@ -66,8 +47,7 @@ export function usePyodideRunner(
       onInputRequest: async () => window.prompt("Enter the input"),
     });
 
-    // A string URL, not `new URL(...)`: the worker uses `importScripts` to pull
-    // Pyodide in, which only classic (non-module) workers support.
+    // A string URL, not `new URL(...)`: the worker uses `importScripts` to pull Pyodide in, which only classic (non-module) workers support.
     loader.initializeWorker(workerUrl);
     loaderRef.current = loader;
 
@@ -96,8 +76,7 @@ export function usePyodideRunner(
     const loader = loaderRef.current;
     if (!loader) return;
 
-    // Pyodide runs synchronously inside the worker, so there is no cooperative
-    // interrupt to send — killing and rebuilding the worker is the only stop.
+    // Pyodide runs synchronously inside the worker, so there is no cooperative interrupt to send — killing and rebuilding the worker is the only stop.
     loader.stopAndRestart(workerUrl);
     setIsRunning(false);
     setOutput(BANNER);
