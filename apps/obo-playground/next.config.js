@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@nexus-tools/ui", "@nexus-tools/utils", "@nexus-tools/types", "@nexus-tools/auth"],
-  experimental: {
-    optimizePackageImports: ["@nexus-tools/ui"],
-  },
+  transpilePackages: ["@nexus-tools/auth", "@nexus-tools/design-system"],
 };
 
 module.exports = nextConfig;

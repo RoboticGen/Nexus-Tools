@@ -1,6 +1,8 @@
-import { Inter } from "next/font/google";
 
-import { LogoutButton } from "@/components/logout-button";
+import { WorkspaceNavbar } from "@nexus-tools/design-system/components/workspace-navbar";
+import { THEME_STORAGE_KEY } from "@nexus-tools/design-system/lib/theme";
+import { Inter } from "next/font/google";
+import { cookies } from "next/headers";
 
 import { Providers } from "./providers";
 
@@ -15,19 +17,19 @@ export const metadata: Metadata = {
   description: "OBO Playground - Part of Nexus Tools",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Resolved server-side so an explicit theme choice never flashes on load.
+  const theme = (await cookies()).get(THEME_STORAGE_KEY)?.value;
+
   return (
-    <html lang="en">
+    <html lang="en" className={theme === "dark" ? "dark" : undefined}>
       <body className={inter.className}>
         <Providers>
-          <header className="playground-nav">
-            <span className="playground-title">OBO Playground</span>
-            <LogoutButton />
-          </header>
+          <WorkspaceNavbar title="Obo Playground" />
           {children}
         </Providers>
       </body>
