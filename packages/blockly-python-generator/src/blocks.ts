@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { BRAND, BRAND_DEEP, TONE } from "@nexus-tools/design-system/lib/palette";
 import * as Blockly from "blockly/core";
 
 import {
@@ -22,7 +23,7 @@ Blockly.Blocks["string_block"] = {
       "input"
     );
     (this as any).setOutput(true, null);
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -34,7 +35,7 @@ Blockly.Blocks["add_block"] = {
     (this as any).appendDummyInput().appendField("+");
     (this as any).appendValueInput("right").setCheck(null);
     (this as any).setOutput(true, null);
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -46,7 +47,7 @@ Blockly.Blocks["subtract_block"] = {
     (this as any).appendDummyInput().appendField("-");
     (this as any).appendValueInput("right").setCheck(null);
     (this as any).setOutput(true, null);
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -57,7 +58,7 @@ Blockly.Blocks["print_block"] = {
     (this as any).appendValueInput("value").setCheck(null).appendField("print");
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#4C97FF");
+    (this as any).setColour(BRAND_DEEP.sky);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -69,7 +70,7 @@ Blockly.Blocks["if_block"] = {
     (this as any).appendStatementInput("statement").setCheck(null).appendField("then");
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#FFBF00");
+    (this as any).setColour(BRAND_DEEP.gold);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -79,7 +80,7 @@ Blockly.Blocks["number_block"] = {
   init: function () {
     (this as any).appendDummyInput().appendField(new Blockly.FieldNumber(0), "input");
     (this as any).setOutput(true, "Number");
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -91,7 +92,7 @@ Blockly.Blocks["equal_block"] = {
     (this as any).appendDummyInput().appendField("==");
     (this as any).appendValueInput("right").setCheck(null);
     (this as any).setOutput(true, "Boolean");
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -104,7 +105,7 @@ Blockly.Blocks["if_else_block"] = {
     (this as any).appendStatementInput("else").setCheck(null).appendField("else");
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#FFAB19");
+    (this as any).setColour(BRAND_DEEP.gold);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -116,7 +117,7 @@ Blockly.Blocks["multiply_block"] = {
     (this as any).appendDummyInput().appendField("*");
     (this as any).appendValueInput("right").setCheck("Number");
     (this as any).setOutput(true, null);
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -128,7 +129,7 @@ Blockly.Blocks["division_block"] = {
     (this as any).appendDummyInput().appendField("/");
     (this as any).appendValueInput("right").setCheck(null);
     (this as any).setOutput(true, null);
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -140,7 +141,7 @@ Blockly.Blocks["not_equal_block"] = {
     (this as any).appendDummyInput().appendField("!=");
     (this as any).appendValueInput("right").setCheck(null);
     (this as any).setOutput(true, "Boolean");
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -152,7 +153,7 @@ Blockly.Blocks["while_block"] = {
     (this as any).appendStatementInput("statement").setCheck(null).appendField("do");
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#FFBF00");
+    (this as any).setColour(BRAND_DEEP.gold);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -164,7 +165,7 @@ Blockly.Blocks["greater_than_block"] = {
     (this as any).appendDummyInput().appendField(">");
     (this as any).appendValueInput("right").setCheck(null);
     (this as any).setOutput(true, "Boolean");
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -176,7 +177,7 @@ Blockly.Blocks["less_than_block"] = {
     (this as any).appendDummyInput().appendField("<");
     (this as any).appendValueInput("right").setCheck(null);
     (this as any).setOutput(true, "Boolean");
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -188,7 +189,7 @@ Blockly.Blocks["greater_than_equal_block"] = {
     (this as any).appendDummyInput().appendField(">=");
     (this as any).appendValueInput("right").setCheck(null);
     (this as any).setOutput(true, "Boolean");
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -200,7 +201,7 @@ Blockly.Blocks["less_than_equal_block"] = {
     (this as any).appendDummyInput().appendField("<=");
     (this as any).appendValueInput("right").setCheck(null);
     (this as any).setOutput(true, "Boolean");
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -212,7 +213,7 @@ Blockly.Blocks["input_block"] = {
       .appendField("input")
       .appendField(new Blockly.FieldTextInput("prompt"), "input");
     (this as any).setOutput(true, "String");
-    (this as any).setColour("#4C97FF");
+    (this as any).setColour(BRAND_DEEP.sky);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -222,7 +223,7 @@ Blockly.Blocks["true_block"] = {
   init: function () {
     (this as any).appendDummyInput().appendField("True");
     (this as any).setOutput(true, "Boolean");
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -232,7 +233,7 @@ Blockly.Blocks["false_block"] = {
   init: function () {
     (this as any).appendDummyInput().appendField("False");
     (this as any).setOutput(true, "Boolean");
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -244,7 +245,7 @@ Blockly.Blocks["modulo_block"] = {
     (this as any).appendDummyInput().appendField("%");
     (this as any).appendValueInput("right").setCheck("Number");
     (this as any).setOutput(true, null);
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -256,7 +257,7 @@ Blockly.Blocks["power_block"] = {
     (this as any).appendDummyInput().appendField("^");
     (this as any).appendValueInput("right").setCheck("Number");
     (this as any).setOutput(true, null);
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -269,7 +270,7 @@ Blockly.Blocks["range_block"] = {
     (this as any).appendValueInput("end").setCheck(null).appendField("end");
     (this as any).appendValueInput("step").setCheck(null).appendField("step");
     (this as any).setOutput(true, null);
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -285,7 +286,7 @@ Blockly.Blocks["for_block"] = {
     (this as any).appendStatementInput("statement").setCheck(null);
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#FFBF00");
+    (this as any).setColour(BRAND_DEEP.gold);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -297,7 +298,7 @@ Blockly.Blocks["list_block"] = {
       .appendField("list")
       .appendField(new Blockly.FieldTextInput("1,2,3"), "input");
     (this as any).setOutput(true, null);
-    (this as any).setColour("#CF63CF");
+    (this as any).setColour(TONE.danger);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -311,7 +312,7 @@ Blockly.Blocks["list_append_block"] = {
     (this as any).appendValueInput("list").setCheck(null);
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#CF63CF");
+    (this as any).setColour(TONE.danger);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -325,7 +326,7 @@ Blockly.Blocks["list_index_get_block"] = {
       .appendField(new Blockly.FieldNumber(0, 0, Infinity, 1), "index")
       .appendField("of");
     (this as any).setOutput(true, null);
-    (this as any).setColour("#CF63CF");
+    (this as any).setColour(TONE.danger);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -343,7 +344,7 @@ Blockly.Blocks["list_index_set_block"] = {
       .appendField(new Blockly.FieldTextInput("1,2,3"), "value");
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#CF63CF");
+    (this as any).setColour(TONE.danger);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -357,7 +358,7 @@ Blockly.Blocks["list_remove_block"] = {
     (this as any).appendValueInput("list").setCheck(null);
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#CF63CF");
+    (this as any).setColour(TONE.danger);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -369,7 +370,7 @@ Blockly.Blocks["int_str_conv_block"] = {
       .appendField("str")
       .appendField(new Blockly.FieldNumber(0, 0, Infinity, 1), "number");
     (this as any).setOutput(true, null);
-    (this as any).setColour("#59C059");
+    (this as any).setColour(BRAND_DEEP.green);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -383,7 +384,7 @@ Blockly.Blocks["time_sleep"] = {
       .appendField("Seconds");
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#8c52ff");
+    (this as any).setColour(BRAND_DEEP.teal);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -408,7 +409,7 @@ Blockly.Blocks["pin_state"] = {
     (this as any).setInputsInline(true);
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#005d8f");
+    (this as any).setColour(BRAND.navy);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(pinModeBlockValidator);
@@ -435,7 +436,7 @@ Blockly.Blocks["pin_mode"] = {
       );
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#005d8f");
+    (this as any).setColour(BRAND.navy);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -459,7 +460,7 @@ Blockly.Blocks["pin_value"] = {
       );
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#005d8f");
+    (this as any).setColour(BRAND.navy);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(pinModeBlockValidator);
@@ -481,7 +482,7 @@ Blockly.Blocks["create_adc"] = {
       );
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#ff4300");
+    (this as any).setColour(TONE.dangerDeep);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
   },
@@ -502,7 +503,7 @@ Blockly.Blocks["read_adc"] = {
       );
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#ff4300");
+    (this as any).setColour(TONE.dangerDeep);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(adcBlockValidator);
@@ -524,7 +525,7 @@ Blockly.Blocks["read_micro_volt"] = {
       );
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#ff4300");
+    (this as any).setColour(TONE.dangerDeep);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(adcBlockValidator);
@@ -550,7 +551,7 @@ Blockly.Blocks["create_pwm"] = {
       .appendField(new Blockly.FieldNumber(8000, 0, Infinity, 10), "duty");
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#6e9d2f");
+    (this as any).setColour(BRAND.ink);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(pinModeBlockValidator);
@@ -569,7 +570,7 @@ Blockly.Blocks["set_pwm_duty"] = {
       .appendField(new Blockly.FieldNumber(32768, 0), "duty_cycle");
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#6e9d2f");
+    (this as any).setColour(BRAND.ink);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(pwmBlockValidator);
@@ -590,7 +591,7 @@ Blockly.Blocks["init_pwm"] = {
       .appendField(new Blockly.FieldNumber(8000, 0, Infinity, 10), "duty");
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#6e9d2f");
+    (this as any).setColour(BRAND.ink);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(pwmBlockValidator);
@@ -607,7 +608,7 @@ Blockly.Blocks["deinitilize_pwm"] = {
       );
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#6e9d2f");
+    (this as any).setColour(BRAND.ink);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(pwmBlockValidator);
@@ -627,7 +628,7 @@ Blockly.Blocks["set_duty_ns"] = {
       .appendField("nanoseconds");
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#6e9d2f");
+    (this as any).setColour(BRAND.ink);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(pwmBlockValidator);
@@ -644,7 +645,7 @@ Blockly.Blocks["set_frequency"] = {
       )
       .appendField("to")
       .appendField(new Blockly.FieldNumber(50, 0), "frequency");
-    (this as any).setColour("#6e9d2f");
+    (this as any).setColour(BRAND.ink);
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
     (this as any).setTooltip("");
@@ -675,7 +676,7 @@ Blockly.Blocks["i2c"] = {
       );
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#797c7d");
+    (this as any).setColour(BRAND_DEEP.grey);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(i2cPinBlockValidator);
@@ -704,7 +705,7 @@ Blockly.Blocks["i2c_init"] = {
       );
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#797c7d");
+    (this as any).setColour(BRAND_DEEP.grey);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(i2cPinBlockValidator);
@@ -721,7 +722,7 @@ Blockly.Blocks["deint_i2c"] = {
       );
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#797c7d");
+    (this as any).setColour(BRAND_DEEP.grey);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(i2cBlockValidator);
@@ -738,7 +739,7 @@ Blockly.Blocks["i2c_scan"] = {
       );
     (this as any).setPreviousStatement(true, null);
     (this as any).setNextStatement(true, null);
-    (this as any).setColour("#797c7d");
+    (this as any).setColour(BRAND_DEEP.grey);
     (this as any).setTooltip("");
     (this as any).setHelpUrl("");
     (this as any).setOnChange(i2cBlockValidator);
