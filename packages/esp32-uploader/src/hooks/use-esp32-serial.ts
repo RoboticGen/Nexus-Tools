@@ -1,10 +1,4 @@
-/**
- * ESP32 Serial Communication Hook
- * Handles Web Serial API connection, file writing, and device control.
- *
- * All read/write operations are routed through the shared
- * SerialStreamManager to prevent "stream is locked" errors.
- */
+/** ESP32 Serial Communication Hook Handles Web Serial API connection, file writing, and device control. All read/write operations are routed through the shared SerialStreamManager to prevent "stream is locked" errors. */
 
 import { useCallback } from "react";
 
@@ -19,12 +13,7 @@ interface UseESP32SerialOptions {
 type SerialPortType = any;
 
 export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
-  /**
-   * Check if Web Serial API is supported in this browser
-   *
-   * Note: window.isSecureContext already returns true for localhost,
-   * 127.0.0.1, and HTTPS in all modern browsers. No need for extra checks.
-   */
+  /** Check if Web Serial API is supported in this browser Note: window.isSecureContext already returns true for localhost, 127.0.0.1, and HTTPS in all modern browsers. No need for extra checks. */
   const checkSerialSupport = useCallback((): boolean => {
     if (typeof window === "undefined") return false;
 
@@ -34,10 +23,7 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
     return hasSerial && isSecureContext;
   }, []);
 
-  /**
-   * Connect to ESP32 via Web Serial API and initialize the shared
-   * stream manager. Returns the raw serial port object.
-   */
+  /** Connect to ESP32 via Web Serial API and initialize the shared stream manager. Returns the raw serial port object. */
   const connectToESP32 = useCallback(async (): Promise<SerialPortType> => {
     try {
       console.log("[useESP32Serial] Requesting port with filters:", ESP32_USB_FILTERS);
@@ -54,8 +40,7 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
 
       console.log("[useESP32Serial] Port opened with baudRate:", baudRate);
 
-      // Hand the port to the stream manager immediately.
-      // From this point on, ALL reads/writes go through the manager.
+      // Hand the port to the stream manager immediately. From this point on, ALL reads/writes go through the manager.
       await serialStreamManager.initialize(port);
 
       return port;
@@ -79,7 +64,7 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
           
           await serialStreamManager.initialize(port);
           return port;
-        } catch (_err) {
+        } catch {
           throw new Error("ESP32 device not found. Please check your USB connection and try again.");
         }
       } else if (error.name === "NetworkError") {
@@ -95,17 +80,12 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
     }
   }, [baudRate]);
 
-  /**
-   * Write a file to ESP32 using Raw REPL mode (via stream manager).
-   * This is safe to call even when REPL is active — the operation queue
-   * ensures exclusive access.
-   */
+  /** Write a file to ESP32 using Raw REPL mode (via stream manager). This is safe to call even when REPL is active — the operation queue ensures exclusive access. */
   const writeFileToESP32 = useCallback(
     async (_port: SerialPortType, filename: string, content: string): Promise<void> => {
       const sanitizedContent = content.trimEnd();
 
-      // Escape backslashes and single quotes so the filename can't break out of
-      // the Python string literal (or inject code) on the device.
+      // Escape backslashes and single quotes so the filename can't break out of the Python string literal (or inject code) on the device.
       const safeFilename = filename.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 
       // Use JSON.stringify to safely escape the content string for Python
@@ -125,26 +105,19 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
     [],
   );
 
-  /**
-   * Stop any running code on ESP32 (Ctrl-C × 2)
-   */
+  /** Stop any running code on ESP32 (Ctrl-C × 2) */
   const stopRunningCode = useCallback(async (_port: SerialPortType): Promise<void> => {
     await serialStreamManager.sendData("\x03\x03");
     // Small delay for the interrupt to take effect
     await new Promise((r) => setTimeout(r, 200));
   }, []);
 
-  /**
-   * Soft reset ESP32 to run main.py (Ctrl-D)
-   */
+  /** Soft reset ESP32 to run main.py (Ctrl-D) */
   const softResetESP32 = useCallback(async (_port: SerialPortType): Promise<void> => {
     await serialStreamManager.sendData("\x04");
   }, []);
 
-  /**
-   * Close serial port safely. Only tears down the stream manager if the
-   * port being closed is the one managed by the singleton.
-   */
+  /** Close serial port safely. Only tears down the stream manager if the port being closed is the one managed by the singleton. */
   const closePort = useCallback(async (port: SerialPortType | null): Promise<void> => {
     // Only cleanup if this is the actual managed port
     const managedPort = serialStreamManager.getPort();

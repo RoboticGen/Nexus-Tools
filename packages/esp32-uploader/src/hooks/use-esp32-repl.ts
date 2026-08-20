@@ -1,12 +1,7 @@
-/**
- * ESP32 REPL Hook
- * Handles interactive MicroPython REPL communication.
- *
- * Uses the shared SerialStreamManager for all I/O so it coexists
- * safely with file operations and code uploads.
- */
+/** ESP32 REPL Hook Handles interactive MicroPython REPL communication. Uses the shared SerialStreamManager for all I/O so it coexists safely with file operations and code uploads. */
 
 import { useState, useCallback, useRef, useEffect } from "react";
+
 import { serialStreamManager } from "../utils/serial-stream-manager";
 
 interface REPLResult {
@@ -30,14 +25,9 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
     message: string,
     description: string
   ) => {
-    // Notification is the consumer's concern: this package is headless now, so
-    // it reports and the app decides how to surface it. The previous fallback
-    // rendered an antd toast, which forced every consumer to ship antd (and to
-    // ship antd's CSS) just to call a serial hook.
+    // Notification is the consumer's concern: this package reports, the app decides how to surface it.
     options?.onNotification?.(type, message, description);
   }, [options]);
-
-  // ── Connect to REPL ────────────────────────────────────────────────────
 
   const connectToREPL = useCallback(async () => {
     if (!serialPort) {
@@ -76,8 +66,6 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
     }
   }, [serialPort, showNotification]);
 
-  // ── Execute Command ────────────────────────────────────────────────────
-
   const executeCommand = useCallback(
     async (command: string): Promise<REPLResult> => {
       if (!isConnected || !serialStreamManager.isReady()) {
@@ -90,8 +78,7 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
       }
 
       try {
-        // In continuation mode users may accidentally type the visible
-        // prompt prefix ("... "). Strip it before sending to the device.
+        // In continuation mode users may accidentally type the visible prompt prefix ("... ").
         const preparedCommand =
           isAwaitingContinuation && /^\s*\.\.\.\s?/.test(command)
             ? command.replace(/^\s*\.\.\.\s?/, "")
@@ -103,7 +90,8 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
 
         const normalized = raw
           .replace(/\r/g, "")
-          // Strip control characters that can appear during USB glitches.
+          // Stripping control characters is the point here, so the rule does not apply.
+          // eslint-disable-next-line no-control-regex
           .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
         
         // Split once and reuse for both continuation detection and parsing
@@ -185,8 +173,6 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
     [isConnected, isAwaitingContinuation, showNotification],
   );
 
-  // ── Ctrl-C / Ctrl-D helpers ────────────────────────────────────────────
-
   const sendCtrlC = useCallback(async () => {
     if (!serialStreamManager.isReady()) {
       showNotification(
@@ -227,8 +213,6 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
     }
   }, [showNotification]);
 
-  // ── Disconnect ─────────────────────────────────────────────────────────
-
   const disconnect = useCallback(async () => {
     // Remove listener first
     if (unsubRef.current) {
@@ -249,8 +233,6 @@ export function useESP32REPL(serialPort: any, options?: UseESP32REPLOptions) {
     setIsAwaitingContinuation(false);
     outputBufferRef.current = "";
   }, [showNotification]);
-
-  // ── Cleanup on unmount / port change ───────────────────────────────────
 
   useEffect(() => {
     return () => {
