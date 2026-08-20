@@ -1,11 +1,9 @@
-import type { NextAuthOptions } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
-import type { NextAuthSession } from "./types";
 
-/**
- * Get NextAuth configuration for Keycloak OAuth provider
- * Environment variables should be set: KEYCLOAK_URL, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET, KEYCLOAK_REALM, NEXTAUTH_URL
- */
+import type { NextAuthSession } from "./types";
+import type { NextAuthOptions } from "next-auth";
+
+/** Get NextAuth configuration for Keycloak OAuth provider Environment variables should be set: KEYCLOAK_URL, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET, KEYCLOAK_REALM, NEXTAUTH_URL */
 export function getAuthConfig(): NextAuthOptions {
   const keycloakUrl = process.env.KEYCLOAK_URL || "https://auth.roboticgen.co";
   const realm = process.env.KEYCLOAK_REALM || "roboticgen";
@@ -91,7 +89,12 @@ export function getAuthConfig(): NextAuthOptions {
                 return { ...token, error: "RefreshAccessTokenError" };
               }
 
-              const refreshedTokens = await response.json();
+              // `Response.json()` resolves to `unknown` from TypeScript 6 — it used to be `any`, which let these four reads through unchecked. Naming the shape is the fix, not a cast: this is Keycloak's token response and nothing else.
+              const refreshedTokens = (await response.json()) as {
+                access_token?: string;
+                refresh_token?: string;
+                expires_in?: number;
+              };
               token.accessToken = refreshedTokens.access_token;
               token.refreshToken = refreshedTokens.refresh_token || token.refreshToken;
               token.expiresAt = refreshedTokens.expires_in
@@ -129,9 +132,7 @@ export function getAuthConfig(): NextAuthOptions {
               image: token.picture as string | undefined,
             },
             accessToken: token.accessToken as string,
-            // idToken is exposed for RP-initiated logout (id_token_hint).
-            // refreshToken is intentionally NOT returned: it must never leave
-            // the server, where it is kept inside the encrypted JWT cookie.
+            // idToken is exposed for RP-initiated logout (id_token_hint). refreshToken is intentionally NOT returned: it must never leave the server, where it is kept inside the encrypted JWT cookie.
             idToken: token.idToken as string | undefined,
             expiresAt: token.expiresAt as number,
             error: token.error as string | undefined,

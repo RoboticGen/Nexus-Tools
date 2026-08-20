@@ -1,0 +1,16 @@
+{
+  "extends": "@nexus-tools/typescript-config/react-library.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "preserve",
+    "allowImportingTsExtensions": false
+  },
+  "include": [
+    "src",
+    "../auth/src/next-auth.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
