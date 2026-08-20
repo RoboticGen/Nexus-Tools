@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "next-auth/middleware";
 
-/** Route protection for the workspace apps. obo-code and obo-blocks carried byte-identical copies of this. */
+/** Route protection for all three workspace apps. */
 export const authMiddleware = withAuth(
   function middleware() {
     // If user is not authenticated, withAuth will handle the redirect based on the pages.signIn config
@@ -16,8 +16,11 @@ export const authMiddleware = withAuth(
           return true;
         }
 
-        // For all other routes, require authentication
-        return !!token;
+        // `!token.error` matters as much as the token existing: a failed Keycloak refresh
+        // returns { ...token, error: "RefreshAccessTokenError" } rather than dropping the
+        // token, so a truthy-but-dead session would otherwise pass the gate and only fail
+        // later, on the first API call.
+        return !!token && !token.error;
       },
     },
     pages: {

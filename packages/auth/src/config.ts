@@ -12,19 +12,6 @@ export function getAuthConfig(): NextAuthOptions {
   if (!clientSecret) {
     throw new Error("KEYCLOAK_CLIENT_SECRET env var is required");
   }
-  const nextAuthUrl = process.env.NEXTAUTH_URL || "http://localhost:3001";
-
-  // Log configuration for debugging (development only)
-  if (process.env.NODE_ENV === "development") {
-    console.log("[NextAuth Config]", {
-      keycloakUrl,
-      realm,
-      clientId,
-      nextAuthUrl,
-      callbackUrl: `${nextAuthUrl}/api/auth/callback/keycloak`,
-    });
-  }
-
   return {
     debug: process.env.NODE_ENV === "development",
     providers: [
