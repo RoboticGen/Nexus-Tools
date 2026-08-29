@@ -130,7 +130,16 @@ function CodeEditorPanel({
                       key={tab.id}
                       value={tab.id}
                       style={{ order: index * 2 }}
-                      className={cn("px-3 text-xs", canClose && "pr-6")}
+                      className={cn(
+                        "px-3 text-xs",
+                        canClose && "pr-6",
+                        // A hairline between adjacent tabs — `variant="line"`'s 4px
+                        // gap alone doesn't read as a boundary between two files.
+                        // Keyed off `index`, not a DOM pseudo-class: visual order
+                        // here comes from the `order` style, not DOM order, so
+                        // `:first-child`/`:last-child` would pick the wrong tab.
+                        index > 0 && "border-l border-border"
+                      )}
                       onDoubleClick={() => onTabRename && startRename(tab)}
                       onKeyDown={(event) => {
                         if (event.key === "F2" && onTabRename) {
@@ -153,7 +162,13 @@ function CodeEditorPanel({
                   return (
                     <input
                       key={tab.id}
-                      autoFocus
+                      // Not the `autoFocus` attribute: its native `.focus()` call has
+                      // `preventScroll: false`, so the browser scrolls every scrollable
+                      // ancestor (this row, the panel, the workspace) to reveal it —
+                      // in a nested layout that reads as the whole view jumping to a
+                      // corner. Focusing manually with `preventScroll: true` keeps the
+                      // input's position the only thing that changes.
+                      ref={(el) => el?.focus({ preventScroll: true })}
                       value={draft}
                       aria-label={`Rename ${tab.label}`}
                       style={{ order: index * 2 }}

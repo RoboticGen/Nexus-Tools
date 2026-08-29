@@ -5,6 +5,8 @@ export interface SkulptAPI {
   configure: (options: SkulptConfigureOptions) => void;
   TurtleGraphics: {
     target: string;
+    width?: number;
+    height?: number;
   };
   misceval: {
     asyncToPromise: (
