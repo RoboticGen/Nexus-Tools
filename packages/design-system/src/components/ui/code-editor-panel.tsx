@@ -62,8 +62,17 @@ function CodeEditorPanel({
   // Rename's draft text is local UI state for the same reason Terminal's scroll-pin and DeviceSidebar's expand state are: no consumer wants to own a half-typed value between keystrokes.
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [draft, setDraft] = useState("")
+  // The trigger's rendered width at the moment rename starts, locked onto the
+  // input via inline `width` below. Neither a flex-1 nor a fixed-class input
+  // stayed put: flex-1 fights its sibling triggers for space (grows to fill
+  // whatever the tab bar has free that moment), and a class-based fixed width
+  // is just a guess at the trigger's actual size. Measuring the real trigger
+  // and pinning the input to that exact size is the only way the row doesn't
+  // reflow at all when a rename starts.
+  const [renameWidth, setRenameWidth] = useState<number | null>(null)
 
-  const startRename = (tab: CodeEditorTab) => {
+  const startRename = (tab: CodeEditorTab, triggerEl: HTMLElement) => {
+    setRenameWidth(triggerEl.getBoundingClientRect().width)
     setEditingTabId(tab.id)
     setDraft(tab.label)
   }
@@ -146,11 +155,11 @@ function CodeEditorPanel({
                         // single left-edge divider.
                         index > 0 && "border-l-border"
                       )}
-                      onDoubleClick={() => onTabRename && startRename(tab)}
+                      onDoubleClick={(event) => onTabRename && startRename(tab, event.currentTarget)}
                       onKeyDown={(event) => {
                         if (event.key === "F2" && onTabRename) {
                           event.preventDefault()
-                          startRename(tab)
+                          startRename(tab, event.currentTarget)
                         } else if ((event.key === "Delete" || event.key === "Backspace") && canClose) {
                           event.preventDefault()
                           onTabClose?.(tab.id)
@@ -177,7 +186,12 @@ function CodeEditorPanel({
                       ref={(el) => el?.focus({ preventScroll: true })}
                       value={draft}
                       aria-label={`Rename ${tab.label}`}
-                      style={{ order: index * 2 }}
+                      // Pinned to the trigger's own measured width (see
+                      // `startRename`) and `flex-none` so it neither grows to
+                      // fight its sibling triggers for free space nor shrinks
+                      // below it — the tab's footprint stays exactly what it
+                      // was before the rename started.
+                      style={{ order: index * 2, width: renameWidth ?? undefined }}
                       onChange={(event) => setDraft(event.target.value)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter") {
@@ -189,16 +203,7 @@ function CodeEditorPanel({
                         }
                       }}
                       onBlur={commitRename}
-                      // `flex-1`, not `shrink-0`: `TabsTrigger` (what this
-                      // replaces while editing) is `flex-1` too. A fixed-width
-                      // input drops that tab's share of the row, so every
-                      // other `flex-1` trigger expands into the gap and the
-                      // whole bar reflows — which reads as the input jumping
-                      // sideways away from where the tab just was. `max-w-48`
-                      // caps the other side of that: with only one other
-                      // flex-1 sibling, unbounded growth lets the input eat
-                      // almost the entire row instead of sharing it.
-                      className="border-ring bg-background focus-ring h-6 min-w-20 max-w-48 flex-1 rounded border px-1.5 text-xs"
+                      className="border-ring bg-background focus-ring h-6 flex-none rounded border px-1.5 text-xs"
                     />
                   )
                 }
