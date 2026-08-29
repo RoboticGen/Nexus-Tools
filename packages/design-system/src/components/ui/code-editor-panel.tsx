@@ -138,7 +138,13 @@ function CodeEditorPanel({
                         // Keyed off `index`, not a DOM pseudo-class: visual order
                         // here comes from the `order` style, not DOM order, so
                         // `:first-child`/`:last-child` would pick the wrong tab.
-                        index > 0 && "border-l border-border"
+                        // `border-l-border`, not `border-border`: the trigger
+                        // already carries `border border-transparent` (1px on
+                        // all four sides, just invisible), and `border-border`
+                        // sets the *whole* border's color — it made every
+                        // non-first tab a full outlined box instead of a
+                        // single left-edge divider.
+                        index > 0 && "border-l-border"
                       )}
                       onDoubleClick={() => onTabRename && startRename(tab)}
                       onKeyDown={(event) => {
@@ -183,7 +189,16 @@ function CodeEditorPanel({
                         }
                       }}
                       onBlur={commitRename}
-                      className="border-ring bg-background focus-ring h-6 w-20 shrink-0 rounded border px-1.5 text-xs"
+                      // `flex-1`, not `shrink-0`: `TabsTrigger` (what this
+                      // replaces while editing) is `flex-1` too. A fixed-width
+                      // input drops that tab's share of the row, so every
+                      // other `flex-1` trigger expands into the gap and the
+                      // whole bar reflows — which reads as the input jumping
+                      // sideways away from where the tab just was. `max-w-48`
+                      // caps the other side of that: with only one other
+                      // flex-1 sibling, unbounded growth lets the input eat
+                      // almost the entire row instead of sharing it.
+                      className="border-ring bg-background focus-ring h-6 min-w-20 max-w-48 flex-1 rounded border px-1.5 text-xs"
                     />
                   )
                 }
