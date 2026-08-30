@@ -15,23 +15,47 @@
     "./types": {
       "types": "./src/types.ts",
       "default": "./src/types.ts"
+    },
+    "./middleware": {
+      "types": "./src/middleware.ts",
+      "default": "./src/middleware.ts"
+    },
+    "./route-handler": {
+      "types": "./src/route-handler.ts",
+      "default": "./src/route-handler.ts"
+    },
+    "./login-redirect": {
+      "types": "./src/login-redirect.tsx",
+      "default": "./src/login-redirect.tsx"
+    },
+    "./firmware-proxy": {
+      "types": "./src/firmware-proxy.ts",
+      "default": "./src/firmware-proxy.ts"
+    },
+    "./session-provider": {
+      "types": "./src/session-provider.tsx",
+      "default": "./src/session-provider.tsx"
     }
   },
   "scripts": {
-    "build": "tsc",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
-  "dependencies": {
-    "@auth/core": "^0.34.0",
-    "@auth/nextjs": "^0.0.0-380f8d56",
-    "next-auth": "^4.24.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.0"
+    "@types/node": "^24.13.2",
+    "typescript": "~6.0.2",
+    "next-auth": "^4.24.15",
+    "next": "^16.3.1",
+    "react": "^19.2.8",
+    "@types/react": "^19.2.18",
+    "@nexus-tools/eslint-config": "workspace:*",
+    "@nexus-tools/typescript-config": "workspace:*"
   },
   "peerDependencies": {
-    "next": "^14.0.0"
+    "next": "^14.0.0 || ^15.0.0 || ^16.0.0",
+    "next-auth": "^4.24.0",
+    "react": "^19.0.0"
   }
 }

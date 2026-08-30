@@ -1,6 +1,1 @@
-import { getAuthConfig } from "@nexus-tools/auth";
-import NextAuth from "next-auth";
-
-const handler = NextAuth(getAuthConfig());
-
-export { handler as GET, handler as POST };
+export { GET, POST } from "@nexus-tools/auth/route-handler";

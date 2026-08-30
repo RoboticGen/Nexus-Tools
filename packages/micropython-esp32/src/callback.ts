@@ -1,65 +1,70 @@
+/** "Create variable…" flyout buttons for the typed MicroPython categories. These go through `Blockly.dialog` rather than the global `prompt`/`alert`, so they land in the app's own dialog (see `BlocklyDialogs` in the design system) instead of the browser's native box. */
 import * as Blockly from "blockly/core";
 
 export const createPinButtonCallback = (button: Blockly.FlyoutButton) => {
   const workspace = button.getTargetWorkspace();
   if (workspace) {
-    const variable_name = prompt("Name of the Pin variable ?");
-    if (variable_name == null) {
-      return;
-    }
-    const variable = workspace.getVariable(variable_name, "Pin");
-    if (variable != null) {
-      alert("Variable " + variable_name + " already exists!");
-      return;
-    }
-    workspace.createVariable(variable_name, "Pin");
+    Blockly.dialog.prompt("Name of the Pin variable ?", "", (variable_name) => {
+      if (variable_name == null) {
+        return;
+      }
+      const variable = workspace.getVariableMap().getVariable(variable_name, "Pin");
+      if (variable != null) {
+        Blockly.dialog.alert("Variable " + variable_name + " already exists!");
+        return;
+      }
+      workspace.getVariableMap().createVariable(variable_name, "Pin");
+    });
   }
 };
 
 export const createADCButtonCallback = (button: Blockly.FlyoutButton) => {
   const workspace = button.getTargetWorkspace();
   if (workspace) {
-    const variable_name = prompt("Name of the ADC variable ?");
-    if (variable_name == null) {
-      return;
-    }
-    const variable = workspace.getVariable(variable_name, "ADC");
-    if (variable != null) {
-      alert("Variable " + variable_name + " already exists!");
-      return;
-    }
-    workspace.createVariable(variable_name, "ADC");
+    Blockly.dialog.prompt("Name of the ADC variable ?", "", (variable_name) => {
+      if (variable_name == null) {
+        return;
+      }
+      const variable = workspace.getVariableMap().getVariable(variable_name, "ADC");
+      if (variable != null) {
+        Blockly.dialog.alert("Variable " + variable_name + " already exists!");
+        return;
+      }
+      workspace.getVariableMap().createVariable(variable_name, "ADC");
+    });
   }
 };
 
 export const createPWMButtonCallback = (button: Blockly.FlyoutButton) => {
   const workspace = button.getTargetWorkspace();
   if (workspace) {
-    const variable_name = prompt("Name of the PWM variable ?");
-    if (variable_name == null) {
-      return;
-    }
-    const variable = workspace.getVariable(variable_name, "PWM");
-    if (variable != null) {
-      alert("Variable " + variable_name + " already exists!");
-      return;
-    }
-    workspace.createVariable(variable_name, "PWM");
+    Blockly.dialog.prompt("Name of the PWM variable ?", "", (variable_name) => {
+      if (variable_name == null) {
+        return;
+      }
+      const variable = workspace.getVariableMap().getVariable(variable_name, "PWM");
+      if (variable != null) {
+        Blockly.dialog.alert("Variable " + variable_name + " already exists!");
+        return;
+      }
+      workspace.getVariableMap().createVariable(variable_name, "PWM");
+    });
   }
 };
 
 export const createI2CButtonCallback = (button: Blockly.FlyoutButton) => {
   const workspace = button.getTargetWorkspace();
   if (workspace) {
-    const variable_name = prompt("Name of the I2C variable ?");
-    if (variable_name == null) {
-      return;
-    }
-    const variable = workspace.getVariable(variable_name, "I2C");
-    if (variable != null) {
-      alert("Variable " + variable_name + " already exists!");
-      return;
-    }
-    workspace.createVariable(variable_name, "I2C");
+    Blockly.dialog.prompt("Name of the I2C variable ?", "", (variable_name) => {
+      if (variable_name == null) {
+        return;
+      }
+      const variable = workspace.getVariableMap().getVariable(variable_name, "I2C");
+      if (variable != null) {
+        Blockly.dialog.alert("Variable " + variable_name + " already exists!");
+        return;
+      }
+      workspace.getVariableMap().createVariable(variable_name, "I2C");
+    });
   }
 };

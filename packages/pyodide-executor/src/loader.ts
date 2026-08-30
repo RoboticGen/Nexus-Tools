@@ -1,7 +1,4 @@
-/**
- * Pyodide Loader
- * Initialize and manage Python execution environment using WebWorker
- */
+/** Pyodide Loader Initialize and manage Python execution environment using WebWorker */
 
 import type { WorkerMessage, WorkerResponse } from './types';
 
@@ -22,10 +19,7 @@ export class PyodideLoader {
     this.options = options;
   }
 
-  /**
-   * Initialize the WebWorker
-   * @param workerUrl URL to the worker.js file
-   */
+  /** Initialize the WebWorker @param workerUrl URL to the worker.js file */
   public initializeWorker(workerUrl: string | URL): Worker {
     if (this.worker) {
       return this.worker;
@@ -57,9 +51,7 @@ export class PyodideLoader {
     return this.worker;
   }
 
-  /**
-   * Send a message to the worker
-   */
+  /** Send a message to the worker */
   public sendMessage(message: WorkerMessage): void {
     if (!this.worker) {
       throw new Error('Worker not initialized');
@@ -67,23 +59,17 @@ export class PyodideLoader {
     this.worker.postMessage(message);
   }
 
-  /**
-   * Run Python code
-   */
+  /** Run Python code */
   public runCode(code: string): void {
     this.sendMessage({ command: 'run', code });
   }
 
-  /**
-   * Send input to Python stdin
-   */
+  /** Send input to Python stdin */
   public sendInput(input: string): void {
     this.sendMessage({ command: 'input', code: input });
   }
 
-  /**
-   * Terminate the worker
-   */
+  /** Terminate the worker */
   public terminate(): void {
     if (this.worker) {
       this.worker.terminate();
@@ -91,25 +77,19 @@ export class PyodideLoader {
     }
   }
 
-  /**
-   * Stop execution and restart worker
-   */
+  /** Stop execution and restart worker */
   public stopAndRestart(workerUrl: string | URL): void {
     this.terminate();
     this.initializeWorker(workerUrl);
   }
 
-  /**
-   * Get the current worker instance
-   */
+  /** Get the current worker instance */
   public getWorker(): Worker | null {
     return this.worker;
   }
 }
 
-/**
- * Create a simple loader instance with default terminal-based output
- */
+/** Create a simple loader instance with default terminal-based output */
 export function createTerminalLoader(terminalId: string = 'terminal-output'): PyodideLoader {
   const getTerminal = (): HTMLTextAreaElement | null => {
     if (typeof window !== 'undefined') {

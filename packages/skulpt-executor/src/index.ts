@@ -1,7 +1,4 @@
-/**
- * Skulpt Executor Package
- * Browser-based Python execution using Skulpt
- */
+/** Skulpt Executor Package Browser-based Python execution using Skulpt */
 
 // Core loader and utilities
 export { 

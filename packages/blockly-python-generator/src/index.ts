@@ -1,7 +1,4 @@
-/**
- * Blockly Python Generator - Main Export
- * Blockly-based visual programming with Python code generation
- */
+/** Blockly Python Generator - Main Export Blockly-based visual programming with Python code generation */
 
 // Import blocks to register them with Blockly (side effects)
 import './blocks';

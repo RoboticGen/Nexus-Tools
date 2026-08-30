@@ -25,8 +25,8 @@ coverage
 !.vscode/settings.json
 .idea
 
-# Claude Code local settings
-.claude/settings.local.json
+# Claude Code local settings and skills
+.claude/
 
 # Misc local artifacts
 cookies.txt

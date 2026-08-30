@@ -1,9 +1,7 @@
-/**
- * Wrapper around esptool-js for ESP32 firmware flashing.
- * Handles connection, chip detection, erasing, and writing firmware.
- */
+/** Wrapper around esptool-js for ESP32 firmware flashing. Handles connection, chip detection, erasing, and writing firmware. */
 
 import { ESPLoader, Transport } from "esptool-js";
+
 import type { SerialPort } from "../types/esp32";
 
 export interface FlashOptions {
@@ -11,23 +9,6 @@ export interface FlashOptions {
   onProgress?: (loaded: number, total: number, phase: string) => void;
   onLog?: (message: string) => void;
   onVerified?: () => void;
-}
-
-/**
- * esptool-js expects firmware data as a "binary string" where each character's
- * code point is one byte (0–255), and reads it via bstr.charCodeAt(i). Passing
- * a Uint8Array/ArrayBuffer triggers "bstr.charCodeAt is not a function".
- * Build the string in chunks to avoid call-stack limits on large firmware.
- */
-function toBinaryString(bytes: Uint8Array): string {
-  const CHUNK = 0x8000;
-  let result = "";
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    result += String.fromCharCode(
-      ...(bytes.subarray(i, i + CHUNK) as unknown as number[])
-    );
-  }
-  return result;
 }
 
 // Flash start addresses differ by chip family (ROM bootloader location)
@@ -40,15 +21,7 @@ const FLASH_ADDRESS_MAP: Record<string, number> = {
   "ESP32-H2": 0x0,
 };
 
-/**
- * Flash firmware using esptool-js.
- * The caller must ensure the SerialPort is CLOSED and all readers/writers
- * released before calling — esptool-js opens the port itself via Transport.
- *
- * After a successful flash, the chip is hard-reset via esptool-js so the
- * new firmware runs immediately. The transport is disconnected in the
- * finally block, closing the port so the caller can re-open it for REPL.
- */
+/** Flash firmware using esptool-js. The caller must ensure the SerialPort is CLOSED and all readers/writers released before calling — esptool-js opens the port itself via Transport. */
 export async function flashFirmwareWithESPTool(
   serialPort: SerialPort,
   firmware: ArrayBuffer,
@@ -66,7 +39,7 @@ export async function flashFirmwareWithESPTool(
     const esp = new ESPLoader({
       transport,
       baudrate,
-      romBaudrate: baudrate,
+      // No `romBaudrate` — esptool-js 0.6 dropped it from LoaderOptions and manages the ROM-bootloader rate internally. It used to be pinned to `baudrate`, which is what the loader now does on its own anyway.
       terminal: {
         clean: () => {},
         writeLine: (data: string) => options?.onLog?.(`[esptool] ${data}`),
@@ -85,15 +58,14 @@ export async function flashFirmwareWithESPTool(
     ]);
     options?.onLog?.("[esptool] Connected to chip");
 
-    // Read SPI flash ID — required so the stub knows the actual flash size.
-    // Without this, large compressed writes fail mid-stream (INFLATE_ERROR / status 0xC9).
+    // Read SPI flash ID — required so the stub knows the actual flash size. Without this, large compressed writes fail mid-stream (INFLATE_ERROR / status 0xC9).
     options?.onLog?.("[esptool] Reading flash ID...");
     await esp.flashId();
     options?.onLog?.("[esptool] Flash ID read successfully");
 
     const flashAddress = FLASH_ADDRESS_MAP[chipFamily] ?? 0x1000;
-    // esptool-js wants a binary string here, not a typed array.
-    const firmwareData = toBinaryString(new Uint8Array(firmware));
+    // esptool-js 0.6 takes the bytes directly. Before, `fileArray[].data` was a "binary string" (one char per byte, read via `charCodeAt`), so this had to go through a chunked `String.fromCharCode` conversion first — that helper is gone along with the copy it made of every firmware image.
+    const firmwareData = new Uint8Array(firmware);
 
     options?.onLog?.(
       `[esptool] Writing ${firmware.byteLength} bytes at 0x${flashAddress.toString(16)}...`
@@ -144,9 +116,7 @@ export async function flashFirmwareWithESPTool(
     options?.onProgress?.(100, 100, "writing");
     options?.onLog?.("[esptool] Flash write complete");
 
-    // MD5 verification — done here while the stub is still connected,
-    // so we don't need REPL after reboot. flashMd5sum reads the flash
-    // directly over the protocol and is always reliable.
+    // MD5 verification — done here while the stub is still connected, so we don't need REPL after reboot. flashMd5sum reads the flash directly over the protocol and is always reliable.
     options?.onLog?.("[esptool] Verifying written data via MD5...");
     try {
       const deviceMd5 = await esp.flashMd5sum(flashAddress, firmware.byteLength);

@@ -1,31 +1,7 @@
-import { NextResponse } from "next/server";
-import { withAuth } from "next-auth/middleware";
+import { authMiddleware } from "@nexus-tools/auth/middleware";
 
-// Apply auth to all routes except public ones
-export default withAuth(
-  function middleware() {
-    // If user is not authenticated, withAuth will handle the redirect
-    // based on the pages.signIn config
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        // Allow public routes
-        const publicRoutes = ["/login", "/api/auth", "/unauthorized"];
-        if (publicRoutes.some((route) => req.nextUrl.pathname.startsWith(route))) {
-          return true;
-        }
-
-        // For all other routes, require authentication with a valid (non-errored) token
-        return !!token && !token.error;
-      },
-    },
-    pages: {
-      signIn: "/login",
-    },
-  }
-);
+// Next reads both exports from the AST: the default must be a literal function, and a re-exported matcher is invisible to it.
+export default authMiddleware;
 
 export const config = {
   matcher: ["/((?!_next|favicon.ico|api/auth).*)"],

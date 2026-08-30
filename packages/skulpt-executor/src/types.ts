@@ -1,14 +1,12 @@
-/**
- * Type definitions for Skulpt Executor
- */
+/** Type definitions for Skulpt Executor */
 
-/**
- * Skulpt global interface
- */
+/** Skulpt global interface */
 export interface SkulptAPI {
   configure: (options: SkulptConfigureOptions) => void;
   TurtleGraphics: {
     target: string;
+    width?: number;
+    height?: number;
   };
   misceval: {
     asyncToPromise: (
@@ -27,9 +25,7 @@ export interface SkulptAPI {
   };
 }
 
-/**
- * Skulpt configuration options
- */
+/** Skulpt configuration options */
 export interface SkulptConfigureOptions {
   output: (text: string) => void;
   read: (filename: string) => string;
@@ -40,18 +36,14 @@ export interface SkulptConfigureOptions {
   killableFor?: boolean;
 }
 
-/**
- * Options for usePythonRunner hook
- */
+/** Options for usePythonRunner hook */
 export interface UsePythonRunnerOptions {
   onError?: (error: string) => void;
   onSuccess?: () => void;
   turtleCanvasId?: string;
 }
 
-/**
- * Return type of usePythonRunner hook
- */
+/** Return type of usePythonRunner hook */
 export interface UsePythonRunnerResult {
   runCode: (code: string) => Promise<void>;
   stopCode: () => void;

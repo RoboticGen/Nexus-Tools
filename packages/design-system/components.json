@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/theme.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@nexus-tools/design-system/components",
+    "utils": "@nexus-tools/design-system/lib/utils",
+    "ui": "@nexus-tools/design-system/components/ui",
+    "lib": "@nexus-tools/design-system/lib",
+    "hooks": "@nexus-tools/design-system/hooks"
+  },
+  "iconLibrary": "lucide",
+  "registries": {
+    "@roboticgen": "https://raw.githubusercontent.com/RoboticGen/academy-design-system/latest/public/r/{name}.json"
+  }
+}

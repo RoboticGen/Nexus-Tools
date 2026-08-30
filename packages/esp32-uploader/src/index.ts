@@ -1,20 +1,5 @@
-/**
- * ESP32 Uploader Package
- * Shared package for ESP32 code uploading functionality
- */
+/** Headless ESP32 support: hooks, serial transport, firmware catalog and types. No UI, no styles, no design-system dependency — consumers render these hooks through their own components. */
 
-// Styles
-import './styles';
-
-// Components
-export { ESP32Uploader, ESP32UploaderSidebar, ESP32REPL, ESP32FileManager, ESP32Flasher, DeviceFileManagerSidebar } from "./components";
-export type { ESP32UploaderProps } from "./components";
-export type { DeviceFileManagerSidebarProps, DeviceFileManagerSidebarHandle } from "./components";
-
-// Context
-export { ESP32Provider, useESP32Context } from "./contexts/ESP32Context";
-
-// Hooks
 export { useESP32Uploader } from "./hooks/use-esp32-uploader";
 export { useESP32Serial } from "./hooks/use-esp32-serial";
 export { useESP32REPL } from "./hooks/use-esp32-repl";

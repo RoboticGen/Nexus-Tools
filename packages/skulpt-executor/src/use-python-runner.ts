@@ -1,6 +1,4 @@
-/**
- * React Hook for Skulpt Python Execution
- */
+/** React Hook for Skulpt Python Execution */
 
 "use client";
 
@@ -64,6 +62,9 @@ export function usePythonRunner(options: UsePythonRunnerOptions = {}): UsePython
       setIsRunning(true);
       stopExecutionRef.current = false;
       setOutput("Python 3.10 \n>>> ");
+      // Re-measure the target panel before every run — it's resizable, so
+      // the space reserved for the canvas can differ from load time.
+      configureTurtleGraphics(turtleCanvasId);
 
       try {
         await Sk.misceval.asyncToPromise(
@@ -89,7 +90,7 @@ export function usePythonRunner(options: UsePythonRunnerOptions = {}): UsePython
         setIsRunning(false);
       }
     },
-    [onError, onSuccess]
+    [onError, onSuccess, turtleCanvasId]
   );
 
   const stopCode = useCallback(() => {

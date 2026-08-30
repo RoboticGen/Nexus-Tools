@@ -24,19 +24,24 @@ import {
 } from "@nexus-tools/micropython-esp32";
 import * as Blockly from "blockly";
 import "blockly/blocks";
+import { Download, Upload } from "lucide-react";
 import { useEffect, useRef, useCallback } from "react";
 
+import { BlocklyPanel } from "@nexus-tools/design-system/components/ui/blockly-panel";
+import { Button } from "@nexus-tools/design-system/components/ui/button";
 import { useEditorHandlers } from "@/hooks/use-editor-handlers";
 
 interface BlocklyEditorProps {
   onCodeChange: (code: string) => void;
   onEditToggle?: (isEditing: boolean) => void;
   showNotification: (message: string) => void;
+  className?: string;
 }
 
 export function BlocklyEditor({
   onCodeChange,
   showNotification,
+  className,
 }: BlocklyEditorProps) {
   const blocklyDivRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.Workspace | null>(null);
@@ -75,19 +80,16 @@ export function BlocklyEditor({
 
     const workspace = Blockly.inject(div, options);
 
-    // The div already has real dimensions (guaranteed by the ResizeObserver
-    // caller), so we can measure synchronously right after inject.
+    // The div already has real dimensions (guaranteed by the ResizeObserver caller), so we can measure synchronously right after inject.
     Blockly.svgResize(workspace);
     (workspace as any).resize();
     (workspace as any).updateInverseScreenCTM();
 
-    // Register flyout callbacks
     workspace.registerToolboxCategoryCallback("PIN", pinCategoryFlyout);
     workspace.registerToolboxCategoryCallback("ADC", adcCategoryFlyout);
     workspace.registerToolboxCategoryCallback("PWM", pwmCategoryFlyout);
     workspace.registerToolboxCategoryCallback("I2C", i2cCategoryFlyout);
 
-    // Register button callbacks
     workspace.registerButtonCallback(
       "CREATE_PIN_VARIABLE",
       createPinButtonCallback
@@ -107,7 +109,6 @@ export function BlocklyEditor({
 
     workspace.updateToolbox(toolbox);
 
-    // Add change listener
     workspace.addChangeListener((e: Blockly.Events.Abstract) => {
       if (
         e.isUiEvent ||
@@ -129,23 +130,19 @@ export function BlocklyEditor({
     return workspace;
   }, [onCodeChange]);
 
-  // Initialize Blockly and define blocks
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     try {
       Blockly.common.defineBlocks(blocks);
       
-      // Merge generator definitions
       const merged = { ...pythonGenerator.forBlock, ...forBlock };
       Object.assign(pythonGenerator.forBlock, merged);
 
       // Override the finish method to properly handle function definitions
       pythonGenerator.finish = function(code: string) {
-        // Get all definitions (functions)
         const definitions = Object.values(this.definitions_ || {}).join('\n');
         
-        // Prepend definitions to the main code
         if (definitions) {
           return definitions + '\n' + code;
         }
@@ -159,12 +156,7 @@ export function BlocklyEditor({
         true
       );
 
-      // Use a ResizeObserver to delay inject until the container div has
-      // real non-zero pixel dimensions.  A plain rAF or useEffect isn't
-      // enough here because Next.js dynamic imports + CSS flex/grid
-      // percentage heights can take multiple layout passes to resolve.
-      // The observer fires as soon as the element gets its first real size,
-      // at which point Blockly can measure the correct viewport immediately.
+      // Use a ResizeObserver to delay inject until the container div has real non-zero pixel dimensions. A plain rAF or useEffect isn't enough here because Next.js dynamic imports + CSS flex/grid percentage heights can take multiple layout passes to resolve.
       const div = blocklyDivRef.current;
       if (!div) return;
 
@@ -173,10 +165,19 @@ export function BlocklyEditor({
         const entry = entries[0];
         if (!entry) return;
         const { width, height } = entry.contentRect;
-        if (width > 0 && height > 0 && !initialized) {
+        if (width <= 0 || height <= 0) return;
+
+        if (!initialized) {
           initialized = true;
-          observer.disconnect();
           initBlockly(div);
+          return;
+        }
+
+        // Keep observing after inject: Blockly measures its container itself and
+        // only re-measures on `window.resize`, which a splitter drag never fires,
+        // so the canvas would stay at its original width inside a resized panel.
+        if (workspaceRef.current) {
+          Blockly.svgResize(workspaceRef.current as Blockly.WorkspaceSvg);
         }
       });
       observer.observe(div);
@@ -189,20 +190,16 @@ export function BlocklyEditor({
     }
   }, []);
 
-  // Handle window resize
+  // Panel resizes are handled by the ResizeObserver above; this only tracks the
+  // viewport, where the mobile breakpoint decides whether scrollbars show.
   useEffect(() => {
     const handleResize = () => {
-      if (blocklyDivRef.current && workspaceRef.current) {
-        const workspace = workspaceRef.current as any;
-        if (workspace.resize) {
-          workspace.resize();
-        }
-        
-        // Update scrolling behavior on resize
-        const isMobile = window.innerWidth <= 768;
-        if (workspace.scrollbar && workspace.scrollbar.horizontal) {
-          workspace.scrollbar.horizontal.setVisible(isMobile);
-        }
+      const workspace = workspaceRef.current as any;
+      if (!workspace) return;
+
+      const isMobile = window.innerWidth <= 768;
+      if (workspace.scrollbar && workspace.scrollbar.horizontal) {
+        workspace.scrollbar.horizontal.setVisible(isMobile);
       }
     };
 
@@ -221,7 +218,6 @@ export function BlocklyEditor({
             showNotification("Workspace imported successfully");
             const workspace = getActiveWorkspace();
             
-            // Initialize generator before generating code
             pythonGenerator.init(workspace);
             (pythonGenerator as any).definitions_ = {};
             
@@ -265,24 +261,23 @@ export function BlocklyEditor({
   }, [handleImportJson]);
 
   return (
-    <div className="blocky-editor">
-      <div className="button-row">
-        <p className="code-title">Visual Blocks</p>
-        <div className="button-group">
-          <button className="button" onClick={handleImportClick}>
-            <i className="fa fa-file-import" style={{ paddingRight: "2px" }} />
-            <span>Import</span>
-          </button>
-          <button className="button" onClick={handleExportJson}>
-            <i
-              className="fa fa-file-export"
-              style={{ paddingRight: "4px" }}
-            />
-            <span>Export</span>
-          </button>
-        </div>
-      </div>
-      <div className="editor" ref={blocklyDivRef} />
-    </div>
+    <BlocklyPanel
+      className={className}
+      actions={
+        <>
+          <Button size="sm" variant="outline" onClick={handleImportClick} title="Import workspace JSON">
+            <Upload aria-hidden="true" />
+            Import
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleExportJson} title="Export workspace JSON">
+            <Download aria-hidden="true" />
+            Export
+          </Button>
+        </>
+      }
+    >
+      {/* Blockly measures this element, so it needs real dimensions; `min-h-0` stops the flex parent refusing to shrink it below its content. */}
+      <div ref={blocklyDivRef} className="h-full min-h-0 w-full overflow-hidden" />
+    </BlocklyPanel>
   );
 }

@@ -1,12 +1,12 @@
+import { THEME_STORAGE_KEY } from "@nexus-tools/design-system/lib/theme";
 import { Inter } from "next/font/google";
+import { cookies } from "next/headers";
 
 import { Providers } from "./providers";
 
 import type { Metadata, Viewport } from "next";
 
 import "@/styles/globals.css";
-import "antd/dist/reset.css";
-import "@nexus-tools/esp32-uploader/styles";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,17 +22,15 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Obo Blocks",
+  title: "Obo Code",
   description:
-    "Obo Blocks: Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions for seamless web-based Python execution.",
+    "Obo Code: Write and run Python code in the browser, with turtle graphics and ESP32 device support.",
   keywords: [
-    "Obo Blocks",
+    "Obo Code",
     "python",
-    "google",
-    "scratch",
-    "Blockly",
-    "visual programming",
-    "pyodide",
+    "turtle graphics",
+    "esp32",
+    "micropython",
     "web application",
     "roboticgen academy",
     "roboticgen",
@@ -42,70 +40,35 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Obo Code",
-    description:
-      "Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions",
-    images: ["/obo_blocks.webp"],
+    description: "Write and run Python code in the browser, with turtle graphics and ESP32 device support.",
+    images: ["/images/OboCode.webp"],
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  /*
+    Resolve the theme on the server so `.dark` is in the initial HTML and an
+    explicit choice never flashes. `ThemeProvider` mirrors its `localStorage`
+    value into this cookie for exactly this read.
+
+    Deliberately no inline `<script>`: React 19 warns on script elements
+    rendered by a component (`next/script` included), and this needs none.
+    `system` is the one case the server cannot resolve — the OS preference
+    isn't sent with the request — so it stays light until the provider's
+    effect corrects it. The default is light, so that path is the rare one.
+  */
+  const theme = (await cookies()).get(THEME_STORAGE_KEY)?.value;
+
   return (
-    <html lang="en">
+    <html lang="en" className={theme === "dark" ? "dark" : undefined}>
       <head>
         <meta name="msvalidate.01" content="F880277201EB0168D24B534ADC14C549" />
-        {/* Preload fonts to prevent FOUC */}
-        <link rel="preload" as="font" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
         {/* Preload images */}
-        <link rel="preload" as="image" href="/academyLogo.webp" />
-        <link rel="preload" as="image" href="/obo_blocks.webp" />
-        <link rel="prefetch" as="image" href="/editing.gif" />
-        {/* Critical inline styles to prevent layout shift during CSS load */}
-        <style dangerouslySetInnerHTML={{__html: `
-          html, body {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Inter", system-ui, sans-serif;
-            font-weight: 400;
-            background-color: #f0f4f8;
-            overflow: hidden;
-            height: 100%;
-            width: 100%;
-          }
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          #__next {
-            height: 100vh;
-            width: 100vw;
-          }
-          .app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-            width: 100%;
-          }
-          /* Hide all buttons until app initializes */
-          button, .ant-btn, .action-btn {
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-          }
-          /* Show buttons when app is ready */
-          html.app-ready button, 
-          html.app-ready .ant-btn, 
-          html.app-ready .action-btn {
-            opacity: 1;
-            pointer-events: auto;
-          }
-        `}} />
+        <link rel="preload" as="image" href="/images/OboCode.webp" />
       </head>
       <body className={inter.className}>
         <Providers>

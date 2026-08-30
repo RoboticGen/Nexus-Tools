@@ -1,14 +1,15 @@
-/**
- * Pyodide Executor Package
- * WebWorker-based Python execution using Pyodide
- * 
- * Usage:
- * 1. Copy worker.ts content to your app's public/worker.js
- * 2. Use PyodideLoader to initialize and communicate with the worker
- */
+/** Pyodide Executor Package WebWorker-based Python execution using Pyodide Usage: 1. Copy worker.ts content to your app's public/worker.js 2. */
 
 // Core loader and worker management
 export { PyodideLoader, createTerminalLoader, type PyodideLoaderOptions } from './loader';
 
+// React hook
+export { usePyodideRunner } from './use-pyodide-runner';
+
 // Type definitions
-export type { WorkerMessage, WorkerResponse } from './types';
+export type {
+  WorkerMessage,
+  WorkerResponse,
+  UsePyodideRunnerOptions,
+  UsePyodideRunnerResult,
+} from './types';

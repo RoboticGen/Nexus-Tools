@@ -1,23 +1,34 @@
 "use client";
 
-import { DeviceFileManagerSidebar, serialStreamManager, type DeviceFileManagerSidebarHandle, type SerialPort } from "@nexus-tools/esp32-uploader";
-import { SharedCodePanel } from "@nexus-tools/ui/components/shared-code-panel";
-import { notification } from "antd";
-import dynamic from "next/dynamic";
+import { serialStreamManager, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { useState, useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
 
-import { ESP32OutputPanel, type ESP32OutputPanelHandle } from "@/components/esp32-output-panel";
-import { Navbar } from "@/components/navbar";
+import { CodeEditor, type CodeEditorHandle } from "@nexus-tools/design-system/components/code-editor";
+import { DeviceFileManager, type DeviceFileManagerHandle } from "@nexus-tools/design-system/components/device-file-manager";
+import { ESP32OutputPanel, type ESP32OutputPanelHandle } from "@nexus-tools/design-system/components/esp32-output-panel";
+import { BlocklyDialogs } from "@nexus-tools/design-system/components/blockly-dialogs";
+import { WorkspaceNavbar } from "@nexus-tools/design-system/components/workspace-navbar";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@nexus-tools/design-system/components/ui/resizable";
+import { WorkspaceLayout, WorkspaceColumn } from "@nexus-tools/design-system/components/ui/workspace-layout";
 import { useBlocklyHandlers } from "@/hooks/use-blockly-handlers";
 import { useEditorHandlers } from "@/hooks/use-editor-handlers";
 
-import type { SharedCodeEditorHandle } from "@nexus-tools/ui/components/shared-code-editor";
+import dynamic from "next/dynamic";
 
 const BlocklyEditor = dynamic(
   () => import("@/components/blockly-editor").then((mod) => ({ default: mod.BlocklyEditor })),
   {
     ssr: false,
-    loading: () => <div>Loading Blockly...</div>,
+    loading: () => (
+      <div className="text-muted-foreground flex h-full items-center justify-center">
+        Loading Blockly...
+      </div>
+    ),
   }
 );
 
@@ -25,24 +36,19 @@ export default function Home() {
   const [code, setCode] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [, setIsDeviceConnected] = useState(false);
+  const [isDeviceConnected, setIsDeviceConnected] = useState(false);
   const [serialPort, setSerialPort] = useState<SerialPort | null>(null);
   const [activeEditorFileName, setActiveEditorFileName] = useState<string | null>(null);
-  const [fileManagerExpanded, setFileManagerExpanded] = useState(true);
-  const saveFileToDeviceRef = useRef<(filename: string, content: string) => Promise<void>>();
-  const codeEditorRef = useRef<SharedCodeEditorHandle>(null);
+  // React 19's `useRef` requires an explicit initial value — no zero-arg overload.
+  const saveFileToDeviceRef = useRef<((filename: string, content: string) => Promise<void>) | undefined>(undefined);
+  const codeEditorRef = useRef<CodeEditorHandle>(null);
   const outputPanelRef = useRef<ESP32OutputPanelHandle>(null);
-  const fileManagerRef = useRef<DeviceFileManagerSidebarHandle>(null);
+  const fileManagerRef = useRef<DeviceFileManagerHandle>(null);
 
   const { copyTextToClipboard, downloadPythonFile } = useEditorHandlers();
 
   const showNotification = useCallback((message: string, type: "success" | "error" | "info" = "info") => {
-    notification[type]({
-      message: type === "success" ? "Success" : type === "error" ? "Error" : "Info",
-      description: message,
-      duration: 2,
-      placement: "topRight",
-    });
+    toast[type](message);
   }, []);
 
   const {
@@ -52,20 +58,12 @@ export default function Home() {
     handleRunCode,
     handleClearTerminal,
     handleStopCode,
+    output,
   } = useBlocklyHandlers(code, isEditing, showNotification, copyTextToClipboard, downloadPythonFile);
 
-  // Initialize worker
+  // Blockly renders through a dynamic import and measures its own container, so it can only mount client-side. The Pyodide worker is no longer started here — `usePyodideRunner` (inside `useBlocklyHandlers`) owns its lifecycle.
   useEffect(() => {
     setIsClient(true);
-    if (typeof window !== "undefined") {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const workerModule = require("@/pyodide/loader");
-        workerModule.getWorker();
-      } catch (err) {
-        console.error("Error initializing worker:", err);
-      }
-    }
   }, []);
 
   const handleCodeChange = useCallback((newCode: string) => {
@@ -80,12 +78,9 @@ export default function Home() {
     [handleEditToggle]
   );
 
-  // Callback to open file in code editor (from file manager)
   const handleOpenFileInEditor = useCallback((filename: string, content: string) => {
-    if (codeEditorRef.current) {
-      codeEditorRef.current.openFileInTab(filename, content);
-      setActiveEditorFileName(filename);
-    }
+    codeEditorRef.current?.openFileInTab(filename, content);
+    setActiveEditorFileName(filename);
   }, []);
 
   const handleConnect = useCallback(() => {
@@ -119,7 +114,6 @@ export default function Home() {
         if (saveFileToDeviceRef.current) {
           await saveFileToDeviceRef.current(filename, content);
           showNotification(`Saved ${filename} to device`);
-          // Refresh file manager after save
           fileManagerRef.current?.refreshFiles();
         } else {
           showNotification("Device not connected");
@@ -133,40 +127,59 @@ export default function Home() {
   );
 
   return (
-    <div className="app-container">
-      <Navbar />
+    <WorkspaceLayout
+      header={<WorkspaceNavbar title="Obo Blocks" logoSrc="/obo_blocks.webp" connectionState={isDeviceConnected ? "connected" : "disconnected"} />}
+      sidebar={
+        <DeviceFileManager
+          ref={fileManagerRef}
+          serialPort={serialPort}
+          isConnected={serialPort !== null}
+          activeFileName={activeEditorFileName}
+          onError={showNotification}
+          onOpenFileInEditor={handleOpenFileInEditor}
+          onConnect={handleConnect}
+          onDisconnect={handleDisconnect}
+        />
+      }
+    >
+      {/* Columns render unconditionally: gating them on `isClient` changes the panel count between renders, which react-resizable-panels reports as "Previous layout not found for panel index N". Only the Blockly workspace itself waits for the client. */}
+      <WorkspaceColumn grow={3} collapsible collapsedSize={0} className="[&:not(:last-child)]:pr-2">
+        {isClient && (
+          <BlocklyEditor
+            onCodeChange={handleCodeChange}
+            onEditToggle={handleEditToggleWrapper}
+            showNotification={showNotification}
+            className="h-full"
+          />
+        )}
+      </WorkspaceColumn>
 
-      {isClient && (
-        <div
-          className={`main-layout main-content-with-file-manager${!fileManagerExpanded ? " file-manager-collapsed" : ""} ${isEditing ? "editing-mode" : ""}`}
-        >
-          <div className="blockly-section">
-            <BlocklyEditor
-              onCodeChange={handleCodeChange}
-              onEditToggle={handleEditToggleWrapper}
-              showNotification={showNotification}
-            />
-          </div>
-
-          <div className="panels-section">
-            <SharedCodePanel
+      <WorkspaceColumn grow={2}>
+        <ResizablePanelGroup direction="vertical" className="gap-2">
+          <ResizablePanel defaultSize={62} minSize={20}>
+            <CodeEditor
+              defaultFileName="main.py"
+              ref={codeEditorRef}
               code={code}
               isEditing={isEditing}
-              onCodeChange={handleCodeChange}
-              onActiveTabChange={setActiveEditorFileName}
+              onChange={handleCodeChange}
               onEditToggle={handleEditToggleWrapper}
+              onActiveTabChange={setActiveEditorFileName}
               onRun={handleRunCode}
               onRunInESP32={handleRunInESP32}
               onCopy={handleCopy}
               onExport={handleExport}
               onSaveToDevice={handleSaveToDevice}
               isConnected={serialPort !== null}
-              codeEditorRef={codeEditorRef}
+              className="h-full"
             />
-
-            <ESP32OutputPanel 
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={38} minSize={15}>
+            <ESP32OutputPanel
               ref={outputPanelRef}
-              onClear={handleClearTerminal} 
+              output={output}
+              onClear={handleClearTerminal}
               onStop={handleStopCode}
               code={code}
               onStatusUpdate={showNotification}
@@ -177,22 +190,14 @@ export default function Home() {
               }}
               onConnectionStatusChange={setIsDeviceConnected}
               onSerialPortChange={setSerialPort}
+              className="h-full"
             />
-          </div>
-        </div>
-      )}
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </WorkspaceColumn>
 
-      <DeviceFileManagerSidebar
-        ref={fileManagerRef}
-        serialPort={serialPort}
-        isConnected={serialPort !== null}
-        activeFileName={activeEditorFileName}
-        onError={showNotification}
-        onOpenFileInEditor={handleOpenFileInEditor}
-        onExpandChange={setFileManagerExpanded}
-        onConnect={handleConnect}
-        onDisconnect={handleDisconnect}
-      />
-    </div>
+      {/* Replaces Blockly's native window.prompt for variable creation. Not a column — WorkspaceLayout renders it outside the panel group. */}
+      <BlocklyDialogs />
+    </WorkspaceLayout>
   );
 }

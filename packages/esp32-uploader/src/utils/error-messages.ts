@@ -1,7 +1,4 @@
-/**
- * Error message translation utility
- * Converts technical errors to user-friendly messages
- */
+/** Error message translation utility Converts technical errors to user-friendly messages */
 
 export function translateErrorMessage(error: unknown): string {
   const msg = error instanceof Error ? error.message : String(error);
