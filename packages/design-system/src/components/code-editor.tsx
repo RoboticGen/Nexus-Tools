@@ -110,13 +110,28 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
 
     const openFileInTab = useCallback(
       (filename: string, content: string) => {
+        // Re-opening a file that is already in a tab focuses that tab rather than
+        // appending a second one. Without this, each click in the file sidebar added
+        // another tab with the same name, and every copy carried its own `code` — so
+        // edits made in one silently diverged from the device content loaded into the
+        // next, and whichever tab was saved last won.
+        const existing = tabs.find((tab) => tab.name === filename);
+        if (existing) {
+          setActiveTabId(existing.id);
+          onActiveTabChange?.(filename);
+          // The tab's own buffer, not the freshly-read `content`: focusing a tab must
+          // not discard unsaved edits sitting in it.
+          onChange(existing.code);
+          return;
+        }
+
         const newTabId = `file-${Date.now()}`;
         setTabs((prevTabs) => [...prevTabs, { id: newTabId, name: filename, code: content }]);
         setActiveTabId(newTabId);
         onActiveTabChange?.(filename);
         onChange(content);
       },
-      [onChange, onActiveTabChange]
+      [tabs, onChange, onActiveTabChange]
     );
 
     useImperativeHandle(ref, () => ({ openFileInTab }), [openFileInTab]);
