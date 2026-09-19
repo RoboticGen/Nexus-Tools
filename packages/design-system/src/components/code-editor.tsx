@@ -100,19 +100,23 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
     const handleChange = useCallback(
       (value: string) => {
         // Monaco's read-only path calls `setValue()` without setting its own
-        // preventTriggerChangeEvent flag (the editable path does), so switching tabs while
-        // `readOnly` echoes the newly-shown value straight back here as if the user had typed it.
-        // A value that already equals the active tab's buffer is that echo, never a real edit:
-        // forwarding it would push the focused file's contents into the parent, and in obo-blocks
-        // the generated-code effect would then copy them over the Blockly tab.
-        if (value === activeTab.code) return;
+        // preventTriggerChangeEvent flag (the editable path does), so every programmatic update
+        // echoes back here as though it had been typed. The user cannot type while read-only, so a
+        // change event in that state is always that echo.
+        //
+        // Comparing `value` against the active tab is not enough: this callback closes over the
+        // render before the switch, so the echo arrives while `activeTabId` still names the tab we
+        // just left, and the new file's text gets written into it — then forwarded to the parent,
+        // where obo-blocks' generated-code effect copies it onto the Blockly tab as well. That is
+        // how every tab ended up holding the last-opened file.
+        if (!editable) return;
 
         setTabs((prevTabs) =>
           prevTabs.map((tab) => (tab.id === activeTabId ? { ...tab, code: value } : tab))
         );
         onChange(value);
       },
-      [activeTab, activeTabId, onChange]
+      [editable, activeTabId, onChange]
     );
 
     const handleAddTab = useCallback(() => {
@@ -136,7 +140,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
           onActiveTabChange?.(filename);
           // The tab's own buffer, not the freshly-read `content`: focusing a tab must
           // not discard unsaved edits sitting in it.
-          onChange(existing.code);
+          if (!isGenerated) onChange(existing.code);
           return;
         }
 
@@ -147,9 +151,13 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
         ]);
         setActiveTabId(newTabId);
         onActiveTabChange?.(filename);
-        onChange(content);
+        // In generated mode the parent's `code` is the Blockly program, not "whatever buffer is
+        // on screen". Reporting a device file through it makes the generated-code effect copy that
+        // file over the `main` tab, after which both tabs hold the same text and switching between
+        // them appears to do nothing.
+        if (!isGenerated) onChange(content);
       },
-      [tabs, onChange, onActiveTabChange]
+      [tabs, isGenerated, onChange, onActiveTabChange]
     );
 
     useImperativeHandle(ref, () => ({ openFileInTab }), [openFileInTab]);
@@ -177,10 +185,10 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
         if (tabToSwitch) {
           setActiveTabId(tabId);
           onActiveTabChange?.(tabToSwitch.name);
-          onChange(tabToSwitch.code);
+          if (!isGenerated) onChange(tabToSwitch.code);
         }
       },
-      [tabs, onChange, onActiveTabChange]
+      [tabs, isGenerated, onChange, onActiveTabChange]
     );
 
     const handleRenameTab = useCallback((tabId: string, label: string) => {
