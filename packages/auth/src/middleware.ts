@@ -29,17 +29,8 @@ export const authMiddleware = withAuth(
   }
 );
 
-/**
- * Reference copy of the matcher. **Nothing imports this, and nothing can**: Next reads
- * `config.matcher` by static analysis of each app's own `middleware.ts`, so an imported value is
- * invisible to it and the middleware would silently never run. Each app therefore repeats the
- * string as a literal, and this export exists to keep the canonical version in one readable place.
- * Change it here and in all three apps together.
- *
- * The brand icons and the web manifest are excluded alongside `_next` and `api/auth`. A browser
- * requests them on the login page itself, while nobody is authenticated, so gating them just
- * answers a 307 to `/login` and the tab renders no icon. They carry nothing worth protecting.
- */
-export const authMatcher = [
-  "/((?!_next|api/auth|favicon|apple-touch-icon|android-chrome|site\\.webmanifest).*)",
-];
+// No matcher is exported from this package, deliberately. Next resolves `config.matcher` by static
+// analysis of each app's own `middleware.ts`, before any module is evaluated, so an imported value
+// is invisible to it: `matcher: someImportedConst` yields no matcher, builds clean, and leaves every
+// gated route public with no error. Each app must therefore spell the matcher out as a literal.
+// Keep the three copies in step -- see apps/*/src/middleware.ts.
