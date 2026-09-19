@@ -3,22 +3,81 @@ import KeycloakProvider from "next-auth/providers/keycloak";
 import type { NextAuthSession } from "./types";
 import type { NextAuthOptions } from "next-auth";
 
-/** Get NextAuth configuration for Keycloak OAuth provider Environment variables should be set: KEYCLOAK_URL, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET, KEYCLOAK_REALM, NEXTAUTH_URL */
-export function getAuthConfig(): NextAuthOptions {
-  const keycloakUrl = process.env.KEYCLOAK_URL || "https://auth.roboticgen.co";
-  const realm = process.env.KEYCLOAK_REALM || "roboticgen";
-  const clientId = process.env.KEYCLOAK_CLIENT_ID || "obo-nexus";
-  const clientSecret = process.env.KEYCLOAK_CLIENT_SECRET;
-  if (!clientSecret) {
-    throw new Error("KEYCLOAK_CLIENT_SECRET env var is required");
+function required(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} env var is required`);
   }
+  return value;
+}
+
+export interface PublicKeycloakConfig {
+  keycloakUrl: string;
+  realm: string;
+  clientId: string;
+}
+
+/**
+ * Keycloak details needed by client components — currently RP-initiated logout.
+ *
+ * These are read as literal `process.env.NEXT_PUBLIC_*` expressions rather than
+ * through `required()`, because Next inlines only literal member accesses at
+ * build time. A dynamic `process.env[name]` lookup resolves to `undefined` in
+ * the browser no matter how the variable is set.
+ *
+ * Call this at module scope so the check runs when the module is first evaluated,
+ * not when someone clicks Log out. Note this is not a build-time guarantee: the
+ * workspace apps render every route dynamically, so nothing is prerendered and a
+ * missing value surfaces on the first render of a page that mounts the navbar.
+ * That is still far earlier, and far louder, than silently signing users out
+ * against the production realm.
+ */
+export function getPublicKeycloakConfig(): PublicKeycloakConfig {
+  const keycloakUrl = process.env.NEXT_PUBLIC_KEYCLOAK_URL;
+  const realm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM;
+  const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID;
+
+  if (!keycloakUrl) throw new Error("NEXT_PUBLIC_KEYCLOAK_URL env var is required");
+  if (!realm) throw new Error("NEXT_PUBLIC_KEYCLOAK_REALM env var is required");
+  if (!clientId) throw new Error("NEXT_PUBLIC_KEYCLOAK_CLIENT_ID env var is required");
+
+  return { keycloakUrl, realm, clientId };
+}
+
+/**
+ * NextAuth configuration for the Keycloak provider.
+ *
+ * Required: KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, plus NEXTAUTH_URL
+ * and NEXTAUTH_SECRET, which NextAuth reads from the environment itself.
+ * Optional: KEYCLOAK_CLIENT_SECRET — see below.
+ */
+export function getAuthConfig(): NextAuthOptions {
+  const keycloakUrl = required("KEYCLOAK_URL");
+  const realm = required("KEYCLOAK_REALM");
+  const clientId = required("KEYCLOAK_CLIENT_ID");
+
+  // `obo-nexus` is registered in the `roboticgen` realm as a PUBLIC client, so
+  // there is no secret to send — the realm refuses client authentication for it
+  // outright ("Public client not allowed to retrieve service account"). Requiring
+  // one here is what pushed deployments into inventing placeholder values.
+  //
+  // The flow is still sound without it: the authorization code is bound to a PKCE
+  // challenge, which is precisely the protection a public client relies on.
+  //
+  // Left optional rather than removed so this config keeps working unchanged if
+  // the client is ever switched to confidential.
+  const clientSecret = process.env.KEYCLOAK_CLIENT_SECRET;
+  const isPublicClient = !clientSecret;
   return {
     debug: process.env.NODE_ENV === "development",
     providers: [
       KeycloakProvider({
         clientId,
-        clientSecret,
+        clientSecret: clientSecret ?? "",
         issuer: `${keycloakUrl}/realms/${realm}`,
+        // Without this, openid-client defaults to `client_secret_basic` and sends
+        // an Authorization header the realm will not accept for a public client.
+        ...(isPublicClient ? { client: { token_endpoint_auth_method: "none" } } : {}),
         authorization: {
           params: {
             scope: "openid profile email roles",
@@ -64,7 +123,9 @@ export function getAuthConfig(): NextAuthOptions {
                   headers: { "Content-Type": "application/x-www-form-urlencoded" },
                   body: new URLSearchParams({
                     client_id: clientId,
-                    client_secret: clientSecret,
+                    // Omitted entirely for a public client; sending an empty
+                    // `client_secret` is not the same as sending none.
+                    ...(clientSecret ? { client_secret: clientSecret } : {}),
                     grant_type: "refresh_token",
                     refresh_token: (token.refreshToken as string) || "",
                   }),
