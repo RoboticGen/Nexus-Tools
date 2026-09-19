@@ -99,12 +99,20 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
 
     const handleChange = useCallback(
       (value: string) => {
+        // Monaco's read-only path calls `setValue()` without setting its own
+        // preventTriggerChangeEvent flag (the editable path does), so switching tabs while
+        // `readOnly` echoes the newly-shown value straight back here as if the user had typed it.
+        // A value that already equals the active tab's buffer is that echo, never a real edit:
+        // forwarding it would push the focused file's contents into the parent, and in obo-blocks
+        // the generated-code effect would then copy them over the Blockly tab.
+        if (value === activeTab.code) return;
+
         setTabs((prevTabs) =>
           prevTabs.map((tab) => (tab.id === activeTabId ? { ...tab, code: value } : tab))
         );
         onChange(value);
       },
-      [activeTabId, onChange]
+      [activeTab, activeTabId, onChange]
     );
 
     const handleAddTab = useCallback(() => {
@@ -213,7 +221,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
                 {editable ? "Editing" : "Edit"}
               </Button>
             )}
-            <Button size="sm" onClick={onRun} title="Run Python Code (Ctrl+Enter)">
+            <Button size="sm" variant="default" onClick={onRun} title="Run Python Code (Ctrl+Enter)">
               <Play aria-hidden="true" />
               Run
             </Button>
