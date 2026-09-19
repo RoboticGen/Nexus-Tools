@@ -29,5 +29,8 @@ export const authMiddleware = withAuth(
   }
 );
 
-/** Next reads `config.matcher` by static analysis of the app's own `middleware.ts`, so the app must spread this into a literal `config` export of its own rather than re-exporting it under a different name. */
-export const authMatcher = ["/((?!_next|favicon.ico|api/auth).*)"];
+// No matcher is exported from this package, deliberately. Next resolves `config.matcher` by static
+// analysis of each app's own `middleware.ts`, before any module is evaluated, so an imported value
+// is invisible to it: `matcher: someImportedConst` yields no matcher, builds clean, and leaves every
+// gated route public with no error. Each app must therefore spell the matcher out as a literal.
+// Keep the three copies in step -- see apps/*/src/middleware.ts.
