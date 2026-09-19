@@ -25,6 +25,13 @@ interface CodeTab {
   id: string;
   name: string;
   code: string;
+  /**
+   * True for a tab opened from the device file list. The scratch tab the editor starts with is
+   * named after `defaultFileName` — "main.py" by default, which is also the commonest filename on
+   * an ESP32 — so matching an incoming file by name alone would focus the scratch buffer and show
+   * the wrong contents. Only device-opened tabs are candidates for reuse.
+   */
+  fromDevice?: boolean;
 }
 
 interface CodeEditorProps {
@@ -115,7 +122,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
         // another tab with the same name, and every copy carried its own `code` — so
         // edits made in one silently diverged from the device content loaded into the
         // next, and whichever tab was saved last won.
-        const existing = tabs.find((tab) => tab.name === filename);
+        const existing = tabs.find((tab) => tab.fromDevice && tab.name === filename);
         if (existing) {
           setActiveTabId(existing.id);
           onActiveTabChange?.(filename);
@@ -126,7 +133,10 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
         }
 
         const newTabId = `file-${Date.now()}`;
-        setTabs((prevTabs) => [...prevTabs, { id: newTabId, name: filename, code: content }]);
+        setTabs((prevTabs) => [
+          ...prevTabs,
+          { id: newTabId, name: filename, code: content, fromDevice: true },
+        ]);
         setActiveTabId(newTabId);
         onActiveTabChange?.(filename);
         onChange(content);
