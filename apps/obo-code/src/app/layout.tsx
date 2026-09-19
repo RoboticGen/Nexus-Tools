@@ -76,7 +76,7 @@ export default async function RootLayout({
       <head>
         <meta name="msvalidate.01" content="F880277201EB0168D24B534ADC14C549" />
         {/* Preload images */}
-        <link rel="preload" as="image" href="/images/OboCode.webp" />
+        <link rel="preload" as="image" href="/brand/obo-code-wordmark.webp" />
       </head>
       <body className={inter.className}>
         <Providers>

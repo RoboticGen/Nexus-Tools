@@ -176,7 +176,7 @@ export default function Home() {
 
   return (
     <WorkspaceLayout
-      header={<WorkspaceNavbar title="Obo Code" logoSrc="/images/OboCode.webp" connectionState={isDeviceConnected ? "connected" : "disconnected"} />}
+      header={<WorkspaceNavbar title="Obo Code" logoSrc="/brand/obo-code-wordmark.webp" connectionState={isDeviceConnected ? "connected" : "disconnected"} />}
       sidebar={
         <DeviceFileManager
           ref={fileManagerRef}

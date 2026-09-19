@@ -79,7 +79,7 @@ export default async function RootLayout({
     <html lang="en" className={theme === "dark" ? "dark" : undefined}>
       <head>
         <meta name="msvalidate.01" content="F880277201EB0168D24B534ADC14C549" />
-        <link rel="preload" as="image" href="/obo_blocks.webp" />
+        <link rel="preload" as="image" href="/brand/obo-blocks-wordmark.webp" />
       </head>
       <body className={inter.className}>
         <Providers>
