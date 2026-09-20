@@ -68,16 +68,38 @@ export default function Home() {
       return;
     }
 
+    if (!code.trim()) {
+      showNotification("No code to run");
+      return;
+    }
+
     try {
       await serialStreamManager.initialize(serialPort);
-      // Ctrl-C (interrupt) + Ctrl-D (soft reset) => runs boot.py then main.py
-      await serialStreamManager.sendData("\x03\x04");
-      showNotification("ESP32 restarting to run main.py...");
+
+      // Run the buffer the way Thonny runs a script: hand it to the REPL in paste mode rather
+      // than writing it to flash. Nothing on the device is modified, so this neither needs nor
+      // overwrites a main.py -- which is why the old Ctrl-C + Ctrl-D soft reset appeared to do
+      // nothing on a board that has no main.py: it only re-ran what was already stored.
+      //
+      // Output is not captured here on purpose. use-esp32-repl holds a serialStreamManager
+      // listener, so the device's stdout streams to the REPL tab as it is produced -- including
+      // for scripts that never terminate, which a one-shot executeRawREPL would abandon at its
+      // timeout.
+      // Leading \r flushes any half-typed line before the interrupts land, which is what
+      // ViperIDE's runCurrentFile does (`port.write('\r\x03\x03')`) -- without it a partial
+      // line can swallow the first Ctrl-C.
+      await serialStreamManager.sendData("\r\x03\x03"); // interrupt whatever is running
+      await serialStreamManager.sendData("\x02"); // leave raw mode if a previous op left us in it
+      await serialStreamManager.sendData("\x05"); // paste mode
+      await serialStreamManager.sendData(code.replace(/\r\n/g, "\n"));
+      await serialStreamManager.sendData("\x04"); // execute
+
+      showNotification("Running on ESP32 - output is in the REPL tab");
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       showNotification(`Failed to run on ESP32: ${msg}`);
     }
-  }, [serialPort, showNotification]);
+  }, [serialPort, code, showNotification]);
 
   const { runCode, stopCode, isRunning, output, clearOutput } = usePythonRunner({
     onError: (error) => showNotification(error, "error"),
@@ -176,7 +198,7 @@ export default function Home() {
 
   return (
     <WorkspaceLayout
-      header={<WorkspaceNavbar title="Obo Code" logoSrc="/images/OboCode.webp" connectionState={isDeviceConnected ? "connected" : "disconnected"} />}
+      header={<WorkspaceNavbar title="Obo Code" logoSrc="/brand/obo-code-wordmark.webp" connectionState={isDeviceConnected ? "connected" : "disconnected"} />}
       sidebar={
         <DeviceFileManager
           ref={fileManagerRef}
