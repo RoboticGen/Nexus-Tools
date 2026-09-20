@@ -239,7 +239,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
                 variant="outline"
                 onClick={onRunInESP32}
                 disabled={!isConnected}
-                title={isConnected ? "Restart ESP32 to run main.py" : "Connect device first"}
+                title={isConnected ? "Run this code on the ESP32 (output in the REPL tab)" : "Connect device first"}
               >
                 <Zap aria-hidden="true" />
                 Run in ESP32
