@@ -36,8 +36,16 @@ export const metadata: Metadata = {
     "roboticgen",
   ],
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
+  manifest: "/site.webmanifest",
   openGraph: {
     title: "Obo Code",
     description: "Write and run Python code in the browser, with turtle graphics and ESP32 device support.",
@@ -68,7 +76,7 @@ export default async function RootLayout({
       <head>
         <meta name="msvalidate.01" content="F880277201EB0168D24B534ADC14C549" />
         {/* Preload images */}
-        <link rel="preload" as="image" href="/images/OboCode.webp" />
+        <link rel="preload" as="image" href="/brand/obo-code-wordmark.webp" />
       </head>
       <body className={inter.className}>
         <Providers>

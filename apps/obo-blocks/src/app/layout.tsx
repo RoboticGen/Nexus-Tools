@@ -39,8 +39,16 @@ export const metadata: Metadata = {
     "roboticgen",
   ],
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
+  manifest: "/site.webmanifest",
   openGraph: {
     title: "Obo Blocks",
     description:
@@ -71,7 +79,7 @@ export default async function RootLayout({
     <html lang="en" className={theme === "dark" ? "dark" : undefined}>
       <head>
         <meta name="msvalidate.01" content="F880277201EB0168D24B534ADC14C549" />
-        <link rel="preload" as="image" href="/obo_blocks.webp" />
+        <link rel="preload" as="image" href="/brand/obo-blocks-wordmark.webp" />
       </head>
       <body className={inter.className}>
         <Providers>
