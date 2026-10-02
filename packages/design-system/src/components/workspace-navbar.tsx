@@ -1,5 +1,6 @@
 "use client";
 
+import { getPublicKeycloakConfig } from "@nexus-tools/auth";
 import { LogOut } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 
@@ -10,6 +11,10 @@ import {
   type ConnectionState,
 } from "@nexus-tools/design-system/components/ui/connection-status";
 import { ThemeToggle } from "@nexus-tools/design-system/components/ui/theme-toggle";
+
+// Resolved once, at module evaluation, so a missing NEXT_PUBLIC_* var surfaces on
+// first render rather than on a user's first logout click.
+const { keycloakUrl, realm, clientId } = getPublicKeycloakConfig();
 
 interface WorkspaceNavbarProps {
   /** App name. Used as the brand when there is no logo, and as the logo's alt text. */
@@ -28,9 +33,6 @@ export function WorkspaceNavbar({
   connectionLabel = "ESP32 connected",
 }: WorkspaceNavbarProps) {
   const { data: session } = useSession();
-  const keycloakUrl = process.env.NEXT_PUBLIC_KEYCLOAK_URL || "https://auth.roboticgen.co";
-  const realm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM || "roboticgen";
-  const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || "obo-nexus";
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
