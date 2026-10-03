@@ -105,7 +105,7 @@ import { CodeEditor } from "@nexus-tools/design-system/components/code-editor";
 
 ### @nexus-tools/auth
 
-NextAuth + Keycloak. The apps' `middleware.ts`, `[...nextauth]` route, login page
+NextAuth + Keycloak. The apps' `proxy.ts`, `[...nextauth]` route, login page
 and firmware proxy are one-line re-exports of this package.
 
 ```tsx
