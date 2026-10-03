@@ -23,6 +23,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
   title: "Obo Blocks",
   description:
     "Obo Blocks: Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions for seamless web-based Python execution.",
@@ -53,7 +54,8 @@ export const metadata: Metadata = {
     title: "Obo Blocks",
     description:
       "Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions",
-    images: ["/obo_blocks.webp"],
+
+    images: ["/brand/obo-blocks-wordmark.webp"],
   },
 };
 

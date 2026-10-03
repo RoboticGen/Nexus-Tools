@@ -22,6 +22,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
   title: "Obo Code",
   description:
     "Obo Code: Write and run Python code in the browser, with turtle graphics and ESP32 device support.",
@@ -49,7 +50,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Obo Code",
     description: "Write and run Python code in the browser, with turtle graphics and ESP32 device support.",
-    images: ["/images/OboCode.webp"],
+
+    images: ["/brand/obo-code-wordmark.webp"],
   },
 };
 
