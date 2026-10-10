@@ -21,6 +21,8 @@ interface WorkspaceNavbarProps {
   title: string;
   /** Logo shown instead of the title. */
   logoSrc?: string;
+  /** Logo for dark mode. Omit if `logoSrc` already reads on both backgrounds. */
+  logoSrcDark?: string;
   connectionState?: ConnectionState;
   connectionLabel?: string;
 }
@@ -29,6 +31,7 @@ interface WorkspaceNavbarProps {
 export function WorkspaceNavbar({
   title,
   logoSrc,
+  logoSrcDark,
   connectionState = "disconnected",
   connectionLabel = "ESP32 connected",
 }: WorkspaceNavbarProps) {
@@ -53,7 +56,16 @@ export function WorkspaceNavbar({
       brand={
         // A plain <img>, not next/image: a fixed-height brand mark gains nothing from the optimisation pipeline.
         logoSrc ? (
-          <img src={logoSrc} alt={title} className="h-8 object-contain" />
+          logoSrcDark ? (
+            // Both carry the alt text: whichever is hidden is `display: none`, which takes it out of
+            // the accessibility tree, so exactly one is announced in either theme.
+            <>
+              <img src={logoSrc} alt={title} className="h-8 object-contain dark:hidden" />
+              <img src={logoSrcDark} alt={title} className="hidden h-8 object-contain dark:block" />
+            </>
+          ) : (
+            <img src={logoSrc} alt={title} className="h-8 object-contain" />
+          )
         ) : (
           <span className="text-base font-semibold">{title}</span>
         )
