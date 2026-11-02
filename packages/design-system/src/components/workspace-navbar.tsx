@@ -1,8 +1,10 @@
 "use client";
 
-import { getPublicKeycloakConfig } from "@nexus-tools/auth";
+import { getPublicKeycloakConfig, type PublicKeycloakConfig } from "@nexus-tools/auth";
 import { LogIn, LogOut } from "lucide-react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 import { AppHeader } from "@nexus-tools/design-system/components/ui/app-header";
 import { Button } from "@nexus-tools/design-system/components/ui/button";
@@ -12,9 +14,17 @@ import {
 } from "@nexus-tools/design-system/components/ui/connection-status";
 import { ThemeToggle } from "@nexus-tools/design-system/components/ui/theme-toggle";
 
-// Resolved once, at module evaluation, so a missing NEXT_PUBLIC_* var surfaces on
-// first render rather than on a user's first logout click.
-const { keycloakUrl, realm, clientId } = getPublicKeycloakConfig();
+// Resolved once, at module evaluation, so a missing NEXT_PUBLIC_* var is logged on first render
+// rather than on a user's first logout click. Caught rather than thrown: guests render this bar on
+// every page, and a missing logout setting must not take the whole tool down with a 500.
+const keycloak: PublicKeycloakConfig | null = (() => {
+  try {
+    return getPublicKeycloakConfig();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+})();
 
 interface WorkspaceNavbarProps {
   /** App name. Used as the brand when there is no logo, and as the logo's alt text. */
@@ -37,18 +47,36 @@ export function WorkspaceNavbar({
   // Sign in for it, as for a guest. Signing in again replaces it.
   const isSignedIn = status === "authenticated" && !session?.error;
 
+  // The auth proxy turns NextAuth's /login?error=… into /?authError=… for guests. Say so once, then
+  // drop the parameter so a reload or a retried sign-in does not repeat it.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("authError")) return;
+    toast.error("Sign-in didn't complete. You can keep working as a guest or try again.");
+    url.searchParams.delete("authError");
+    window.history.replaceState(window.history.state, "", url);
+  }, []);
+
+  // Through /login rather than signIn() here, so the gate's redirect and this button share one
+  // sign-in entry point.
   const handleSignIn = () => {
-    signIn("keycloak", { callbackUrl: window.location.href });
+    const { pathname, search, hash } = window.location;
+    window.location.assign(`/login?callbackUrl=${encodeURIComponent(pathname + search + hash)}`);
   };
 
   const handleLogout = async () => {
+    if (!keycloak) {
+      // No Keycloak settings to end the SSO session with: clear the local session at least.
+      await signOut({ callbackUrl: "/" });
+      return;
+    }
     await signOut({ redirect: false });
     const postLogout = `${window.location.origin}/login`;
     const logoutUrl = new URL(
-      `${keycloakUrl}/realms/${realm}/protocol/openid-connect/logout`
+      `${keycloak.keycloakUrl}/realms/${keycloak.realm}/protocol/openid-connect/logout`
     );
     logoutUrl.searchParams.set("post_logout_redirect_uri", postLogout);
-    logoutUrl.searchParams.set("client_id", clientId);
+    logoutUrl.searchParams.set("client_id", keycloak.clientId);
     if (session?.idToken) {
       logoutUrl.searchParams.set("id_token_hint", session.idToken);
     }

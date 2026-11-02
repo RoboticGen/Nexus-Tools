@@ -169,7 +169,7 @@ Each app also needs Keycloak/NextAuth variables (`KEYCLOAK_URL`, `KEYCLOAK_REALM
 
 - `NEXTAUTH_URL` differs per app since each runs on its own port (obo-code: 3001, obo-blocks: 3002, obo-playground: 3003). Keycloak must have all three `/api/auth/callback/keycloak` URLs registered as valid redirect URIs, and the three `/login` URLs as valid post-logout redirect URIs.
 - The `NEXT_PUBLIC_*` variables are inlined into the client bundle at build time, so they must be set before running `next build`, not just at runtime.
-- `REQUIRE_LOGIN` decides whether students must sign in. Unset (the default), the tools are open to guests; `true` restores the Keycloak gate on every page. It is read on the server at startup, so changing it needs a restart, not a rebuild.
+- `REQUIRE_LOGIN` decides whether students must sign in. Unset, empty or `false` (the default) opens the tools to guests; `true` restores the Keycloak gate on every page. Any value it does not recognise also keeps the gate, so a typo never makes a locked deployment public. It is read when the server starts: locally a restart picks up a change, on Vercel it takes a redeploy.
 - `NEXTAUTH_SECRET` is required by NextAuth in production; leaving it unset makes `next build` fail with a `NO_SECRET` error. Generate one with `openssl rand -base64 32`.
 
 ## 📄 License
