@@ -1,8 +1,8 @@
 "use client";
 
 import { getPublicKeycloakConfig } from "@nexus-tools/auth";
-import { LogOut } from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
+import { LogIn, LogOut } from "lucide-react";
+import { signIn, signOut, useSession } from "next-auth/react";
 
 import { AppHeader } from "@nexus-tools/design-system/components/ui/app-header";
 import { Button } from "@nexus-tools/design-system/components/ui/button";
@@ -25,14 +25,21 @@ interface WorkspaceNavbarProps {
   connectionLabel?: string;
 }
 
-/** Top bar with the Keycloak logout flow, shared by all three apps. */
+/** Top bar with the Keycloak sign-in and logout flows, shared by all three apps. */
 export function WorkspaceNavbar({
   title,
   logoSrc,
   connectionState = "disconnected",
   connectionLabel = "ESP32 connected",
 }: WorkspaceNavbarProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  // A session whose Keycloak refresh failed still reads as "authenticated", but it is dead: show
+  // Sign in for it, as for a guest. Signing in again replaces it.
+  const isSignedIn = status === "authenticated" && !session?.error;
+
+  const handleSignIn = () => {
+    signIn("keycloak", { callbackUrl: window.location.href });
+  };
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
@@ -64,10 +71,18 @@ export function WorkspaceNavbar({
             <ConnectionStatus state="connected" label={connectionLabel} readOnly />
           )}
           <ThemeToggle />
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut aria-hidden="true" />
-            Log out
-          </Button>
+          {/* Nothing while the session loads, so a signed-in user never sees Sign in flash past. */}
+          {status === "loading" ? null : isSignedIn ? (
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut aria-hidden="true" />
+              Log out
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={handleSignIn}>
+              <LogIn aria-hidden="true" />
+              Sign in
+            </Button>
+          )}
         </>
       }
     />

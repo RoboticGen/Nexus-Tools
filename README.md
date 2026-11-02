@@ -108,6 +108,9 @@ import { CodeEditor } from "@nexus-tools/design-system/components/code-editor";
 NextAuth + Keycloak. The apps' `proxy.ts`, `[...nextauth]` route, login page
 and firmware proxy are one-line re-exports of this package.
 
+Signing in is optional by default: guests can use every tool, and the navbar
+offers Sign in. Set `REQUIRE_LOGIN=true` to put every page behind Keycloak.
+
 ```tsx
 import { authMiddleware } from "@nexus-tools/auth/middleware";
 import { SessionProvider } from "@nexus-tools/auth/session-provider";
@@ -166,6 +169,7 @@ Each app also needs Keycloak/NextAuth variables (`KEYCLOAK_URL`, `KEYCLOAK_REALM
 
 - `NEXTAUTH_URL` differs per app since each runs on its own port (obo-code: 3001, obo-blocks: 3002, obo-playground: 3003). Keycloak must have all three `/api/auth/callback/keycloak` URLs registered as valid redirect URIs, and the three `/login` URLs as valid post-logout redirect URIs.
 - The `NEXT_PUBLIC_*` variables are inlined into the client bundle at build time, so they must be set before running `next build`, not just at runtime.
+- `REQUIRE_LOGIN` decides whether students must sign in. Unset (the default), the tools are open to guests; `true` restores the Keycloak gate on every page. It is read on the server at startup, so changing it needs a restart, not a rebuild.
 - `NEXTAUTH_SECRET` is required by NextAuth in production; leaving it unset makes `next build` fail with a `NO_SECRET` error. Generate one with `openssl rand -base64 32`.
 
 ## 📄 License
