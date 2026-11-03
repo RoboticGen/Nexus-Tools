@@ -1,14 +1,7 @@
 import { type NextFetchEvent, NextResponse } from "next/server";
 import { type NextRequestWithAuth, withAuth } from "next-auth/middleware";
 
-/**
- * Whether every page sits behind Keycloak. Guest access is the default: nothing in the apps needs
- * a session to work, so students open the tools straight away and sign in only if they want to.
- *
- * Parsed fail-closed: only an unset/empty value or an explicit "false" / "0" / "no" / "off" opens
- * the tools to guests. Anything else, a typo included, keeps the gate, so a deployment meant to
- * stay locked never goes public because someone wrote `True` or `1`.
- */
+// Fail-closed: an unrecognised value keeps the login gate.
 function parseRequireLogin(raw: string | undefined): boolean {
   const value = raw?.trim().toLowerCase() ?? "";
   if (value === "" || ["false", "0", "no", "off"].includes(value)) return false;
@@ -18,8 +11,7 @@ function parseRequireLogin(raw: string | undefined): boolean {
   return true;
 }
 
-// Read on the server when the proxy loads: locally a restart picks up a change, on Vercel a
-// redeploy does.
+// Read once at startup: a change needs a restart, or a redeploy on Vercel.
 const requireLogin = parseRequireLogin(process.env.REQUIRE_LOGIN);
 
 const keycloakGate = withAuth(
@@ -49,25 +41,18 @@ const keycloakGate = withAuth(
   }
 );
 
-/** Route protection for all three workspace apps. */
 export function authMiddleware(req: NextRequestWithAuth, event: NextFetchEvent) {
   if (requireLogin) {
     return keycloakGate(req, event);
   }
 
-  // Guest mode skips withAuth entirely: it would decrypt the session cookie on every request only
-  // to let it through, and without NEXTAUTH_SECRET it redirects to its error page, which the
-  // bounce below would send straight back here.
+  // Guests skip withAuth: without NEXTAUTH_SECRET it redirects to an error page that loops back here.
   const { pathname, searchParams } = req.nextUrl;
+  // /login without a callbackUrl is Keycloak's post-logout redirect or NextAuth's error page.
   if (pathname === "/login" && !searchParams.has("callbackUrl")) {
-    // NextAuth reports sign-in failures by redirecting to /login?error=… (pages.error). Pass the
-    // code on so the navbar can say so, rather than starting another sign-in that may fail the
-    // same way.
     const home = new URL("/", req.url);
     const error = searchParams.get("error");
     if (error) home.searchParams.set("authError", error);
-    // Otherwise this is Keycloak's post-logout redirect: a guest who just logged out wants the
-    // tool, not the Keycloak form. Sign-in from the navbar or the gate always carries a callbackUrl.
     return NextResponse.redirect(home);
   }
   return NextResponse.next();
