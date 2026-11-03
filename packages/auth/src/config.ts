@@ -109,8 +109,11 @@ export function getAuthConfig(): NextAuthOptions {
             token.roles = p?.realm_access?.roles ?? p?.roles ?? [];
           }
 
-          // Refresh token if expired (within 5 minutes)
+          // Refresh token if expired (within 5 minutes). Skipped once Keycloak has rejected the
+          // refresh token (see below): the session is dead, and guest mode keeps such users on the
+          // page, so retrying would POST the same dead token on every session fetch.
           if (
+            token.refreshToken &&
             token.expiresAt &&
             typeof token.expiresAt === "number" &&
             Date.now() > (token.expiresAt - 300) * 1000
@@ -134,6 +137,12 @@ export function getAuthConfig(): NextAuthOptions {
 
               if (!response.ok) {
                 console.error("Token refresh failed:", response.status);
+                // 400/401 is Keycloak refusing the token itself (expired, revoked, session ended),
+                // which no retry will fix, so drop it. A 5xx may be transient: keep the token so the
+                // next session fetch tries again and can clear the error.
+                if (response.status === 400 || response.status === 401) {
+                  delete token.refreshToken;
+                }
                 return { ...token, error: "RefreshAccessTokenError" };
               }
 
