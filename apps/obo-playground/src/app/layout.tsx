@@ -40,7 +40,7 @@ export default async function RootLayout({
     <html lang="en" className={theme === "dark" ? "dark" : undefined}>
       <body className={inter.className}>
         <Providers>
-          <WorkspaceNavbar title="Obo Playground" logoSrc="/brand/obo-playground-wordmark.webp" />
+          <WorkspaceNavbar title="Obo Playground" logoSrc="/brand/obo-playground-wordmark.webp" logoSrcDark="/brand/obo-playground-wordmark-dark.webp" />
           {children}
         </Providers>
       </body>
