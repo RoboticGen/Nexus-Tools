@@ -14,9 +14,7 @@ import {
 } from "@nexus-tools/design-system/components/ui/connection-status";
 import { ThemeToggle } from "@nexus-tools/design-system/components/ui/theme-toggle";
 
-// Resolved once, at module evaluation, so a missing NEXT_PUBLIC_* var is logged on first render
-// rather than on a user's first logout click. Caught rather than thrown: guests render this bar on
-// every page, and a missing logout setting must not take the whole tool down with a 500.
+// Caught so a missing NEXT_PUBLIC_* var only limits logout instead of 500ing every page.
 const keycloak: PublicKeycloakConfig | null = (() => {
   try {
     return getPublicKeycloakConfig();
@@ -37,7 +35,6 @@ interface WorkspaceNavbarProps {
   connectionLabel?: string;
 }
 
-/** Top bar with the Keycloak sign-in and logout flows, shared by all three apps. */
 export function WorkspaceNavbar({
   title,
   logoSrc,
@@ -46,12 +43,10 @@ export function WorkspaceNavbar({
   connectionLabel = "ESP32 connected",
 }: WorkspaceNavbarProps) {
   const { data: session, status } = useSession();
-  // A session whose Keycloak refresh failed still reads as "authenticated", but it is dead: show
-  // Sign in for it, as for a guest. Signing in again replaces it.
+  // A session whose refresh failed still reads as "authenticated".
   const isSignedIn = status === "authenticated" && !session?.error;
 
-  // The auth proxy turns NextAuth's /login?error=… into /?authError=… for guests. Say so once, then
-  // drop the parameter so a reload or a retried sign-in does not repeat it.
+  // Set by the auth proxy; removed so a reload doesn't show the toast again.
   useEffect(() => {
     const url = new URL(window.location.href);
     if (!url.searchParams.has("authError")) return;
@@ -60,8 +55,7 @@ export function WorkspaceNavbar({
     window.history.replaceState(window.history.state, "", url);
   }, []);
 
-  // Through /login rather than signIn() here, so the gate's redirect and this button share one
-  // sign-in entry point.
+  // Via /login, not signIn(), so this and the login gate share one entry point.
   const handleSignIn = () => {
     const { pathname, search, hash } = window.location;
     window.location.assign(`/login?callbackUrl=${encodeURIComponent(pathname + search + hash)}`);
@@ -69,7 +63,6 @@ export function WorkspaceNavbar({
 
   const handleLogout = async () => {
     if (!keycloak) {
-      // No Keycloak settings to end the SSO session with: clear the local session at least.
       await signOut({ callbackUrl: "/" });
       return;
     }
@@ -111,7 +104,7 @@ export function WorkspaceNavbar({
             <ConnectionStatus state="connected" label={connectionLabel} readOnly />
           )}
           <ThemeToggle />
-          {/* Nothing while the session loads, so a signed-in user never sees Sign in flash past. */}
+          {/* Nothing while loading, so Sign in doesn't flash for signed-in users. */}
           {status === "loading" ? null : isSignedIn ? (
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut aria-hidden="true" />
