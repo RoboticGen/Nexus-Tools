@@ -25,6 +25,13 @@ interface CodeTab {
   id: string;
   name: string;
   code: string;
+  /**
+   * True for a tab opened from the device file list. The scratch tab the editor starts with is
+   * named after `defaultFileName` — "main.py" by default, which is also the commonest filename on
+   * an ESP32 — so matching an incoming file by name alone would focus the scratch buffer and show
+   * the wrong contents. Only device-opened tabs are candidates for reuse.
+   */
+  fromDevice?: boolean;
 }
 
 interface CodeEditorProps {
@@ -92,12 +99,24 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
 
     const handleChange = useCallback(
       (value: string) => {
+        // Monaco's read-only path calls `setValue()` without setting its own
+        // preventTriggerChangeEvent flag (the editable path does), so every programmatic update
+        // echoes back here as though it had been typed. The user cannot type while read-only, so a
+        // change event in that state is always that echo.
+        //
+        // Comparing `value` against the active tab is not enough: this callback closes over the
+        // render before the switch, so the echo arrives while `activeTabId` still names the tab we
+        // just left, and the new file's text gets written into it — then forwarded to the parent,
+        // where obo-blocks' generated-code effect copies it onto the Blockly tab as well. That is
+        // how every tab ended up holding the last-opened file.
+        if (!editable) return;
+
         setTabs((prevTabs) =>
           prevTabs.map((tab) => (tab.id === activeTabId ? { ...tab, code: value } : tab))
         );
         onChange(value);
       },
-      [activeTabId, onChange]
+      [editable, activeTabId, onChange]
     );
 
     const handleAddTab = useCallback(() => {
@@ -110,13 +129,35 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
 
     const openFileInTab = useCallback(
       (filename: string, content: string) => {
+        // Re-opening a file that is already in a tab focuses that tab rather than
+        // appending a second one. Without this, each click in the file sidebar added
+        // another tab with the same name, and every copy carried its own `code` — so
+        // edits made in one silently diverged from the device content loaded into the
+        // next, and whichever tab was saved last won.
+        const existing = tabs.find((tab) => tab.fromDevice && tab.name === filename);
+        if (existing) {
+          setActiveTabId(existing.id);
+          onActiveTabChange?.(filename);
+          // The tab's own buffer, not the freshly-read `content`: focusing a tab must
+          // not discard unsaved edits sitting in it.
+          if (!isGenerated) onChange(existing.code);
+          return;
+        }
+
         const newTabId = `file-${Date.now()}`;
-        setTabs((prevTabs) => [...prevTabs, { id: newTabId, name: filename, code: content }]);
+        setTabs((prevTabs) => [
+          ...prevTabs,
+          { id: newTabId, name: filename, code: content, fromDevice: true },
+        ]);
         setActiveTabId(newTabId);
         onActiveTabChange?.(filename);
-        onChange(content);
+        // In generated mode the parent's `code` is the Blockly program, not "whatever buffer is
+        // on screen". Reporting a device file through it makes the generated-code effect copy that
+        // file over the `main` tab, after which both tabs hold the same text and switching between
+        // them appears to do nothing.
+        if (!isGenerated) onChange(content);
       },
-      [onChange, onActiveTabChange]
+      [tabs, isGenerated, onChange, onActiveTabChange]
     );
 
     useImperativeHandle(ref, () => ({ openFileInTab }), [openFileInTab]);
@@ -144,10 +185,10 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
         if (tabToSwitch) {
           setActiveTabId(tabId);
           onActiveTabChange?.(tabToSwitch.name);
-          onChange(tabToSwitch.code);
+          if (!isGenerated) onChange(tabToSwitch.code);
         }
       },
-      [tabs, onChange, onActiveTabChange]
+      [tabs, isGenerated, onChange, onActiveTabChange]
     );
 
     const handleRenameTab = useCallback((tabId: string, label: string) => {
@@ -188,7 +229,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
                 {editable ? "Editing" : "Edit"}
               </Button>
             )}
-            <Button size="sm" onClick={onRun} title="Run Python Code (Ctrl+Enter)">
+            <Button size="sm" variant="default" onClick={onRun} title="Run Python Code (Ctrl+Enter)">
               <Play aria-hidden="true" />
               Run
             </Button>
@@ -198,7 +239,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
                 variant="outline"
                 onClick={onRunInESP32}
                 disabled={!isConnected}
-                title={isConnected ? "Restart ESP32 to run main.py" : "Connect device first"}
+                title={isConnected ? "Run this code on the ESP32 (output in the REPL tab)" : "Connect device first"}
               >
                 <Zap aria-hidden="true" />
                 Run in ESP32
