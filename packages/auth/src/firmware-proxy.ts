@@ -4,8 +4,6 @@ import { type NextRequest, NextResponse } from "next/server";
 
 const ALLOWED_HOSTS = new Set(["micropython.org", "www.micropython.org"]);
 
-export const dynamic = "force-dynamic";
-
 export async function GET(req: NextRequest) {
   const target = req.nextUrl.searchParams.get("url");
   if (!target) {
