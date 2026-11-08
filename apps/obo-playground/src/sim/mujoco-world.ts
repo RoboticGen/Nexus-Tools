@@ -1,7 +1,5 @@
-// MuJoCo model of the OBO Car + the track walls, generated as MJCF from the track.
-// Physics frame: x forward, y left, z up (MuJoCo's convention), in metres. The car's collision
-// shapes, masses and sonar mounts are copied from RoboticGen/obo_car_description
-// models/obo_car.xml; keep the two in step.
+// MJCF for the OBO Car (copied from RoboticGen/obo_car_description models/obo_car.xml; keep in
+// step) and the track walls. Frame: x forward, y left, z up, metres.
 
 import { loadMujoco } from "./load-mujoco";
 
@@ -20,7 +18,9 @@ export const SENSOR_SITES = {
 export const WALL_H = 0.08;
 export const WALL_T = 0.01; // half-thickness
 export const SENSOR_RANGE = 4; // HC-SR04 maximum, metres
-const MAX_WHEEL_OMEGA = 30; // rad/s at motor ±1: ~0.51 m/s on 17 mm wheels, like a 300 rpm N20
+export const NEAR_WALL = 0.15; // the dashboard and the rays turn red closer than this
+const MAX_WHEEL_OMEGA = 30; // rad/s at motor ±1, like a 300 rpm N20
+export const TOP_SPEED = MAX_WHEEL_OMEGA * RIDE_H; // m/s; RIDE_H is the wheel radius
 
 export type SensorDir = keyof typeof SENSOR_SITES;
 export type Sensors = Record<SensorDir, number>;
@@ -124,8 +124,8 @@ export class MujocoWorld {
     this.model = mj.MjModel.from_xml_string(buildMJCF(this.track));
     this.data = new mj.MjData(this.model);
     this.timestep = this.model.opt.timestep;
-    // joints are numbered in the order written: root, caster, left wheel, right wheel
-    this.wheelQpos = [this.model.jnt_qposadr[2], this.model.jnt_qposadr[3]];
+    const joint = (name: string) => this.model!.jnt_qposadr[mj.mj_name2id(this.model!, mj.mjtObj.mjOBJ_JOINT.value, name)];
+    this.wheelQpos = [joint("j_wheel_left"), joint("j_wheel_right")];
     this.ready = true;
     this.reset();
   }

@@ -1,10 +1,5 @@
-// Rebuild public/models/obo-car.glb from a checkout of RoboticGen/obo-pcbs:
-//
-//   node tools/build-car-model.mjs /path/to/obo-pcbs
-//
-// Reads exports/obo-car-assembly.glb (refresh it with obo-pcbs' tools/export_glb.py), cuts each
-// tire out of its N20 motor mesh into its own node so the view can spin it, then joins, simplifies
-// and meshopt-compresses the rest like obo-play-sim's tools/build_board_model.sh.
+// node tools/build-car-model.mjs /path/to/obo-pcbs  ->  public/models/obo-car.glb, in the car's own
+// frame (axle midpoint at the origin, x forward, y up) with each tire as a node that can spin.
 
 import { mkdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -42,6 +37,8 @@ const apply = (m, [x, y, z], w) => [
   m[1] * x + m[5] * y + m[9] * z + m[13] * w,
   m[2] * x + m[6] * y + m[10] * z + m[14] * w,
 ];
+const mul = (a, b) =>
+  Array.from({ length: 16 }, (_, i) => [0, 1, 2, 3].reduce((s, k) => s + a[k * 4 + (i % 4)] * b[Math.floor(i / 4) * 4 + k], 0));
 const det3 = (m) =>
   m[0] * (m[5] * m[10] - m[9] * m[6]) - m[4] * (m[1] * m[10] - m[9] * m[2]) + m[8] * (m[1] * m[6] - m[5] * m[2]);
 
@@ -112,15 +109,35 @@ const split = motorMesh.listPrimitives().map((prim) => {
   return { prim, wheel, motor };
 });
 
-const wheels = motors.map((node) => {
-  const m = node.getWorldMatrix();
-  const centre = apply(m, WHEEL_CENTRE, 1);
+// KiCad's frame has the car facing -z at an arbitrary spot on the sheet; move it into the car's
+// frame: axle midpoint at the origin, then turn -90° about y so forward is +x and right is +z.
+const worlds = motors.map((node) => node.getWorldMatrix());
+const centres = worlds.map((w) => apply(w, WHEEL_CENTRE, 1));
+const [cx, cy, cz] = [0, 1, 2].map((k) => (centres[0][k] + centres[1][k]) / 2);
+const F = [0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, 0, cz, -cy, -cx, 1];
+const frame = doc.createNode().setRotation([0, -Math.SQRT1_2, 0, Math.SQRT1_2]).setTranslation([cz, -cy, -cx]);
+for (const child of scene.listChildren()) {
+  scene.removeChild(child);
+  frame.addChild(child);
+}
+scene.addChild(frame);
+
+const wheels = worlds.map((w, i) => {
+  const m = mul(F, w);
+  const centre = apply(F, centres[i], 1);
   const mesh = doc.createMesh();
   for (const { prim, wheel } of split) if (wheel.length) mesh.addPrimitive(subset(prim, wheel, { m, origin: centre }));
+  // A different motor model would cut in the wrong place: insist on a 17 mm wheel round its axle.
+  const pos = mesh.listPrimitives().flatMap((q) => Array.from(q.getAttribute("POSITION").getArray()));
+  const xs = pos.filter((_, k) => k % 3 === 0);
+  const ys = pos.filter((_, k) => k % 3 === 1);
+  const r = Math.max(...xs.map((x, k) => Math.hypot(x, ys[k])));
+  const skew = Math.max(Math.abs(Math.max(...xs) + Math.min(...xs)), Math.abs(Math.max(...ys) + Math.min(...ys)));
+  if (r < 0.016 || r > 0.018 || skew > 0.001) throw new Error(`wheel cut looks wrong: radius ${r}, off-axle ${skew}`);
   return { centre, mesh };
 });
-// glTF +X is the car's right (forward is -Z), so the wheel with the smaller x is the left one.
-wheels.sort((a, b) => a.centre[0] - b.centre[0]);
+// In the car's frame +z is right, so the wheel with the smaller z is the left one.
+wheels.sort((a, b) => a.centre[2] - b.centre[2]);
 const wheelNodes = ["wheel_left", "wheel_right"].map((name, i) => {
   wheels[i].mesh.setName(name);
   const n = doc.createNode(name).setMesh(wheels[i].mesh).setTranslation(wheels[i].centre);
@@ -129,7 +146,7 @@ const wheelNodes = ["wheel_left", "wheel_right"].map((name, i) => {
 });
 
 for (const { prim, motor } of split) {
-  motorMesh.addPrimitive(subset(prim, motor));
+  if (motor.length) motorMesh.addPrimitive(subset(prim, motor));
   motorMesh.removePrimitive(prim);
   prim.dispose();
 }

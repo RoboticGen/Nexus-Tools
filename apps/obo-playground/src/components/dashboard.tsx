@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@nexus-tools/design-system/components/ui/card";
 import { cn } from "@nexus-tools/design-system/lib/utils";
 
-import { SENSOR_RANGE } from "@/sim/mujoco-world";
+import { NEAR_WALL, SENSOR_RANGE, TOP_SPEED } from "@/sim/mujoco-world";
 
 import { TrackBuilder } from "./track-builder";
 
@@ -12,8 +12,6 @@ import type { Snapshot } from "@/sim/playground-sim";
 import type { Track } from "@/sim/track";
 
 const BAR_FULL_SCALE_M = 1; // bars fill at 1 m; the number shows the real reading
-const NEAR_WALL = 0.15;
-const TOP_SPEED = 0.6; // m/s, a little above the car's 0.51
 
 function Row({ label, value, children }: { label: string; value: string; children: React.ReactNode }) {
   return (

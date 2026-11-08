@@ -1,6 +1,5 @@
-// A track is a centerline polyline + corridor width turned into wall segments, or a maze.
-// Physics and rendering both read this one description. Coordinates: x/y on the ground, metres,
-// sized for the real 12 cm OBO Car (a classroom floor, not a racetrack).
+// A track is a centerline polyline + corridor width turned into wall segments, or a maze. Physics
+// and rendering both read it; x/y on the ground in metres, sized for the 12 cm OBO Car.
 
 import { generateMaze } from "./maze";
 

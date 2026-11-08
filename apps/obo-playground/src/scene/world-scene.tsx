@@ -2,10 +2,10 @@
 
 import { CameraControls, Environment, Lightformer } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { RIDE_H, SENSOR_SITES, WALL_H, WALL_T, type SensorDir } from "@/sim/mujoco-world";
+import { NEAR_WALL, RIDE_H, SENSOR_SITES, WALL_H, WALL_T, type SensorDir } from "@/sim/mujoco-world";
 
 import { OboCar } from "./obo-car";
 
@@ -59,7 +59,6 @@ export const SCENE_COLORS: Record<"light" | "dark", SceneColors> = {
 
 const DIRS = Object.keys(SENSOR_SITES) as SensorDir[];
 const FOV = 50;
-const NEAR_WALL = 0.15;
 
 function TrackMeshes({ track, colors }: { track: Track; colors: SceneColors }) {
   const wh = track.wallHeight ?? WALL_H;
@@ -152,9 +151,7 @@ function Robot({ sim, colors }: { sim: PlaygroundSim; colors: SceneColors }) {
 
   return (
     <group ref={group}>
-      <Suspense fallback={null}>
-        <OboCar sim={sim} />
-      </Suspense>
+      <OboCar sim={sim} />
       {DIRS.map((dir) => (
         <primitive key={dir} object={rays[dir]} />
       ))}
@@ -206,7 +203,7 @@ function CameraRig({ sim, track, view }: { sim: PlaygroundSim; track: Track; vie
       ref={ref}
       makeDefault
       minDistance={0.15}
-      maxDistance={15}
+      maxDistance={track.extent * 8}
       maxPolarAngle={Math.PI / 2 - 0.04}
       smoothTime={0.2}
     />
@@ -227,9 +224,13 @@ export function WorldScene({
   return (
     <Canvas shadows dpr={[1, 2]} camera={{ fov: FOV, near: 0.005, far: 50, position: [0, 2.5, 2.5] }} resize={{ debounce: 0 }}>
       <color key={colors.background} attach="background" args={[colors.background]} />
-      <fog key={`fog-${colors.background}`} attach="fog" args={[colors.background, 6, 15]} />
+      {/* only in chase: the top view sits farther out than the far side of the track */}
+      {view.name === "chase" && (
+        <fog key={`fog-${colors.background}`} attach="fog" args={[colors.background, track.extent, track.extent * 3]} />
+      )}
       <hemisphereLight args={["#ffffff", colors.floor, 1.1]} />
       <directionalLight
+        key={track.extent} // remount so the shadow camera takes the new bounds
         position={[1.5, 2.75, 1]}
         intensity={1.6}
         castShadow
@@ -237,10 +238,10 @@ export function WorldScene({
         shadow-bias={-0.0002}
         shadow-camera-near={0.1}
         shadow-camera-far={10}
-        shadow-camera-left={-3}
-        shadow-camera-right={3}
-        shadow-camera-top={3}
-        shadow-camera-bottom={-3}
+        shadow-camera-left={-track.extent}
+        shadow-camera-right={track.extent}
+        shadow-camera-top={track.extent}
+        shadow-camera-bottom={-track.extent}
       />
       {/* Studio lighting for the car's PCB, copper and plastic, as OBO Lab lights the OBO PLAY */}
       <Environment resolution={128} frames={1}>

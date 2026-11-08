@@ -1,20 +1,18 @@
 "use client";
 
-// The real OBO Car: the KiCad export from RoboticGen/obo-pcbs (car + IR panel, every part),
-// compressed by tools/build-car-model.mjs with each tire cut out as its own node.
+// The real OBO Car (car + IR panel) from RoboticGen/obo-pcbs, built by tools/build-car-model.mjs
+// in the car's own frame: axle midpoint at the origin, x forward, y up, z right.
 
 import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useMemo } from "react";
+import { Component, Suspense, useLayoutEffect, useMemo, type ReactNode } from "react";
 
 import type { PlaygroundSim } from "@/sim/playground-sim";
 import type * as THREE from "three";
 
 const MODEL = "/models/obo-car.glb";
-// The GLB keeps KiCad's frame (metres, y up, car forward = -z); this is its axle midpoint.
-const AXLE_OFFSET: [number, number, number] = [-0.14975, 0.005085, -0.124586];
 
-export function OboCar({ sim }: { sim: PlaygroundSim }) {
+function CarModel({ sim }: { sim: PlaygroundSim }) {
   const { scene } = useGLTF(MODEL, false, true);
   const wheels = useMemo(() => [scene.getObjectByName("wheel_left"), scene.getObjectByName("wheel_right")], [scene]);
 
@@ -27,18 +25,46 @@ export function OboCar({ sim }: { sim: PlaygroundSim }) {
 
   useFrame(() => {
     const angles = sim.world?.getWheelAngles() ?? [0, 0];
-    // glTF +x is the car's right, so rolling forward is a negative turn about it
+    // The axle is +z (the car's right), so rolling forward is a negative turn about it.
     wheels.forEach((w, i) => {
-      if (w) w.rotation.x = -angles[i];
+      if (w) w.rotation.z = -angles[i];
     });
   });
 
-  // Turning -90° about y points the GLB's forward (-z) along the car's +x.
+  return <primitive object={scene} />;
+}
+
+// A blocked or failed .glb download must not take the whole page down: drive the chassis box.
+class ModelBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(err: unknown) {
+    console.error("OBO Car model failed to load:", err);
+  }
+
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <mesh position={[0.03249, 0.00647, -0.00035]} castShadow>
+        <boxGeometry args={[0.1155, 0.0285, 0.0993]} />
+        <meshStandardMaterial color="#2448a8" roughness={0.6} />
+      </mesh>
+    );
+  }
+}
+
+export function OboCar({ sim }: { sim: PlaygroundSim }) {
   return (
-    <group rotation-y={-Math.PI / 2}>
-      <primitive object={scene} position={AXLE_OFFSET} />
-    </group>
+    <ModelBoundary>
+      <Suspense fallback={null}>
+        <CarModel sim={sim} />
+      </Suspense>
+    </ModelBoundary>
   );
 }
 
-useGLTF.preload(MODEL, false, true);
+if (typeof window !== "undefined") useGLTF.preload(MODEL, false, true);

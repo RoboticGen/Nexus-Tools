@@ -1,5 +1,5 @@
 import * as Blockly from "blockly";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MujocoWorld, SENSOR_RANGE } from "./mujoco-world";
 import { PlaygroundSim } from "./playground-sim";
@@ -26,10 +26,25 @@ const corridor = track([
 ]);
 const openFloor = track([]);
 
+// Disposed even when an assertion fails, so one failure can't leak wasm models or fake timers.
+const cleanup: (() => void)[] = [];
+afterEach(() => {
+  cleanup.splice(0).forEach((dispose) => dispose());
+  vi.useRealTimers();
+});
+
 async function worldOn(t: Track) {
   const world = new MujocoWorld(t);
+  cleanup.push(() => world.dispose());
   await world.init();
   return world;
+}
+
+async function simOn(t: Track) {
+  const sim = new PlaygroundSim(t);
+  cleanup.push(() => sim.dispose());
+  await sim.setTrack(t);
+  return sim;
 }
 
 function runFor(world: MujocoWorld, seconds: number, left: number, right: number) {
@@ -66,15 +81,12 @@ describe("physics", () => {
     expect(s.left).toBeCloseTo(0.2 - 0.05 - 0.01, 2);
     expect(s.right).toBeCloseTo(0.6 - 0.0497 - 0.01, 2);
     expect(s.front).toBeCloseTo(1.5 - 0.0836 - 0.01, 2);
-    world.dispose();
   });
 
   it("gives blocks centimetres", async () => {
-    const sim = new PlaygroundSim(corridor);
-    await sim.setTrack(corridor);
+    const sim = await simOn(corridor);
     sim.advance(0.02); // one control tick reads the sensors
     expect(sim.api.sensor("left")).toBeCloseTo(14, 0);
-    sim.dispose();
   });
 
   it("drives toward the wall ahead", async () => {
@@ -82,7 +94,6 @@ describe("physics", () => {
     const before = world.getSensors().front;
     runFor(world, 0.5, 0.5, 0.5);
     expect(world.getSensors().front).toBeLessThan(before - 0.08);
-    world.dispose();
   });
 
   it("tops out near the real car's 0.51 m/s", async () => {
@@ -91,14 +102,12 @@ describe("physics", () => {
     expect(world.getPose().speed).toBeGreaterThan(0.45);
     expect(world.getPose().speed).toBeLessThan(0.55);
     expect(world.getWheelAngles()[0]).toBeGreaterThan(0); // rolling forward is positive
-    world.dispose();
   });
 
   it("turns right when the left motor is faster", async () => {
     const world = await worldOn(corridor);
     runFor(world, 0.5, 1, 0.5);
     expect(world.getPose().theta).toBeLessThan(-0.05); // clockwise seen from above
-    world.dispose();
   });
 
   it("never sees the floor, even pitching through a hard stop", async () => {
@@ -109,7 +118,6 @@ describe("physics", () => {
     world.setMotors(-1, -1);
     for (let i = 0; i < 250; i++) { world.step(); seen.push(...Object.values(world.getSensors())); }
     expect(Math.min(...seen)).toBe(SENSOR_RANGE);
-    world.dispose();
   });
 
   it("drive() with a positive turn favours the left wheel", () => {
@@ -120,16 +128,13 @@ describe("physics", () => {
 });
 
 describe("example program", () => {
-  it("laps the oval without touching a wall", async () => {
+  it.each(["oval", "clover", "slalom"])("laps the %s without touching a wall", async (key) => {
     const ws = new Blockly.Workspace();
     Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(EXAMPLE_XML), ws);
-    const oval = trackFromPreset("oval");
-    const sim = new PlaygroundSim(oval);
-    await sim.setTrack(oval);
+    const sim = await simOn(trackFromPreset(key));
     vi.useFakeTimers();
     sim.run(compileWorkspace(ws));
     vi.advanceTimersByTime(3000); // the 3-2-1-GO countdown
-    vi.useRealTimers();
     let clearance = Infinity;
     for (let i = 0; i < 40 * 60 && sim.race.lap < 2; i++) {
       sim.advance(1 / 60);
@@ -137,17 +142,14 @@ describe("example program", () => {
     }
     expect(sim.race.lap).toBe(2);
     expect(clearance).toBeGreaterThan(0.1);
-    sim.dispose();
   });
 });
 
 describe("timing", () => {
   it.each([60, 120, 144])("simulates one second per wall second at %i fps", async (fps) => {
-    const sim = new PlaygroundSim(corridor);
-    await sim.setTrack(corridor);
+    const sim = await simOn(corridor);
     for (let i = 0; i < fps; i++) sim.advance(1 / fps);
     // within one 2 ms physics step; any leftover carries into the next frame
     expect(Math.abs(sim.simTime - 1000)).toBeLessThanOrEqual(2.0001);
-    sim.dispose();
   });
 });
