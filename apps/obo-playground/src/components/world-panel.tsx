@@ -68,11 +68,11 @@ export function WorldPanel({
             aria-label="Driving mode"
           >
             <ToggleGroupItem value="program" title="Drive with your blocks">
-              <Puzzle aria-hidden="true" />
+              <Puzzle aria-hidden="true" className="text-brand-teal" />
               Program
             </ToggleGroupItem>
             <ToggleGroupItem value="manual" title="Drive with the arrow keys">
-              <Joystick aria-hidden="true" />
+              <Joystick aria-hidden="true" className="text-brand-green" />
               Manual
             </ToggleGroupItem>
           </ToggleGroup>

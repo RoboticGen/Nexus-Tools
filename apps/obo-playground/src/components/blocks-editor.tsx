@@ -5,7 +5,7 @@ import { BlocklyPanel } from "@nexus-tools/design-system/components/ui/blockly-p
 import { Button } from "@nexus-tools/design-system/components/ui/button";
 import * as Blockly from "blockly";
 import "blockly/blocks";
-import { Eraser, Lightbulb, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronLeft, Eraser, Lightbulb, Puzzle } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { toast } from "sonner";
 
@@ -50,6 +50,7 @@ export function BlocksEditor({
   const divRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const [toolboxOpen, setToolboxOpen] = useState(true);
+  const [toolboxWidth, setToolboxWidth] = useState(0);
 
   useEffect(() => {
     const div = divRef.current;
@@ -85,6 +86,7 @@ export function BlocksEditor({
         save(workspace);
       });
       workspaceRef.current = workspace;
+      setToolboxWidth(workspace.getToolbox()?.getWidth() ?? 0);
       getCodeRef.current = () => compileWorkspace(workspace);
     });
     observer.observe(div);
@@ -103,14 +105,14 @@ export function BlocksEditor({
     toast.info(lineTrack ? "Loaded the line-following example." : "Loaded the wall-following example.");
   };
 
-  const onToggleToolbox = () => {
+  const showToolbox = (open: boolean) => {
     const workspace = workspaceRef.current;
     const box = workspace?.getToolbox();
     if (!workspace || !box) return;
     box.clearSelection();
-    box.setVisible(!toolboxOpen);
+    box.setVisible(open);
     Blockly.svgResize(workspace);
-    setToolboxOpen(!toolboxOpen);
+    setToolboxOpen(open);
   };
 
   const onClear = () => {
@@ -127,29 +129,51 @@ export function BlocksEditor({
       className="h-full"
       actions={
         <>
-          <Button
-            size="icon-sm"
-            variant="outline"
-            aria-label={toolboxOpen ? "Hide block categories" : "Show block categories"}
-            title={toolboxOpen ? "Hide block categories" : "Show block categories"}
-            aria-pressed={!toolboxOpen}
-            onClick={onToggleToolbox}
-          >
-            {toolboxOpen ? <PanelLeftClose aria-hidden="true" /> : <PanelLeftOpen aria-hidden="true" />}
-          </Button>
           <Button size="sm" variant="outline" onClick={onExample}>
-            <Lightbulb aria-hidden="true" />
+            <Lightbulb aria-hidden="true" className="text-brand-gold" />
             Example
           </Button>
           <Button size="sm" variant="outline" onClick={onClear}>
-            <Eraser aria-hidden="true" />
+            <Eraser aria-hidden="true" className="text-brand-coral" />
             Clear
           </Button>
         </>
       }
     >
-      {/* Blockly measures this element; min-h-0 lets the flex parent shrink it below its content. */}
-      <div ref={divRef} className="h-full min-h-0 w-full overflow-hidden" />
+      <div className="relative h-full min-h-0 w-full">
+        {/* Blockly measures this element; min-h-0 lets the flex parent shrink it below its content. */}
+        {/* pt-10 on the toolbox leaves room for its header row. */}
+        <div ref={divRef} className="h-full min-h-0 w-full overflow-hidden [&_.blocklyToolbox]:!pt-10" />
+        {toolboxWidth > 0 &&
+          (toolboxOpen ? (
+            <div
+              className="absolute top-1.5 left-0 z-[80] flex items-center justify-between pr-1 pl-3"
+              style={{ width: toolboxWidth }}
+            >
+              <span className="text-muted-foreground text-[11px] font-bold tracking-wider uppercase">Blocks</span>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                aria-label="Hide blocks"
+                title="Hide blocks"
+                onClick={() => showToolbox(false)}
+              >
+                <ChevronLeft aria-hidden="true" className="text-brand-teal" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-card absolute top-2 left-2 z-[80] shadow-sm"
+              title="Show blocks"
+              onClick={() => showToolbox(true)}
+            >
+              <Puzzle aria-hidden="true" className="text-brand-teal" />
+              Blocks
+            </Button>
+          ))}
+      </div>
     </BlocklyPanel>
   );
 }
