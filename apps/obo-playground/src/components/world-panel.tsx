@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Spinner } from "@nexus-tools/design-system/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@nexus-tools/design-system/components/ui/toggle-group";
 import { ToolbarSeparator } from "@nexus-tools/design-system/components/ui/toolbar";
-import { Play, RotateCcw, Square } from "lucide-react";
+import { Joystick, Map as MapIcon, Play, Puzzle, RotateCcw, Square } from "lucide-react";
 
 import { WorldScene, type CameraView, type SceneColors } from "@/scene/world-scene";
 import { TRACK_PRESETS, type Track } from "@/sim/track";
@@ -51,6 +51,21 @@ export function WorldPanel({
       className="h-full"
       actions={
         <>
+          <Select value={trackKey} onValueChange={onTrackChange}>
+            <SelectTrigger size="sm" aria-label="Track" className="w-44">
+              <MapIcon aria-hidden="true" className="text-brand-teal" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(TRACK_PRESETS).map(([key, p]) => (
+                <SelectItem key={key} value={key}>
+                  {p.name}
+                </SelectItem>
+              ))}
+              {trackKey === "custom" && <SelectItem value="custom">Custom track</SelectItem>}
+            </SelectContent>
+          </Select>
+          <ToolbarSeparator />
           <Button size="sm" onClick={onRun} disabled={engine !== "ready"}>
             {snap?.running ? <Square aria-hidden="true" /> : <Play aria-hidden="true" />}
             {snap?.running ? "Stop" : "Run"}
@@ -67,22 +82,15 @@ export function WorldPanel({
             onValueChange={(v) => v && sim?.setMode(v as Mode)}
             aria-label="Driving mode"
           >
-            <ToggleGroupItem value="program">Program</ToggleGroupItem>
-            <ToggleGroupItem value="manual">Manual</ToggleGroupItem>
+            <ToggleGroupItem value="program" title="Drive with your blocks">
+              <Puzzle aria-hidden="true" className="text-brand-teal" />
+              Program
+            </ToggleGroupItem>
+            <ToggleGroupItem value="manual" title="Drive with the arrow keys">
+              <Joystick aria-hidden="true" className="text-brand-green" />
+              Manual
+            </ToggleGroupItem>
           </ToggleGroup>
-          <Select value={trackKey} onValueChange={onTrackChange}>
-            <SelectTrigger size="sm" aria-label="Track" className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(TRACK_PRESETS).map(([key, p]) => (
-                <SelectItem key={key} value={key}>
-                  {p.name}
-                </SelectItem>
-              ))}
-              {trackKey === "custom" && <SelectItem value="custom">Custom track</SelectItem>}
-            </SelectContent>
-          </Select>
           {/* Clicking the active view again resets it, so the empty value still reframes. */}
           <ToggleGroup
             type="single"
