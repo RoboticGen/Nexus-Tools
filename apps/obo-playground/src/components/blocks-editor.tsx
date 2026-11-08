@@ -5,11 +5,14 @@ import { BlocklyPanel } from "@nexus-tools/design-system/components/ui/blockly-p
 import { Button } from "@nexus-tools/design-system/components/ui/button";
 import * as Blockly from "blockly";
 import "blockly/blocks";
-import { Eraser } from "lucide-react";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { Download, Eraser, Upload } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent, type RefObject } from "react";
+import { toast } from "sonner";
 
 import { EXAMPLE_XML } from "@/blocks/examples";
+import { projectFile, readProjectFile } from "@/blocks/project-file";
 import { compileWorkspace, theme, toolbox } from "@/blocks/robot-blocks";
+import type { Track } from "@/sim/track";
 
 const STORAGE_KEY = "obo-playground.blocks";
 
@@ -43,13 +46,20 @@ function save(workspace: Blockly.WorkspaceSvg) {
 export function BlocksEditor({
   getCodeRef,
   loadBlocksRef,
+  world,
+  onImportWorld,
 }: {
   getCodeRef: RefObject<(() => string) | null>;
   /** Set once the workspace exists; replaces its blocks with the given XML. */
   loadBlocksRef: RefObject<((xml: string) => void) | null>;
+  /** The current world, saved with the blocks on Export. */
+  world: { key: string; track: Track };
+  /** Switches to the world an imported file was saved with. */
+  onImportWorld: (key: string, track: Track) => void;
 }) {
   const divRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
 
   useEffect(() => {
@@ -103,6 +113,43 @@ export function BlocksEditor({
     };
   }, [getCodeRef, loadBlocksRef]);
 
+  const onExport = () => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+    const file = projectFile(Blockly.serialization.workspaces.save(workspace), world.key, world.track);
+    const url = URL.createObjectURL(new Blob([JSON.stringify(file, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `obo-playground-${world.track.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const onImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const workspace = workspaceRef.current;
+    const file = event.target.files?.[0];
+    event.target.value = ""; // lets the same file be picked again
+    if (!workspace || !file) return;
+    let project;
+    try {
+      project = readProjectFile(await file.text());
+    } catch (err) {
+      toast.error((err as Error).message);
+      return;
+    }
+    // load() clears the workspace first, so a file that fails halfway must not cost the student their blocks.
+    const before = Blockly.serialization.workspaces.save(workspace);
+    try {
+      Blockly.serialization.workspaces.load(project.blocks as Blockly.serialization.blocks.State, workspace);
+    } catch {
+      Blockly.serialization.workspaces.load(before, workspace);
+      toast.error("Those blocks couldn't be loaded. Your blocks are unchanged.");
+      return;
+    }
+    if (project.world) onImportWorld(project.world.key, project.world.track);
+    toast.success(project.world ? `Imported ${file.name} on ${project.world.track.name}.` : `Imported ${file.name}.`);
+  };
+
   const onClear = () => {
     const workspace = workspaceRef.current;
     if (!workspace) return;
@@ -118,6 +165,15 @@ export function BlocksEditor({
       workspace={workspace}
       actions={
         <>
+          <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} title="Import blocks from a file">
+            <Upload aria-hidden="true" className="text-brand-teal" />
+            Import
+          </Button>
+          <Button size="sm" variant="outline" onClick={onExport} title="Save these blocks and their world to a file">
+            <Download aria-hidden="true" className="text-brand-teal" />
+            Export
+          </Button>
+          <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={onImport} />
           <Button size="sm" variant="outline" onClick={onClear}>
             <Eraser aria-hidden="true" className="text-brand-coral" />
             Clear

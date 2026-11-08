@@ -112,7 +112,12 @@ export default function Home() {
       }
     >
       <WorkspaceColumn grow={3} collapsible collapsedSize={0}>
-        <BlocksEditor getCodeRef={getCodeRef} loadBlocksRef={loadBlocksRef} />
+        <BlocksEditor
+          getCodeRef={getCodeRef}
+          loadBlocksRef={loadBlocksRef}
+          world={{ key: trackKey, track }}
+          onImportWorld={(key, t) => applyTrack(t, key)}
+        />
       </WorkspaceColumn>
       <WorkspaceColumn grow={4}>
         <WorldPanel
