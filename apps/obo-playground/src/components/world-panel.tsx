@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Spinner } from "@nexus-tools/design-system/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@nexus-tools/design-system/components/ui/toggle-group";
 import { ToolbarSeparator } from "@nexus-tools/design-system/components/ui/toolbar";
-import { Play, RotateCcw, Square } from "lucide-react";
+import { Joystick, Play, Puzzle, RotateCcw, Square } from "lucide-react";
 
 import { WorldScene, type CameraView, type SceneColors } from "@/scene/world-scene";
 import { TRACK_PRESETS, type Track } from "@/sim/track";
@@ -67,8 +67,14 @@ export function WorldPanel({
             onValueChange={(v) => v && sim?.setMode(v as Mode)}
             aria-label="Driving mode"
           >
-            <ToggleGroupItem value="program">Program</ToggleGroupItem>
-            <ToggleGroupItem value="manual">Manual</ToggleGroupItem>
+            <ToggleGroupItem value="program" title="Drive with your blocks">
+              <Puzzle aria-hidden="true" />
+              Program
+            </ToggleGroupItem>
+            <ToggleGroupItem value="manual" title="Drive with the arrow keys">
+              <Joystick aria-hidden="true" />
+              Manual
+            </ToggleGroupItem>
           </ToggleGroup>
           <Select value={trackKey} onValueChange={onTrackChange}>
             <SelectTrigger size="sm" aria-label="Track" className="w-40">

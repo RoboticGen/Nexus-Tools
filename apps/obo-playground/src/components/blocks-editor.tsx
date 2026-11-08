@@ -5,8 +5,8 @@ import { BlocklyPanel } from "@nexus-tools/design-system/components/ui/blockly-p
 import { Button } from "@nexus-tools/design-system/components/ui/button";
 import * as Blockly from "blockly";
 import "blockly/blocks";
-import { Eraser, Lightbulb } from "lucide-react";
-import { useEffect, useRef, type RefObject } from "react";
+import { Eraser, Lightbulb, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { toast } from "sonner";
 
 import { compileWorkspace, EXAMPLE_XML, LINE_EXAMPLE_XML, theme, toolbox } from "@/blocks/robot-blocks";
@@ -49,6 +49,7 @@ export function BlocksEditor({
 }) {
   const divRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
+  const [toolboxOpen, setToolboxOpen] = useState(true);
 
   useEffect(() => {
     const div = divRef.current;
@@ -102,6 +103,16 @@ export function BlocksEditor({
     toast.info(lineTrack ? "Loaded the line-following example." : "Loaded the wall-following example.");
   };
 
+  const onToggleToolbox = () => {
+    const workspace = workspaceRef.current;
+    const box = workspace?.getToolbox();
+    if (!workspace || !box) return;
+    box.clearSelection();
+    box.setVisible(!toolboxOpen);
+    Blockly.svgResize(workspace);
+    setToolboxOpen(!toolboxOpen);
+  };
+
   const onClear = () => {
     const workspace = workspaceRef.current;
     if (!workspace) return;
@@ -116,6 +127,16 @@ export function BlocksEditor({
       className="h-full"
       actions={
         <>
+          <Button
+            size="icon-sm"
+            variant="outline"
+            aria-label={toolboxOpen ? "Hide block categories" : "Show block categories"}
+            title={toolboxOpen ? "Hide block categories" : "Show block categories"}
+            aria-pressed={!toolboxOpen}
+            onClick={onToggleToolbox}
+          >
+            {toolboxOpen ? <PanelLeftClose aria-hidden="true" /> : <PanelLeftOpen aria-hidden="true" />}
+          </Button>
           <Button size="sm" variant="outline" onClick={onExample}>
             <Lightbulb aria-hidden="true" />
             Example
