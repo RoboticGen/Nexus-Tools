@@ -9,10 +9,11 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { toast } from "sonner";
 
 import { Dashboard } from "@/components/dashboard";
+import { ExamplesMenu, type Example } from "@/components/examples-menu";
 import { WorldPanel } from "@/components/world-panel";
 import { SCENE_COLORS, type CameraView } from "@/scene/world-scene";
 import { PlaygroundSim } from "@/sim/playground-sim";
-import { trackFromPreset, type Track } from "@/sim/track";
+import { TRACK_PRESETS, trackFromPreset, type Track } from "@/sim/track";
 
 const BlocksEditor = dynamic(() => import("@/components/blocks-editor").then((m) => m.BlocksEditor), {
   ssr: false,
@@ -42,6 +43,7 @@ export default function Home() {
   const [trackKey, setTrackKey] = useState("oval");
   const [view, setView] = useState<{ name: CameraView; nonce: number }>({ name: "chase", nonce: 0 });
   const getCodeRef = useRef<(() => string) | null>(null);
+  const loadBlocksRef = useRef<((xml: string) => void) | null>(null);
   const snap = useSyncExternalStore(sim.subscribe, sim.getSnapshot, sim.getSnapshot);
 
   // The wasm engine loads on the client only; dispose() lets a remount build a fresh world.
@@ -91,6 +93,13 @@ export default function Home() {
     else sim.run(getCodeRef.current?.() ?? "");
   }, [sim]);
 
+  // An example sets up both halves, as in OBO Lab: its blocks and the world they were written for.
+  const onPickExample = (example: Example) => {
+    loadBlocksRef.current?.(example.xml);
+    applyTrack(trackFromPreset(example.track), example.track);
+    toast.success(`Loaded “${example.title}” on ${TRACK_PRESETS[example.track].name}. Press Run!`);
+  };
+
   return (
     <WorkspaceLayout
       header={
@@ -98,11 +107,12 @@ export default function Home() {
           title="Obo Playground"
           logoSrc="/brand/obo-playground-wordmark.webp"
           logoSrcDark="/brand/obo-playground-wordmark-dark.webp"
+          actions={<ExamplesMenu onPick={onPickExample} />}
         />
       }
     >
       <WorkspaceColumn grow={3} collapsible collapsedSize={0}>
-        <BlocksEditor getCodeRef={getCodeRef} onExampleTrack={(key) => applyTrack(trackFromPreset(key), key)} />
+        <BlocksEditor getCodeRef={getCodeRef} loadBlocksRef={loadBlocksRef} />
       </WorkspaceColumn>
       <WorkspaceColumn grow={4}>
         <WorldPanel
