@@ -221,6 +221,12 @@ function CameraRig({ sim, track, view }: { sim: PlaygroundSim; track: Track; vie
     const prev = last.current;
     last.current = { x: p.x, y: p.y };
     if (!c || !prev || view.name !== "chase") return;
+    // Fog distances run from the camera, so they follow the zoom; fixed, zooming out fogs the whole track.
+    const fog = get().scene.fog as THREE.Fog | null;
+    if (fog) {
+      fog.near = c.distance + track.extent;
+      fog.far = c.distance + track.extent * 3;
+    }
     const dx = p.x - prev.x;
     const dz = -(p.y - prev.y);
     if (!dx && !dz) return;

@@ -76,7 +76,7 @@ export function BlocksEditor({
         renderer: "zelos",
         trashcan: true,
         grid: { spacing: 20, length: 1, colour: "#888", snap: false },
-        zoom: { controls: true, startScale: window.innerWidth <= 768 ? 0.7 : 0.85, maxScale: 1.5, minScale: 0.5, scaleSpeed: 1.2 },
+        zoom: { controls: true, wheel: true, pinch: true, startScale: window.innerWidth <= 768 ? 0.7 : 0.85, maxScale: 1.5, minScale: 0.5, scaleSpeed: 1.2 },
         move: { scrollbars: { horizontal: true, vertical: true }, drag: true, wheel: true },
       });
       restore(workspace);
