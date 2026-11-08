@@ -51,7 +51,14 @@ export function WorldPanel({
   const badge = ENGINE_BADGE[engine];
   return (
     <Panel
-      title="World"
+      title={
+        <span className="inline-flex items-center gap-2">
+          World
+          <Badge tone={badge.tone} appearance="dot">
+            {badge.label}
+          </Badge>
+        </span>
+      }
       toolbarLabel="Simulation controls"
       className="h-full"
       actions={
@@ -96,9 +103,6 @@ export function WorldPanel({
               Manual
             </ToggleGroupItem>
           </ToggleGroup>
-          <Badge tone={badge.tone} appearance="dot">
-            {badge.label}
-          </Badge>
         </>
       }
     >
