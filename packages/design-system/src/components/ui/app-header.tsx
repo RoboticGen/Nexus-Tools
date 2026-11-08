@@ -39,7 +39,8 @@ function AppHeader({
       {...props}
     >
       <div className="flex h-14 items-center gap-4 px-4">
-        {brand && <div className="flex shrink-0 items-center gap-2">{brand}</div>}
+        {/* The brand gives way first, so the actions always fit on a phone. */}
+        {brand && <div className="flex min-w-0 shrink items-center gap-2">{brand}</div>}
 
         {nav && (
           <nav aria-label="Main" className="flex min-w-0 flex-1 items-center gap-1">
