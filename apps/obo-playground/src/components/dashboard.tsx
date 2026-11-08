@@ -19,7 +19,7 @@ function Row({ label, value, children }: { label: string; value: string; childre
     <div className="flex items-center gap-3 text-sm">
       <span className="text-muted-foreground w-14 shrink-0">{label}</span>
       <div className="bg-muted relative h-2 flex-1 overflow-hidden rounded-full">{children}</div>
-      <span className="w-20 shrink-0 text-right font-mono text-xs tabular-nums">{value}</span>
+      <span className="w-24 shrink-0 text-right font-mono text-xs whitespace-nowrap tabular-nums">{value}</span>
     </div>
   );
 }
