@@ -5,7 +5,8 @@ import { MujocoWorld, SENSOR_RANGE } from "./mujoco-world";
 import { PlaygroundSim } from "./playground-sim";
 import { Race } from "./race";
 import { trackFromPreset, type Track } from "./track";
-import { compileWorkspace, EXAMPLE_XML, EXAMPLES, LINE_EXAMPLE_XML } from "../blocks/robot-blocks";
+import { EXAMPLE_XML, EXAMPLES, LINE_EXAMPLE_XML } from "../blocks/examples";
+import { compileWorkspace } from "../blocks/robot-blocks";
 
 const track = (walls: Track["walls"]): Track => ({
   name: "test",

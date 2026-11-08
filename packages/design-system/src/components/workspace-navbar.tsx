@@ -33,6 +33,8 @@ interface WorkspaceNavbarProps {
   logoSrcDark?: string;
   connectionState?: ConnectionState;
   connectionLabel?: string;
+  /** App-specific controls, shown before the theme switch. */
+  actions?: React.ReactNode;
 }
 
 export function WorkspaceNavbar({
@@ -41,6 +43,7 @@ export function WorkspaceNavbar({
   logoSrcDark,
   connectionState = "disconnected",
   connectionLabel = "ESP32 connected",
+  actions,
 }: WorkspaceNavbarProps) {
   const { data: session, status } = useSession();
   // A session whose refresh failed still reads as "authenticated".
@@ -100,6 +103,7 @@ export function WorkspaceNavbar({
       }
       actions={
         <>
+          {actions}
           {connectionState === "connected" && (
             <ConnectionStatus state="connected" label={connectionLabel} readOnly />
           )}
