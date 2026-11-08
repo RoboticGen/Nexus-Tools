@@ -58,8 +58,10 @@ function SelectTrigger({
 function SelectContent({
   className,
   children,
-  position = "item-aligned",
-  align = "center",
+  // "popper" opens below the trigger. "item-aligned" shifts the list to line the selected item up with the
+  // trigger, which pushes long lists off-screen behind scroll buttons that flicker as they toggle.
+  position = "popper",
+  align = "start",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
   return (
