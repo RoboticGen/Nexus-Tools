@@ -55,6 +55,7 @@ export class Race {
     }
 
     const n = this.track.centerline.length;
+    if (n < 2) return null; // no loop to lap: otherwise every update would count as a lap
     const { f } = nearestOnLoop(this.track.centerline, pose.x, pose.y);
     if (this.prevF === null) { this.prevF = f; return null; }
     // shortest signed step across the loop seam

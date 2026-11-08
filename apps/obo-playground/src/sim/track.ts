@@ -26,8 +26,7 @@ export interface Track {
   posts?: Point[];
   goal?: { x: number; y: number; r: number };
   cell?: number;
-  line?: Point[]; // closed
-  lineWidth?: number;
+  line?: { points: Point[]; width: number }; // closed loop of tape
 }
 
 // Two straights joined by constant-radius semicircles; starts mid top straight heading +x.
@@ -187,8 +186,7 @@ function buildLineTrack(line: Point[], lineWidth: number, name: string): Track {
     inner: [],
     outer: [],
     startLine: { ax: a[0] - nx, ay: a[1] - ny, bx: a[0] + nx, by: a[1] + ny },
-    line,
-    lineWidth,
+    line: { points: line, width: lineWidth },
   };
 }
 

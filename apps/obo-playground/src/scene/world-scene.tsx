@@ -118,7 +118,7 @@ function TrackMeshes({ track, colors }: { track: Track; colors: SceneColors }) {
           <meshStandardMaterial color={colors.post} roughness={0.5} />
         </mesh>
       ))}
-      {track.line && <Tape line={track.line} width={track.lineWidth ?? 0} color={colors.tape} />}
+      {track.line && <Tape line={track.line.points} width={track.line.width} color={colors.tape} />}
       {track.goal && (
         <mesh position={[track.goal.x, 0.002, -track.goal.y]}>
           <boxGeometry args={[(track.cell ?? 0.3) * 0.8, 0.003, (track.cell ?? 0.3) * 0.8]} />
@@ -131,7 +131,8 @@ function TrackMeshes({ track, colors }: { track: Track; colors: SceneColors }) {
           rotation-y={Math.atan2(line.by - line.ay, line.bx - line.ax)}
         >
           <boxGeometry args={[Math.hypot(line.bx - line.ax, line.by - line.ay), 0.002, 0.05]} />
-          <meshStandardMaterial color={colors.startLine} transparent opacity={0.7} />
+          {/* gold on line tracks: white would vanish against the light-grey dark-theme tape */}
+          <meshStandardMaterial color={track.line ? colors.nose : colors.startLine} transparent opacity={0.7} />
         </mesh>
       )}
     </group>

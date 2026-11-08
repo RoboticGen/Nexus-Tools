@@ -243,8 +243,8 @@ export const EXAMPLE_XML = `
   </block>
 </xml>`;
 
-// Steer toward whichever half of the IR array sees more of the line, and slow down when the line
-// reaches an outer sensor, which only happens on the sharpest curves.
+// Steer toward the half of the IR array that sees more of the line, slow down when an outer sensor
+// sees it (sharp curves), and spin in place to find it again when no sensor does.
 export const LINE_EXAMPLE_XML = `
 <xml xmlns="https://developers.google.com/blockly/xml">
   <variables>
@@ -332,9 +332,38 @@ export const LINE_EXAMPLE_XML = `
                       </block>
                     </statement>
                     <next>
-                      <block type="robot_drive">
-                        <value name="SPEED"><block type="variables_get"><field name="VAR" id="vspeed">speed</field></block></value>
-                        <value name="TURN"><block type="variables_get"><field name="VAR" id="vturn">turn</field></block></value>
+                      <block type="controls_if">
+                        <value name="IF0">
+                          <block type="logic_compare">
+                            <field name="OP">EQ</field>
+                            <value name="A">
+                              <block type="math_arithmetic">
+                                <field name="OP">ADD</field>
+                                <value name="A"><block type="variables_get"><field name="VAR" id="vleft">left</field></block></value>
+                                <value name="B"><block type="variables_get"><field name="VAR" id="vright">right</field></block></value>
+                              </block>
+                            </value>
+                            <value name="B"><block type="math_number"><field name="NUM">0</field></block></value>
+                          </block>
+                        </value>
+                        <statement name="DO0">
+                          <block type="variables_set">
+                            <field name="VAR" id="vspeed">speed</field>
+                            <value name="VALUE"><block type="math_number"><field name="NUM">0</field></block></value>
+                            <next>
+                              <block type="variables_set">
+                                <field name="VAR" id="vturn">turn</field>
+                                <value name="VALUE"><block type="math_number"><field name="NUM">0.4</field></block></value>
+                              </block>
+                            </next>
+                          </block>
+                        </statement>
+                        <next>
+                          <block type="robot_drive">
+                            <value name="SPEED"><block type="variables_get"><field name="VAR" id="vspeed">speed</field></block></value>
+                            <value name="TURN"><block type="variables_get"><field name="VAR" id="vturn">turn</field></block></value>
+                          </block>
+                        </next>
                       </block>
                     </next>
                   </block>

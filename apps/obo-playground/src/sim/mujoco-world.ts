@@ -199,12 +199,12 @@ export class MujocoWorld {
   // MuJoCo can't see floor colour, so each IR sensor reads 1 when its floor point (pitch and roll
   // ignored) lies on the tape.
   getLineSensors(): number[] {
-    const { line, lineWidth = 0 } = this.track;
+    const { line } = this.track;
     const { x, y, theta } = this.pose;
     const c = Math.cos(theta);
     const s = Math.sin(theta);
     return LINE_SITES.map(([sx, sy]) =>
-      line && nearestOnLoop(line, x + c * sx - s * sy, y + s * sx + c * sy).d < lineWidth / 2 ? 1 : 0,
+      line && nearestOnLoop(line.points, x + c * sx - s * sy, y + s * sx + c * sy).d < line.width / 2 ? 1 : 0,
     );
   }
 

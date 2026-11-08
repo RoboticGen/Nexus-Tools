@@ -86,7 +86,10 @@ export class PlaygroundSim {
   readonly api: RobotApi = {
     // Blocks see centimetres, like the real HC-SR04 code; the sim works in metres.
     sensor: (dir) => (this.sensors[dir as SensorDir] ?? SENSOR_RANGE) * 100,
-    line: (index) => this.lineSensors[num(index)] ?? 0,
+    line: (index) => {
+      const i = Number(index);
+      return Number.isInteger(i) ? (this.lineSensors[i] ?? 0) : 0;
+    },
     speed: () => this.pose().speed * 100,
     time: () => (this.simTime - this.startTime) / 1000,
     setMotors: (left, right) => {
