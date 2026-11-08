@@ -3,13 +3,23 @@
 import { OboCategory } from "@nexus-tools/blockly-python-generator";
 import { BlocklyPanel } from "@nexus-tools/design-system/components/ui/blockly-panel";
 import { Button } from "@nexus-tools/design-system/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@nexus-tools/design-system/components/ui/dropdown-menu";
 import * as Blockly from "blockly";
 import "blockly/blocks";
-import { Eraser } from "lucide-react";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { ChevronDown, Download, Eraser, FolderOpen, Upload } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent, type RefObject } from "react";
+import { toast } from "sonner";
 
 import { EXAMPLE_XML } from "@/blocks/examples";
+import { projectFile, readProjectFile } from "@/blocks/project-file";
 import { compileWorkspace, theme, toolbox } from "@/blocks/robot-blocks";
+import type { Track } from "@/sim/track";
 
 const STORAGE_KEY = "obo-playground.blocks";
 
@@ -43,13 +53,20 @@ function save(workspace: Blockly.WorkspaceSvg) {
 export function BlocksEditor({
   getCodeRef,
   loadBlocksRef,
+  world,
+  onImportWorld,
 }: {
   getCodeRef: RefObject<(() => string) | null>;
   /** Set once the workspace exists; replaces its blocks with the given XML. */
   loadBlocksRef: RefObject<((xml: string) => void) | null>;
+  /** The current world, saved with the blocks on Export. */
+  world: { key: string; track: Track };
+  /** Switches to the world an imported file was saved with. */
+  onImportWorld: (key: string, track: Track) => void;
 }) {
   const divRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
 
   useEffect(() => {
@@ -103,6 +120,43 @@ export function BlocksEditor({
     };
   }, [getCodeRef, loadBlocksRef]);
 
+  const onExport = () => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+    const file = projectFile(Blockly.serialization.workspaces.save(workspace), world.key, world.track);
+    const url = URL.createObjectURL(new Blob([JSON.stringify(file, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `obo-playground-${world.track.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const onImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const workspace = workspaceRef.current;
+    const file = event.target.files?.[0];
+    event.target.value = ""; // lets the same file be picked again
+    if (!workspace || !file) return;
+    let project;
+    try {
+      project = readProjectFile(await file.text());
+    } catch (err) {
+      toast.error((err as Error).message);
+      return;
+    }
+    // load() clears the workspace first, so a file that fails halfway must not cost the student their blocks.
+    const before = Blockly.serialization.workspaces.save(workspace);
+    try {
+      Blockly.serialization.workspaces.load(project.blocks as Blockly.serialization.blocks.State, workspace);
+    } catch {
+      Blockly.serialization.workspaces.load(before, workspace);
+      toast.error("Those blocks couldn't be loaded. Your blocks are unchanged.");
+      return;
+    }
+    if (project.world) onImportWorld(project.world.key, project.world.track);
+    toast.success(project.world ? `Imported ${file.name} on ${project.world.track.name}.` : `Imported ${file.name}.`);
+  };
+
   const onClear = () => {
     const workspace = workspaceRef.current;
     if (!workspace) return;
@@ -118,10 +172,32 @@ export function BlocksEditor({
       workspace={workspace}
       actions={
         <>
-          <Button size="sm" variant="outline" onClick={onClear}>
-            <Eraser aria-hidden="true" className="text-brand-coral" />
-            Clear
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                <FolderOpen aria-hidden="true" className="text-brand-teal" />
+                File
+                <ChevronDown aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-48">
+              <DropdownMenuItem onSelect={() => fileRef.current?.click()}>
+                <Upload aria-hidden="true" />
+                Import from file…
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onExport}>
+                <Download aria-hidden="true" />
+                Export to file
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onSelect={onClear}>
+                <Eraser aria-hidden="true" />
+                Clear all blocks
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {/* Outside the menu, so closing it doesn't unmount the input while the file picker is open. */}
+          <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={onImport} />
         </>
       }
     >
