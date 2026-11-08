@@ -8,12 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Spinner } from "@nexus-tools/design-system/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@nexus-tools/design-system/components/ui/toggle-group";
 import { ToolbarSeparator } from "@nexus-tools/design-system/components/ui/toolbar";
-import { Joystick, Map as MapIcon, Play, Puzzle, RotateCcw, Square } from "lucide-react";
+import { Car, Grid3x3, Joystick, Map as MapIcon, Play, Puzzle, RotateCcw, Square } from "lucide-react";
 
 import { WorldScene, type CameraView, type SceneColors } from "@/scene/world-scene";
 import { TRACK_PRESETS, type Track } from "@/sim/track";
 
 import type { Mode, PlaygroundSim, Snapshot } from "@/sim/playground-sim";
+
+const VIEWS = [
+  { name: "chase", label: "Chase view: follow the car (1)", icon: Car },
+  { name: "top", label: "Top view: the whole track (2)", icon: Grid3x3 },
+] as const;
 
 const ENGINE_BADGE = {
   loading: { tone: "info", label: "Loading physics" },
@@ -91,22 +96,6 @@ export function WorldPanel({
               Manual
             </ToggleGroupItem>
           </ToggleGroup>
-          {/* Clicking the active view again resets it, so the empty value still reframes. */}
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            value={view.name}
-            onValueChange={(v) => onViewChange((v || view.name) as CameraView)}
-            aria-label="Camera view (keys 1 and 2)"
-          >
-            <ToggleGroupItem value="chase" title="Chase view (1)">
-              Chase
-            </ToggleGroupItem>
-            <ToggleGroupItem value="top" title="Top view (2)">
-              Top
-            </ToggleGroupItem>
-          </ToggleGroup>
           <Badge tone={badge.tone} appearance="dot">
             {badge.label}
           </Badge>
@@ -121,6 +110,29 @@ export function WorldPanel({
           <Badge variant="secondary" className="font-mono tabular-nums">{(snap?.elapsed ?? 0).toFixed(2)}s</Badge>
           <Badge variant="secondary" className="font-mono tabular-nums">Best {snap?.best ? `${snap.best.toFixed(2)}s` : "-"}</Badge>
           <Badge variant="secondary" className="font-mono tabular-nums">{Math.round((snap?.speed ?? 0) * 100)} cm/s</Badge>
+        </div>
+        {/* Inside the scene, as OBO Lab does. Clicking the active view again reframes it. */}
+        <div
+          role="toolbar"
+          aria-label="Camera view (keys 1 and 2)"
+          className="bg-card/85 absolute top-2 right-2 flex flex-col gap-0.5 rounded-xl border p-1 shadow-sm backdrop-blur"
+        >
+          {VIEWS.map(({ name, label, icon: Icon }) => {
+            const active = view.name === name;
+            return (
+              <Button
+                key={name}
+                size="icon-sm"
+                variant={active ? "default" : "ghost"}
+                aria-label={label}
+                aria-pressed={active}
+                title={label}
+                onClick={() => onViewChange(name)}
+              >
+                <Icon aria-hidden="true" className={active ? undefined : "text-brand-teal"} />
+              </Button>
+            );
+          })}
         </div>
         {snap?.mode === "manual" && (
           <p className="bg-card/80 text-muted-foreground pointer-events-none absolute bottom-2 left-2 rounded-md px-2 py-1 text-xs">
