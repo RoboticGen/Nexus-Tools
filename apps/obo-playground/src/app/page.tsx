@@ -102,7 +102,7 @@ export default function Home() {
       }
     >
       <WorkspaceColumn grow={3} collapsible collapsedSize={0}>
-        <BlocksEditor getCodeRef={getCodeRef} lineTrack={!!track.line} />
+        <BlocksEditor getCodeRef={getCodeRef} onExampleTrack={(key) => applyTrack(trackFromPreset(key), key)} />
       </WorkspaceColumn>
       <WorkspaceColumn grow={4}>
         <WorldPanel
