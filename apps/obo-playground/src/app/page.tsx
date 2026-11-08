@@ -102,7 +102,7 @@ export default function Home() {
       }
     >
       <WorkspaceColumn grow={3} collapsible collapsedSize={0}>
-        <BlocksEditor getCodeRef={getCodeRef} />
+        <BlocksEditor getCodeRef={getCodeRef} lineTrack={!!track.line} />
       </WorkspaceColumn>
       <WorkspaceColumn grow={4}>
         <WorldPanel

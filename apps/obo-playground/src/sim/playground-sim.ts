@@ -1,7 +1,7 @@
 // The playground's brain, outside React: owns the world, race, student program and motors.
 // The 3D view calls advance() every frame; React reads a snapshot refreshed ~10x a second.
 
-import { MujocoWorld, SENSOR_RANGE, type Pose, type SensorDir, type Sensors } from "./mujoco-world";
+import { LINE_SITES, MujocoWorld, SENSOR_RANGE, type Pose, type SensorDir, type Sensors } from "./mujoco-world";
 import { Race } from "./race";
 
 import type { Track } from "./track";
@@ -15,6 +15,7 @@ export interface Notice {
 
 export interface RobotApi {
   sensor(dir: string): number;
+  line(index: unknown): number;
   speed(): number;
   time(): number;
   setMotors(left: unknown, right: unknown): void;
@@ -36,6 +37,7 @@ export interface Snapshot {
   speed: number;
   omega: number;
   sensors: Sensors;
+  lineSensors: number[];
   motorL: number;
   motorR: number;
 }
@@ -60,6 +62,7 @@ export class PlaygroundSim {
   countdown: string | null = null;
   keys = new Set<string>();
   sensors: Sensors = { front: SENSOR_RANGE, left: SENSOR_RANGE, right: SENSOR_RANGE };
+  lineSensors: number[] = LINE_SITES.map(() => 0);
   motorL = 0;
   motorR = 0;
   simTime = 0; // ms of simulated time; laps and robot.time() use this, not the wall clock
@@ -83,6 +86,7 @@ export class PlaygroundSim {
   readonly api: RobotApi = {
     // Blocks see centimetres, like the real HC-SR04 code; the sim works in metres.
     sensor: (dir) => (this.sensors[dir as SensorDir] ?? SENSOR_RANGE) * 100,
+    line: (index) => this.lineSensors[num(index)] ?? 0,
     speed: () => this.pose().speed * 100,
     time: () => (this.simTime - this.startTime) / 1000,
     setMotors: (left, right) => {
@@ -206,6 +210,7 @@ export class PlaygroundSim {
 
   private controlTick(world: MujocoWorld) {
     this.sensors = world.getSensors();
+    this.lineSensors = world.getLineSensors();
     if (this.mode === "manual") {
       let s = 0;
       let t = 0;
@@ -293,6 +298,7 @@ export class PlaygroundSim {
       speed: pose.speed,
       omega: pose.omega,
       sensors: this.sensors,
+      lineSensors: this.lineSensors,
       motorL: this.motorL,
       motorR: this.motorR,
     };

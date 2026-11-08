@@ -9,13 +9,13 @@ import { Eraser, Lightbulb } from "lucide-react";
 import { useEffect, useRef, type RefObject } from "react";
 import { toast } from "sonner";
 
-import { compileWorkspace, EXAMPLE_XML, theme, toolbox } from "@/blocks/robot-blocks";
+import { compileWorkspace, EXAMPLE_XML, LINE_EXAMPLE_XML, theme, toolbox } from "@/blocks/robot-blocks";
 
 const STORAGE_KEY = "obo-playground.blocks";
 
-function loadExample(workspace: Blockly.WorkspaceSvg) {
+function loadExample(workspace: Blockly.WorkspaceSvg, xml = EXAMPLE_XML) {
   workspace.clear();
-  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(EXAMPLE_XML), workspace);
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(xml), workspace);
 }
 
 // Storage can throw (blocked site data, sandboxed iframes); the workspace must still work.
@@ -40,7 +40,13 @@ function save(workspace: Blockly.WorkspaceSvg) {
   }
 }
 
-export function BlocksEditor({ getCodeRef }: { getCodeRef: RefObject<(() => string) | null> }) {
+export function BlocksEditor({
+  getCodeRef,
+  lineTrack,
+}: {
+  getCodeRef: RefObject<(() => string) | null>;
+  lineTrack: boolean;
+}) {
   const divRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
 
@@ -92,8 +98,8 @@ export function BlocksEditor({ getCodeRef }: { getCodeRef: RefObject<(() => stri
 
   const onExample = () => {
     if (!workspaceRef.current) return;
-    loadExample(workspaceRef.current);
-    toast.info("Loaded the wall-following example.");
+    loadExample(workspaceRef.current, lineTrack ? LINE_EXAMPLE_XML : EXAMPLE_XML);
+    toast.info(lineTrack ? "Loaded the line-following example." : "Loaded the wall-following example.");
   };
 
   const onClear = () => {
