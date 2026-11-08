@@ -77,7 +77,8 @@ export function BlocksEditor({
         trashcan: true,
         grid: { spacing: 20, length: 1, colour: "#888", snap: false },
         zoom: { controls: true, wheel: true, pinch: true, startScale: window.innerWidth <= 768 ? 0.7 : 0.85, maxScale: 1.5, minScale: 0.5, scaleSpeed: 1.2 },
-        move: { scrollbars: { horizontal: true, vertical: true }, drag: true, wheel: true },
+        // wheel off so a two-finger swipe zooms, as in the 3D view; dragging the background pans.
+        move: { scrollbars: { horizontal: true, vertical: true }, drag: true, wheel: false },
       });
       restore(workspace);
       workspace.addChangeListener((e: Blockly.Events.Abstract) => {

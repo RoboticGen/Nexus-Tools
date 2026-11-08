@@ -63,7 +63,7 @@ export function BlocklyEditor({
       },
       zoom: {
         controls: true,
-        // With move.wheel also on, Blockly zooms only on a ctrl/⌘ wheel, which is what a trackpad pinch sends.
+        // move.wheel is off, so any wheel or two-finger swipe zooms, matching the 3D views; dragging pans.
         wheel: true,
         pinch: true,
         startScale: isMobile ? 0.8 : 1,
@@ -77,7 +77,7 @@ export function BlocklyEditor({
           vertical: true,
         },
         drag: true,
-        wheel: true,
+        wheel: false,
       },
       renderer: "zelos",
     };
