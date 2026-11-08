@@ -26,9 +26,8 @@ function WorkspaceColumn({
     <ResizablePanel
       data-slot="workspace-column"
       className={cn(
+        // Full padding on every column puts an equal 8px on both sides of each resize handle.
         "flex min-w-0 flex-col gap-2 overflow-hidden p-2",
-        // Only the first column keeps its left padding; the rest butt up against their neighbour so the gutters stay even across the row.
-        "[&:not(:first-child)]:pl-0",
         "[&>*]:min-h-0 [&>*]:flex-1",
         className
       )}

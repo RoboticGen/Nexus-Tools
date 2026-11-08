@@ -165,7 +165,7 @@ export default function Home() {
       }
     >
       {/* Columns render unconditionally: gating them on `isClient` changes the panel count between renders, which react-resizable-panels reports as "Previous layout not found for panel index N". Only the Blockly workspace itself waits for the client. */}
-      <WorkspaceColumn grow={3} collapsible collapsedSize={0} className="[&:not(:last-child)]:pr-2">
+      <WorkspaceColumn grow={3} collapsible collapsedSize={0}>
         {isClient && (
           <BlocklyEditor
             onCodeChange={handleCodeChange}

@@ -269,17 +269,11 @@ export default function Home() {
         snaps the turtle canvas shut and gives the editor the full row, then
         drags back open — obo-code is often used for plain Python with no
         turtle output at all.
-
-        `pl-2` restores the gutter WorkspaceColumn drops on non-first columns
-        (`[&:not(:first-child)]:pl-0`), which left the panel's rounded corner
-        sitting flush against the divider instead of matching the 8px gap the
-        editor/output split has.
       */}
       <WorkspaceColumn
         grow={2}
         collapsible
         collapsedSize={0}
-        className="[&:not(:first-child)]:pl-2"
       >
         <TurtleWorkspace background={background} onBackgroundChange={setBackground} />
       </WorkspaceColumn>
