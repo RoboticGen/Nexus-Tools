@@ -5,7 +5,7 @@ import { BlocklyPanel } from "@nexus-tools/design-system/components/ui/blockly-p
 import { Button } from "@nexus-tools/design-system/components/ui/button";
 import * as Blockly from "blockly";
 import "blockly/blocks";
-import { ChevronLeft, Eraser, Lightbulb, Puzzle } from "lucide-react";
+import { Eraser, Lightbulb } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { toast } from "sonner";
 
@@ -49,16 +49,9 @@ export function BlocksEditor({
 }) {
   const divRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
-  const [toolboxOpen, setToolboxOpen] = useState(true);
-  const [toolboxWidth, setToolboxWidth] = useState(0);
+  const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
 
   useEffect(() => {
-    // Watched rather than read once: the toolbox widens after inject (font swap, category layout),
-    // and Blockly's getWidth() is cached. Hidden, it measures 0; keep the last width for showing it.
-    const toolboxObserver = new ResizeObserver(([entry]) => {
-      const width = (entry?.target as HTMLElement | undefined)?.offsetWidth ?? 0;
-      if (width > 0) setToolboxWidth(width);
-    });
     const div = divRef.current;
     if (!div) return;
     Blockly.registry.register(
@@ -92,19 +85,17 @@ export function BlocksEditor({
         save(workspace);
       });
       workspaceRef.current = workspace;
-      setToolboxOpen(true);
-      const toolboxEl = div.querySelector(".blocklyToolbox");
-      if (toolboxEl) toolboxObserver.observe(toolboxEl);
+      setWorkspace(workspace);
       getCodeRef.current = () => compileWorkspace(workspace);
     });
     observer.observe(div);
 
     return () => {
       observer.disconnect();
-      toolboxObserver.disconnect();
       getCodeRef.current = null;
       workspaceRef.current?.dispose();
       workspaceRef.current = null;
+      setWorkspace(null);
     };
   }, [getCodeRef]);
 
@@ -112,16 +103,6 @@ export function BlocksEditor({
     if (!workspaceRef.current) return;
     loadExample(workspaceRef.current, lineTrack ? LINE_EXAMPLE_XML : EXAMPLE_XML);
     toast.info(lineTrack ? "Loaded the line-following example." : "Loaded the wall-following example.");
-  };
-
-  const showToolbox = (open: boolean) => {
-    const workspace = workspaceRef.current;
-    const box = workspace?.getToolbox();
-    if (!workspace || !box) return;
-    box.clearSelection();
-    box.setVisible(open);
-    Blockly.svgResize(workspace);
-    setToolboxOpen(open);
   };
 
   const onClear = () => {
@@ -136,6 +117,7 @@ export function BlocksEditor({
     <BlocklyPanel
       title="Blocks"
       className="h-full"
+      workspace={workspace}
       actions={
         <>
           <Button size="sm" variant="outline" onClick={onExample}>
@@ -149,40 +131,8 @@ export function BlocksEditor({
         </>
       }
     >
-      <div className="relative h-full min-h-0 w-full">
-        {/* Blockly measures this element; min-h-0 lets the flex parent shrink it below its content. */}
-        {/* pt-10 on the toolbox leaves room for its header row. */}
-        <div ref={divRef} className="h-full min-h-0 w-full overflow-hidden [&_.blocklyToolbox]:!pt-10" />
-        {toolboxWidth > 0 &&
-          (toolboxOpen ? (
-            <div
-              className="absolute top-1.5 left-0 z-[80] flex items-center justify-between pr-1 pl-3"
-              style={{ width: toolboxWidth }}
-            >
-              <span className="text-muted-foreground text-[11px] font-bold tracking-wider uppercase">Blocks</span>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                aria-label="Hide block list"
-                title="Hide block list"
-                onClick={() => showToolbox(false)}
-              >
-                <ChevronLeft aria-hidden="true" className="text-brand-teal" />
-              </Button>
-            </div>
-          ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="bg-card absolute top-2 left-2 z-[80] shadow-sm"
-              title="Show block list"
-              onClick={() => showToolbox(true)}
-            >
-              <Puzzle aria-hidden="true" className="text-brand-teal" />
-              Blocks
-            </Button>
-          ))}
-      </div>
+      {/* Blockly measures this element; min-h-0 lets the flex parent shrink it below its content. */}
+      <div ref={divRef} className="h-full min-h-0 w-full overflow-hidden" />
     </BlocklyPanel>
   );
 }

@@ -25,7 +25,7 @@ import {
 import * as Blockly from "blockly";
 import "blockly/blocks";
 import { Download, Upload } from "lucide-react";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 
 import { BlocklyPanel } from "@nexus-tools/design-system/components/ui/blockly-panel";
 import { Button } from "@nexus-tools/design-system/components/ui/button";
@@ -45,6 +45,7 @@ export function BlocklyEditor({
 }: BlocklyEditorProps) {
   const blocklyDivRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.Workspace | null>(null);
+  const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
   const { downloadJsonFile } = useEditorHandlers();
 
   const initBlockly = useCallback((div: HTMLDivElement) => {
@@ -127,6 +128,7 @@ export function BlocklyEditor({
     });
 
     workspaceRef.current = workspace;
+    setWorkspace(workspace);
     return workspace;
   }, [onCodeChange]);
 
@@ -263,6 +265,7 @@ export function BlocklyEditor({
   return (
     <BlocklyPanel
       className={className}
+      workspace={workspace}
       actions={
         <>
           <Button size="sm" variant="outline" onClick={handleImportClick} title="Import workspace JSON">
