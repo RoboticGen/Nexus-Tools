@@ -3,9 +3,16 @@
 import { OboCategory } from "@nexus-tools/blockly-python-generator";
 import { BlocklyPanel } from "@nexus-tools/design-system/components/ui/blockly-panel";
 import { Button } from "@nexus-tools/design-system/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@nexus-tools/design-system/components/ui/dropdown-menu";
 import * as Blockly from "blockly";
 import "blockly/blocks";
-import { Download, Eraser, Upload } from "lucide-react";
+import { ChevronDown, Download, Eraser, FolderOpen, Upload } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent, type RefObject } from "react";
 import { toast } from "sonner";
 
@@ -165,19 +172,32 @@ export function BlocksEditor({
       workspace={workspace}
       actions={
         <>
-          <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} title="Import blocks from a file">
-            <Upload aria-hidden="true" className="text-brand-teal" />
-            Import
-          </Button>
-          <Button size="sm" variant="outline" onClick={onExport} title="Save these blocks and their world to a file">
-            <Download aria-hidden="true" className="text-brand-teal" />
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                <FolderOpen aria-hidden="true" className="text-brand-teal" />
+                File
+                <ChevronDown aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-48">
+              <DropdownMenuItem onSelect={() => fileRef.current?.click()}>
+                <Upload aria-hidden="true" />
+                Import from file…
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onExport}>
+                <Download aria-hidden="true" />
+                Export to file
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onSelect={onClear}>
+                <Eraser aria-hidden="true" />
+                Clear all blocks
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {/* Outside the menu, so closing it doesn't unmount the input while the file picker is open. */}
           <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={onImport} />
-          <Button size="sm" variant="outline" onClick={onClear}>
-            <Eraser aria-hidden="true" className="text-brand-coral" />
-            Clear
-          </Button>
         </>
       }
     >
