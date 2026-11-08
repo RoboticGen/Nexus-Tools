@@ -1,25 +1,7 @@
 // Lap counting by progress along the centerline (any racing line counts), or reaching the
 // maze goal. Times are simulated milliseconds.
 
-import type { Point, Track } from "./track";
-
-// Fractional centerline index [0, n) of the nearest point: a continuous progress measure.
-function projectFraction(centerline: Point[], x: number, y: number): number {
-  const n = centerline.length;
-  let bestD = Infinity;
-  let bestF = 0;
-  for (let i = 0; i < n; i++) {
-    const a = centerline[i];
-    const b = centerline[(i + 1) % n];
-    const ex = b[0] - a[0];
-    const ey = b[1] - a[1];
-    const len2 = ex * ex + ey * ey || 1e-9;
-    const t = Math.max(0, Math.min(1, ((x - a[0]) * ex + (y - a[1]) * ey) / len2));
-    const d = (x - a[0] - ex * t) ** 2 + (y - a[1] - ey * t) ** 2;
-    if (d < bestD) { bestD = d; bestF = i + t; }
-  }
-  return bestF;
-}
+import { nearestOnLoop, type Track } from "./track";
 
 export type RaceEvent = "lap" | "finish" | null;
 
@@ -73,7 +55,8 @@ export class Race {
     }
 
     const n = this.track.centerline.length;
-    const f = projectFraction(this.track.centerline, pose.x, pose.y);
+    if (n < 2) return null; // no loop to lap: otherwise every update would count as a lap
+    const { f } = nearestOnLoop(this.track.centerline, pose.x, pose.y);
     if (this.prevF === null) { this.prevF = f; return null; }
     // shortest signed step across the loop seam
     let d = f - this.prevF;

@@ -6,11 +6,11 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { NEAR_WALL, RIDE_H, SENSOR_SITES, WALL_H, WALL_T, type SensorDir } from "@/sim/mujoco-world";
+import { offsetLoop, type Point, type Track } from "@/sim/track";
 
 import { OboCar } from "./obo-car";
 
 import type { PlaygroundSim } from "@/sim/playground-sim";
-import type { Track } from "@/sim/track";
 
 // Physics is x forward, y left, z up; three.js is y up. Every position below maps
 // physics (x, y, z) to three (x, z, -y): a rotation, so left stays left on screen.
@@ -25,6 +25,7 @@ export interface SceneColors {
   post: string;
   goal: string;
   startLine: string;
+  tape: string;
   nose: string;
   rayClear: string;
   rayNear: string;
@@ -39,6 +40,7 @@ export const SCENE_COLORS: Record<"light" | "dark", SceneColors> = {
     post: "#022f49",
     goal: "#43b268",
     startLine: "#ffffff",
+    tape: "#1f2022",
     nose: "#fdb713",
     rayClear: "#1c6e3d",
     rayNear: "#dc2626",
@@ -51,6 +53,7 @@ export const SCENE_COLORS: Record<"light" | "dark", SceneColors> = {
     post: "#939598",
     goal: "#43b268",
     startLine: "#e3e8eb",
+    tape: "#c4cacf",
     nose: "#fdb713",
     rayClear: "#43b268",
     rayNear: "#f87171",
@@ -59,6 +62,32 @@ export const SCENE_COLORS: Record<"light" | "dark", SceneColors> = {
 
 const DIRS = Object.keys(SENSOR_SITES) as SensorDir[];
 const FOV = 50;
+
+// A flat ribbon 1 mm above the grid lines, so it never z-fights with them from the top view.
+function Tape({ line, width, color }: { line: Point[]; width: number; color: string }) {
+  const geometry = useMemo(() => {
+    const { inner, outer } = offsetLoop(line, width);
+    const n = line.length;
+    const pos: number[] = [];
+    const index: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      pos.push(outer[i][0], 0, -outer[i][1], inner[i][0], 0, -inner[i][1]);
+      index.push(2 * i, 2 * i + 1, 2 * j, 2 * j, 2 * i + 1, 2 * j + 1);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(index);
+    g.computeVertexNormals();
+    return g;
+  }, [line, width]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return (
+    <mesh geometry={geometry} position-y={0.002} receiveShadow>
+      <meshStandardMaterial color={color} roughness={0.9} side={THREE.DoubleSide} />
+    </mesh>
+  );
+}
 
 function TrackMeshes({ track, colors }: { track: Track; colors: SceneColors }) {
   const wh = track.wallHeight ?? WALL_H;
@@ -89,6 +118,7 @@ function TrackMeshes({ track, colors }: { track: Track; colors: SceneColors }) {
           <meshStandardMaterial color={colors.post} roughness={0.5} />
         </mesh>
       ))}
+      {track.line && <Tape line={track.line.points} width={track.line.width} color={colors.tape} />}
       {track.goal && (
         <mesh position={[track.goal.x, 0.002, -track.goal.y]}>
           <boxGeometry args={[(track.cell ?? 0.3) * 0.8, 0.003, (track.cell ?? 0.3) * 0.8]} />
@@ -101,7 +131,8 @@ function TrackMeshes({ track, colors }: { track: Track; colors: SceneColors }) {
           rotation-y={Math.atan2(line.by - line.ay, line.bx - line.ax)}
         >
           <boxGeometry args={[Math.hypot(line.bx - line.ax, line.by - line.ay), 0.002, 0.05]} />
-          <meshStandardMaterial color={colors.startLine} transparent opacity={0.7} />
+          {/* gold on line tracks: white would vanish against the light-grey dark-theme tape */}
+          <meshStandardMaterial color={track.line ? colors.nose : colors.startLine} transparent opacity={0.7} />
         </mesh>
       )}
     </group>

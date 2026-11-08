@@ -2,8 +2,8 @@
 // step) and the track walls. Frame: x forward, y left, z up, metres.
 
 import { loadMujoco } from "./load-mujoco";
+import { nearestOnLoop, type Track } from "./track";
 
-import type { Track } from "./track";
 import type { MainModule, MjData, MjModel } from "@mujoco/mujoco";
 
 type Vec3 = readonly [number, number, number];
@@ -15,6 +15,15 @@ export const SENSOR_SITES = {
   left: { pos: [0.04891, 0.04999, 0.02526], dir: [0, 1, 0] },
   right: { pos: [0.04915, -0.04969, 0.02576], dir: [0, -1, 0] },
 } as const satisfies Record<string, { pos: Vec3; dir: Vec3 }>;
+// IR line sensors line_0..line_5 (x, y), left to right.
+export const LINE_SITES = [
+  [0.08315, 0.0301],
+  [0.08315, 0.01804],
+  [0.08315, 0.00585],
+  [0.08315, -0.00647],
+  [0.08315, -0.01854],
+  [0.08315, -0.03086],
+] as const;
 export const WALL_H = 0.08;
 export const WALL_T = 0.01; // half-thickness
 export const SENSOR_RANGE = 4; // HC-SR04 maximum, metres
@@ -185,6 +194,18 @@ export class MujocoWorld {
     // rangefinders report -1 when nothing is within the cutoff
     const read = (i: number) => (!sd || sd[i] < 0 ? SENSOR_RANGE : Math.min(SENSOR_RANGE, sd[i]));
     return { front: read(0), left: read(1), right: read(2) };
+  }
+
+  // MuJoCo can't see floor colour, so each IR sensor reads 1 when its floor point (pitch and roll
+  // ignored) lies on the tape.
+  getLineSensors(): number[] {
+    const { line } = this.track;
+    const { x, y, theta } = this.pose;
+    const c = Math.cos(theta);
+    const s = Math.sin(theta);
+    return LINE_SITES.map(([sx, sy]) =>
+      line && nearestOnLoop(line.points, x + c * sx - s * sy, y + s * sx + c * sy).d < line.width / 2 ? 1 : 0,
+    );
   }
 
   dispose() {

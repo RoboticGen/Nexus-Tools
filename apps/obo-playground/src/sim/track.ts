@@ -1,5 +1,5 @@
-// A track is a centerline polyline + corridor width turned into wall segments, or a maze. Physics
-// and rendering both read it; x/y on the ground in metres, sized for the 12 cm OBO Car.
+// A track is walls from a centerline + width, a tape line on an open floor, or a maze. Physics and
+// rendering both read it; x/y on the ground in metres, sized for the 12 cm OBO Car.
 
 import { generateMaze } from "./maze";
 
@@ -26,6 +26,7 @@ export interface Track {
   posts?: Point[];
   goal?: { x: number; y: number; r: number };
   cell?: number;
+  line?: { points: Point[]; width: number }; // closed loop of tape
 }
 
 // Two straights joined by constant-radius semicircles; starts mid top straight heading +x.
@@ -86,14 +87,28 @@ function sampleSerpentine(halfX: number, R: number, amp: number, bumps: number, 
   return pts;
 }
 
+// r = R0 + A·cos 2θ + D·sin θ: a bean with a dent on one side, so a follower meets both left and
+// right turns. Starts mid top heading +x.
+function sampleBean(R0: number, A: number, D: number, n: number): Point[] {
+  const pts: Point[] = [];
+  for (let i = 0; i < n; i++) {
+    const t = Math.PI / 2 - (i / n) * Math.PI * 2;
+    const r = R0 + A * Math.cos(2 * t) + D * Math.sin(t);
+    pts.push([r * Math.cos(t), r * Math.sin(t)]);
+  }
+  return pts;
+}
+
 type Preset =
   | { name: string; width: number; centerline: Point[] }
+  | { name: string; line: Point[]; lineWidth: number }
   | { name: string; maze: { cols: number; rows: number; cell: number; seed: number } };
 
 export const TRACK_PRESETS: Record<string, Preset> = {
   oval: { name: "Speedway Oval", width: 0.5, centerline: sampleStadium(1.0, 0.75, 32) },
   clover: { name: "Clover Loop", width: 0.5, centerline: sampleClover(1.25, 0.3, 54) },
   slalom: { name: "Slalom Loop", width: 0.5, centerline: sampleSerpentine(1.25, 0.75, 0.28, 3, 60) },
+  line: { name: "Line Follower", line: sampleBean(0.6, 0.2, 0.12, 120), lineWidth: 0.019 },
   maze: { name: "Micromouse Maze", maze: { cols: 7, rows: 7, cell: 0.3, seed: 7 } },
 };
 
@@ -103,7 +118,7 @@ function norm(x: number, y: number): Point {
 }
 
 // Offset a closed centerline by half the width using averaged vertex normals (smooth corners).
-function offsetWalls(centerline: Point[], width: number) {
+export function offsetLoop(centerline: Point[], width: number) {
   const n = centerline.length;
   const inner: Point[] = [];
   const outer: Point[] = [];
@@ -133,7 +148,7 @@ function ringToWalls(ring: Point[]): Wall[] {
 }
 
 export function buildTrack(centerline: Point[], width: number, name = "Custom track"): Track {
-  const { inner, outer } = offsetWalls(centerline, width);
+  const { inner, outer } = offsetLoop(centerline, width);
   const start = centerline[0];
   const next = centerline[1 % centerline.length];
   let ext = 0;
@@ -151,11 +166,55 @@ export function buildTrack(centerline: Point[], width: number, name = "Custom tr
   };
 }
 
+// The tape doubles as the centerline so laps count; a distant border keeps a lost car in view.
+function buildLineTrack(line: Point[], lineWidth: number, name: string): Track {
+  const margin = 0.4;
+  const xs = line.map((p) => p[0]);
+  const ys = line.map((p) => p[1]);
+  const [x0, x1] = [Math.min(...xs) - margin, Math.max(...xs) + margin];
+  const [y0, y1] = [Math.min(...ys) - margin, Math.max(...ys) + margin];
+  const [a, b] = line;
+  const heading = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  const [nx, ny] = [-Math.sin(heading) * 0.06, Math.cos(heading) * 0.06];
+  return {
+    name,
+    walls: ringToWalls([[x0, y0], [x1, y0], [x1, y1], [x0, y1]]),
+    start: { x: a[0], y: a[1], heading },
+    extent: Math.max(-x0, x1, -y0, y1) + 0.25,
+    width: lineWidth,
+    centerline: line,
+    inner: [],
+    outer: [],
+    startLine: { ax: a[0] - nx, ay: a[1] - ny, bx: a[0] + nx, by: a[1] + ny },
+    line: { points: line, width: lineWidth },
+  };
+}
+
+// Nearest point on a closed polyline: its fractional index [0, n), a continuous progress measure,
+// and the distance to it.
+export function nearestOnLoop(loop: Point[], x: number, y: number): { f: number; d: number } {
+  const n = loop.length;
+  let bestD = Infinity;
+  let bestF = 0;
+  for (let i = 0; i < n; i++) {
+    const a = loop[i];
+    const b = loop[(i + 1) % n];
+    const ex = b[0] - a[0];
+    const ey = b[1] - a[1];
+    const len2 = ex * ex + ey * ey || 1e-9;
+    const t = Math.max(0, Math.min(1, ((x - a[0]) * ex + (y - a[1]) * ey) / len2));
+    const d = (x - a[0] - ex * t) ** 2 + (y - a[1] - ey * t) ** 2;
+    if (d < bestD) { bestD = d; bestF = i + t; }
+  }
+  return { f: bestF, d: Math.sqrt(bestD) };
+}
+
 export function trackFromPreset(key: string): Track {
   const p = TRACK_PRESETS[key] ?? TRACK_PRESETS.oval;
   if ("maze" in p) {
     const { cols, rows, cell, seed } = p.maze;
     return { ...generateMaze(cols, rows, cell, seed), name: p.name };
   }
+  if ("line" in p) return buildLineTrack(p.line, p.lineWidth, p.name);
   return buildTrack(p.centerline.map(([x, y]) => [x, y]), p.width, p.name);
 }

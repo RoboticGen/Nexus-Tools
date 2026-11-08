@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@nexus-tools/design-system/components/ui/card";
 import { cn } from "@nexus-tools/design-system/lib/utils";
 
-import { NEAR_WALL, SENSOR_RANGE, TOP_SPEED } from "@/sim/mujoco-world";
+import { LINE_SITES, NEAR_WALL, SENSOR_RANGE, TOP_SPEED } from "@/sim/mujoco-world";
 
 import { TrackBuilder } from "./track-builder";
 
@@ -75,6 +75,25 @@ export function Dashboard({
           })}
         </CardContent>
       </Card>
+
+      {track.line && (
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Line sensors</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol aria-label="Line sensors, left to right" className="flex justify-between">
+              {(snap?.lineSensors ?? LINE_SITES.map(() => 0)).map((on, i) => (
+                <li key={i} className="flex flex-col items-center gap-1">
+                  <span className={cn("size-4 rounded-full border-2", on ? "bg-foreground border-foreground" : "border-border")} />
+                  <span className="text-muted-foreground font-mono text-xs">{i}</span>
+                  <span className="sr-only">{on ? "on the line" : "off the line"}</span>
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+      )}
 
       <Card size="sm">
         <CardHeader>

@@ -5,7 +5,7 @@ import { MujocoWorld, SENSOR_RANGE } from "./mujoco-world";
 import { PlaygroundSim } from "./playground-sim";
 import { Race } from "./race";
 import { trackFromPreset, type Track } from "./track";
-import { compileWorkspace, EXAMPLE_XML } from "../blocks/robot-blocks";
+import { compileWorkspace, EXAMPLE_XML, LINE_EXAMPLE_XML } from "../blocks/robot-blocks";
 
 const track = (walls: Track["walls"]): Track => ({
   name: "test",
@@ -25,6 +25,8 @@ const corridor = track([
   { x1: 1.5, y1: -0.6, x2: 1.5, y2: 0.2 },
 ]);
 const openFloor = track([]);
+// Tape along +x at height y; the car starts at the origin heading +x.
+const straightLine = (y: number): Track => ({ ...openFloor, line: { points: [[-1, y], [2, y]], width: 0.019 } });
 
 // Disposed even when an assertion fails, so one failure can't leak wasm models or fake timers.
 const cleanup: (() => void)[] = [];
@@ -127,6 +129,39 @@ describe("physics", () => {
   });
 });
 
+describe("line sensors", () => {
+  it("sees a line under its middle sensors only", async () => {
+    const world = await worldOn(straightLine(0));
+    expect(world.getLineSensors()).toEqual([0, 0, 1, 1, 0, 0]);
+  });
+
+  it("sees nothing 10 cm beside the line", async () => {
+    const world = await worldOn(straightLine(0.1));
+    expect(world.getLineSensors()).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+
+  it("reads 0 for an index that isn't a sensor", async () => {
+    const sim = await simOn(straightLine(0));
+    sim.advance(0.02);
+    expect([sim.api.line(2), sim.api.line(undefined), sim.api.line("x"), sim.api.line(9), sim.api.line(2.5)]).toEqual([1, 0, 0, 0, 0]);
+  });
+
+  it.each([
+    [0.03, [1, 0, 0, 0, 0, 0]],
+    [-0.031, [0, 0, 0, 0, 0, 1]],
+  ])("the block counts 0 to 5 from left to right (line at y = %f)", async (y, expected) => {
+    const sim = await simOn(straightLine(y));
+    sim.advance(0.02);
+    const read = (i: number) => {
+      const ws = new Blockly.Workspace();
+      cleanup.push(() => ws.dispose());
+      ws.newBlock("robot_line").setFieldValue(String(i), "INDEX");
+      return new Function("robot", `return ${compileWorkspace(ws)}`)(sim.api);
+    };
+    expect([0, 1, 2, 3, 4, 5].map(read)).toEqual(expected);
+  });
+});
+
 describe("example program", () => {
   it.each(["oval", "clover", "slalom"])("laps the %s without touching a wall", async (key) => {
     const ws = new Blockly.Workspace();
@@ -142,6 +177,42 @@ describe("example program", () => {
     }
     expect(sim.race.lap).toBe(2);
     expect(clearance).toBeGreaterThan(0.1);
+  });
+
+  it("follows the line track for a lap without losing the line", async () => {
+    const ws = new Blockly.Workspace();
+    cleanup.push(() => ws.dispose());
+    Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(LINE_EXAMPLE_XML), ws);
+    const sim = await simOn(trackFromPreset("line"));
+    vi.useFakeTimers();
+    sim.run(compileWorkspace(ws));
+    vi.advanceTimersByTime(3000);
+    let offLine = 0;
+    let longestOff = 0;
+    for (let i = 0; i < 40 * 60 && sim.race.lap < 2; i++) {
+      sim.advance(1 / 60);
+      offLine = sim.lineSensors.some(Boolean) ? 0 : offLine + 1 / 60;
+      longestOff = Math.max(longestOff, offLine);
+    }
+    expect(sim.race.lap).toBe(2);
+    expect(longestOff).toBeLessThanOrEqual(1);
+    expect(sim.race.best).toBeLessThan(10); // it laps in about 9.2 s
+  });
+
+  it("spins to find the line again when no sensor sees it", async () => {
+    const ws = new Blockly.Workspace();
+    cleanup.push(() => ws.dispose());
+    Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(LINE_EXAMPLE_XML), ws);
+    const sim = await simOn(straightLine(0.05)); // 5 cm left of the car, outside the IR array
+    vi.useFakeTimers();
+    sim.run(compileWorkspace(ws));
+    vi.advanceTimersByTime(3000);
+    let found = false;
+    for (let i = 0; i < 4 * 60 && !found; i++) {
+      sim.advance(1 / 60);
+      found = sim.lineSensors.some(Boolean);
+    }
+    expect(found).toBe(true);
   });
 });
 
