@@ -112,7 +112,7 @@ export function WorldPanel({
           <Badge variant="secondary">{snap?.isMaze ? (snap.finished ? "Goal reached" : "Find the goal") : `Lap ${snap?.lap ?? 0}/${snap?.totalLaps ?? 3}`}</Badge>
           <Badge variant="secondary" className="font-mono tabular-nums">{(snap?.elapsed ?? 0).toFixed(2)}s</Badge>
           <Badge variant="secondary" className="font-mono tabular-nums">Best {snap?.best ? `${snap.best.toFixed(2)}s` : "-"}</Badge>
-          <Badge variant="secondary" className="font-mono tabular-nums">{(snap?.speed ?? 0).toFixed(1)} m/s</Badge>
+          <Badge variant="secondary" className="font-mono tabular-nums">{Math.round((snap?.speed ?? 0) * 100)} cm/s</Badge>
         </div>
         {snap?.mode === "manual" && (
           <p className="bg-card/80 text-muted-foreground pointer-events-none absolute bottom-2 left-2 rounded-md px-2 py-1 text-xs">

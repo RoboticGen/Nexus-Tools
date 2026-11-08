@@ -1,5 +1,5 @@
-// A track is a centerline polyline + corridor width turned into wall segments, or a maze.
-// Physics and rendering both read this one description. Coordinates: x/y on the ground, metres.
+// A track is a centerline polyline + corridor width turned into wall segments, or a maze. Physics
+// and rendering both read it; x/y on the ground in metres, sized for the 12 cm OBO Car.
 
 import { generateMaze } from "./maze";
 
@@ -91,10 +91,10 @@ type Preset =
   | { name: string; maze: { cols: number; rows: number; cell: number; seed: number } };
 
 export const TRACK_PRESETS: Record<string, Preset> = {
-  oval: { name: "Speedway Oval", width: 4.5, centerline: sampleStadium(9, 7, 32) },
-  clover: { name: "Clover Loop", width: 4.5, centerline: sampleClover(11, 2.8, 54) },
-  slalom: { name: "Slalom Loop", width: 4.5, centerline: sampleSerpentine(11, 7, 2.5, 3, 60) },
-  maze: { name: "Micromouse Maze", maze: { cols: 7, rows: 7, cell: 2.8, seed: 7 } },
+  oval: { name: "Speedway Oval", width: 0.5, centerline: sampleStadium(1.0, 0.75, 32) },
+  clover: { name: "Clover Loop", width: 0.5, centerline: sampleClover(1.25, 0.3, 54) },
+  slalom: { name: "Slalom Loop", width: 0.5, centerline: sampleSerpentine(1.25, 0.75, 0.28, 3, 60) },
+  maze: { name: "Micromouse Maze", maze: { cols: 7, rows: 7, cell: 0.3, seed: 7 } },
 };
 
 function norm(x: number, y: number): Point {
@@ -142,7 +142,7 @@ export function buildTrack(centerline: Point[], width: number, name = "Custom tr
     name,
     walls: [...ringToWalls(outer), ...ringToWalls(inner)],
     start: { x: start[0], y: start[1], heading: Math.atan2(next[1] - start[1], next[0] - start[0]) },
-    extent: ext + 3,
+    extent: ext + 0.35,
     width,
     centerline,
     inner,

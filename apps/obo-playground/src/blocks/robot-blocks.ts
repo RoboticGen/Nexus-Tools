@@ -41,7 +41,7 @@ Blockly.common.defineBlocksWithJsonArray([
   },
   {
     type: "robot_sensor",
-    message0: "distance %1",
+    message0: "distance %1 cm",
     args0: [
       {
         type: "field_dropdown",
@@ -55,14 +55,14 @@ Blockly.common.defineBlocksWithJsonArray([
     ],
     output: "Number",
     style: "sensor_blocks",
-    tooltip: "Distance in metres to the nearest wall in that direction (up to 20).",
+    tooltip: "Distance in centimetres to the nearest wall in that direction (up to 400, like the real ultrasonic sensor).",
   },
   {
     type: "robot_speed",
-    message0: "my speed",
+    message0: "my speed cm/s",
     output: "Number",
     style: "sensor_blocks",
-    tooltip: "Current speed of the car in metres per second.",
+    tooltip: "Current speed of the car in centimetres per second.",
   },
   {
     type: "robot_time",
@@ -189,7 +189,7 @@ export const EXAMPLE_XML = `
             <value name="B"><block type="robot_sensor"><field name="DIR">left</field></block></value>
           </block>
         </value>
-        <value name="B"><block type="math_number"><field name="NUM">0.5</field></block></value>
+        <value name="B"><block type="math_number"><field name="NUM">0.04</field></block></value>
       </block>
     </value>
     <next>
@@ -199,7 +199,7 @@ export const EXAMPLE_XML = `
           <block type="math_arithmetic">
             <field name="OP">MULTIPLY</field>
             <value name="A"><block type="robot_sensor"><field name="DIR">front</field></block></value>
-            <value name="B"><block type="math_number"><field name="NUM">0.28</field></block></value>
+            <value name="B"><block type="math_number"><field name="NUM">0.02</field></block></value>
           </block>
         </value>
         <next>

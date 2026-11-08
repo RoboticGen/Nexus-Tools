@@ -40,8 +40,8 @@ export interface Snapshot {
   motorR: number;
 }
 
-// The robot's brain runs every 3 physics steps (15 ms), whatever the display's refresh rate.
-const CONTROL_EVERY = 3;
+// The robot's brain runs every 8 physics steps (16 ms), whatever the display's refresh rate.
+const CONTROL_EVERY = 8;
 const MAX_FRAME_DT = 0.05;
 const SNAPSHOT_MS = 100;
 const COUNTDOWN = ["3", "2", "1", "GO!"];
@@ -81,8 +81,9 @@ export class PlaygroundSim {
   }
 
   readonly api: RobotApi = {
-    sensor: (dir) => this.sensors[dir as SensorDir] ?? SENSOR_RANGE,
-    speed: () => this.pose().speed,
+    // Blocks see centimetres, like the real HC-SR04 code; the sim works in metres.
+    sensor: (dir) => (this.sensors[dir as SensorDir] ?? SENSOR_RANGE) * 100,
+    speed: () => this.pose().speed * 100,
     time: () => (this.simTime - this.startTime) / 1000,
     setMotors: (left, right) => {
       this.motorL = clamp1(num(left));
@@ -208,10 +209,10 @@ export class PlaygroundSim {
     if (this.mode === "manual") {
       let s = 0;
       let t = 0;
-      if (this.keys.has("ArrowUp")) s += 0.9;
-      if (this.keys.has("ArrowDown")) s -= 0.7;
-      if (this.keys.has("ArrowLeft")) t -= 0.4;
-      if (this.keys.has("ArrowRight")) t += 0.4;
+      if (this.keys.has("ArrowUp")) s += 0.7;
+      if (this.keys.has("ArrowDown")) s -= 0.5;
+      if (this.keys.has("ArrowLeft")) t -= 0.3;
+      if (this.keys.has("ArrowRight")) t += 0.3;
       this.api.drive(s, t);
     } else if (this.running && this.armed && this.program) {
       try {

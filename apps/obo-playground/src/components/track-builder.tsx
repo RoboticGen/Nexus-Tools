@@ -24,7 +24,7 @@ export function TrackBuilder({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loaded, setLoaded] = useState<Track | null>(null);
   const [points, setPoints] = useState<Point[]>([]);
-  const [width, setWidth] = useState(4.5);
+  const [width, setWidth] = useState(0.5);
   const [hover, setHover] = useState(-1);
   const dragIndex = useRef(-1);
   const scale = useRef(8); // px per metre
@@ -44,7 +44,7 @@ export function TrackBuilder({
     const H = canvas.height;
     // Refit only between drags, so the view doesn't shift under the pointer mid-drag.
     if (dragIndex.current < 0) {
-      let ext = 6;
+      let ext = 0.7;
       for (const [x, y] of points) ext = Math.max(ext, Math.abs(x), Math.abs(y));
       scale.current = Math.min(W, H) / (2 * (ext + width));
     }
@@ -161,15 +161,15 @@ export function TrackBuilder({
         <input
           id="track-width"
           type="range"
-          min={2.5}
-          max={7}
-          step={0.25}
+          min={0.3}
+          max={0.8}
+          step={0.025}
           value={width}
           disabled={disabled}
           onChange={(e) => setWidth(Number(e.target.value))}
           className="accent-primary w-full"
         />
-        <span className="text-muted-foreground w-12 text-right font-mono text-xs tabular-nums">{width.toFixed(2)} m</span>
+        <span className="text-muted-foreground w-14 text-right font-mono text-xs whitespace-nowrap tabular-nums">{Math.round(width * 100)} cm</span>
       </div>
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" onClick={addPoint} disabled={disabled}>

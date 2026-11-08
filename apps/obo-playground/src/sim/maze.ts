@@ -72,10 +72,10 @@ export function generateMaze(cols: number, rows: number, cell: number, seed = 1)
   return {
     walls,
     posts,
-    wallHeight: 1.0,
+    wallHeight: 0.1,
     start: { x: sc[0], y: sc[1], heading: open[idx(0, 0)].N ? Math.PI / 2 : 0 },
     goal: { x: gc[0], y: gc[1], r: cell * 0.5 },
-    extent: Math.max(W, H) / 2 + 2,
+    extent: Math.max(W, H) / 2 + 0.25,
     width: cell,
     cell,
     centerline: [],

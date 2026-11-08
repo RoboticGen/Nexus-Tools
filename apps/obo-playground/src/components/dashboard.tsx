@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@nexus-tools/design-system/components/ui/card";
 import { cn } from "@nexus-tools/design-system/lib/utils";
 
-import { SENSOR_RANGE } from "@/sim/mujoco-world";
+import { NEAR_WALL, SENSOR_RANGE, TOP_SPEED } from "@/sim/mujoco-world";
 
 import { TrackBuilder } from "./track-builder";
 
@@ -11,8 +11,7 @@ import type { SceneColors } from "@/scene/world-scene";
 import type { Snapshot } from "@/sim/playground-sim";
 import type { Track } from "@/sim/track";
 
-const BAR_FULL_SCALE_M = 6; // bars fill at 6 m; the number shows the real reading
-const NEAR_WALL = 1.2;
+const BAR_FULL_SCALE_M = 1; // bars fill at 1 m; the number shows the real reading
 
 function Row({ label, value, children }: { label: string; value: string; children: React.ReactNode }) {
   return (
@@ -69,7 +68,7 @@ export function Dashboard({
           {(["front", "left", "right"] as const).map((dir) => {
             const d = sensors[dir];
             return (
-              <Row key={dir} label={dir[0].toUpperCase() + dir.slice(1)} value={d >= SENSOR_RANGE ? "∞" : `${d.toFixed(2)} m`}>
+              <Row key={dir} label={dir[0].toUpperCase() + dir.slice(1)} value={d >= SENSOR_RANGE ? "—" : `${(d * 100).toFixed(1)} cm`}>
                 <Fill fraction={d / BAR_FULL_SCALE_M} className={d < NEAR_WALL ? "bg-tone-danger" : "bg-tone-success"} />
               </Row>
             );
@@ -82,12 +81,12 @@ export function Dashboard({
           <CardTitle>Motion</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          <Row label="Speed" value={`${(snap?.speed ?? 0).toFixed(2)} m/s`}>
-            <Fill fraction={(snap?.speed ?? 0) / 4} className="bg-tone-brand" />
+          <Row label="Speed" value={`${((snap?.speed ?? 0) * 100).toFixed(1)} cm/s`}>
+            <Fill fraction={(snap?.speed ?? 0) / TOP_SPEED} className="bg-tone-brand" />
           </Row>
           {/* positive = turning right, the same sign as the drive block's turn */}
           <Row label="Turning" value={`${(-(snap?.omega ?? 0)).toFixed(2)} rad/s`}>
-            <SignedBar value={-(snap?.omega ?? 0) / 4} />
+            <SignedBar value={-(snap?.omega ?? 0) / 8} />
           </Row>
         </CardContent>
       </Card>
