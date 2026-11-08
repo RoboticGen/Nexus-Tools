@@ -254,6 +254,13 @@ export const EXAMPLES = [
     xml: LINE_EXAMPLE_XML,
   },
   {
+    id: "line-figure8",
+    title: "Line follower: Figure eight",
+    track: "figure8",
+    summary: "The same follower drives straight over the crossing.",
+    xml: LINE_EXAMPLE_XML,
+  },
+  {
     id: "maze",
     title: "Maze solver",
     track: "maze",

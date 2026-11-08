@@ -99,6 +99,18 @@ function sampleBean(R0: number, A: number, D: number, n: number): Point[] {
   return pts;
 }
 
+// A lemniscate of Gerono (x = A·sin t, y = B·sin t·cos t): a figure eight whose tape crosses itself
+// at the origin, so a follower has to drive straight over a junction. Starts at the right lobe's tip,
+// clear of the crossing, heading -y.
+function sampleFigureEight(A: number, B: number, n: number): Point[] {
+  const pts: Point[] = [];
+  for (let i = 0; i < n; i++) {
+    const t = Math.PI / 2 + (i / n) * Math.PI * 2;
+    pts.push([A * Math.sin(t), B * Math.sin(t) * Math.cos(t)]);
+  }
+  return pts;
+}
+
 type Preset =
   | { name: string; width: number; centerline: Point[] }
   | { name: string; line: Point[]; lineWidth: number }
@@ -109,6 +121,7 @@ export const TRACK_PRESETS: Record<string, Preset> = {
   clover: { name: "Clover Loop", width: 0.5, centerline: sampleClover(1.25, 0.3, 54) },
   slalom: { name: "Slalom Loop", width: 0.5, centerline: sampleSerpentine(1.25, 0.75, 0.28, 3, 60) },
   line: { name: "Line Follower", line: sampleBean(0.6, 0.2, 0.12, 120), lineWidth: 0.019 },
+  figure8: { name: "Figure Eight", line: sampleFigureEight(1.1, 1.1, 160), lineWidth: 0.019 },
   maze: { name: "Micromouse Maze", maze: { cols: 7, rows: 7, cell: 0.3, seed: 7 } },
 };
 
@@ -166,7 +179,7 @@ export function buildTrack(centerline: Point[], width: number, name = "Custom tr
   };
 }
 
-// The tape doubles as the centerline so laps count; a distant border keeps a lost car in view.
+// The tape doubles as the centerline so laps count. No walls: a line course is just tape on the floor.
 function buildLineTrack(line: Point[], lineWidth: number, name: string): Track {
   const margin = 0.4;
   const xs = line.map((p) => p[0]);
@@ -178,7 +191,7 @@ function buildLineTrack(line: Point[], lineWidth: number, name: string): Track {
   const [nx, ny] = [-Math.sin(heading) * 0.06, Math.cos(heading) * 0.06];
   return {
     name,
-    walls: ringToWalls([[x0, y0], [x1, y0], [x1, y1], [x0, y1]]),
+    walls: [],
     start: { x: a[0], y: a[1], heading },
     extent: Math.max(-x0, x1, -y0, y1) + 0.25,
     width: lineWidth,

@@ -67,6 +67,21 @@ describe("race", () => {
     expect(race.lap).toBe(2);
   });
 
+  it("counts one lap of a figure eight, not two, across its crossing", () => {
+    const t = trackFromPreset("figure8");
+    const race = new Race(t, 3);
+    race.start(0);
+    const loop = t.centerline.concat([t.centerline[0], t.centerline[1]]);
+    const events = loop.map(([x, y], i) => race.update({ x, y }, i * 100));
+    expect(events.filter((e) => e === "lap")).toHaveLength(1);
+    expect(race.lap).toBe(2);
+  });
+
+  it("has no walls on a line course", () => {
+    expect(trackFromPreset("line").walls).toHaveLength(0);
+    expect(trackFromPreset("figure8").walls).toHaveLength(0);
+  });
+
   it("finishes the maze at the goal cell", () => {
     const t = trackFromPreset("maze");
     const race = new Race(t);

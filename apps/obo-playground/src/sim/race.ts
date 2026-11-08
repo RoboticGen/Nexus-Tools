@@ -62,6 +62,9 @@ export class Race {
     let d = f - this.prevF;
     if (d > n / 2) d -= n;
     else if (d < -n / 2) d += n;
+    // Where a loop crosses itself the nearest point can flip to the other branch, half a loop away.
+    // The car moves millimetres per update, so skip such jumps until it is clearly back on its branch.
+    if (Math.abs(d) > Math.max(1, n / 8)) return null;
     this.progress += d;
     this.prevF = f;
 
