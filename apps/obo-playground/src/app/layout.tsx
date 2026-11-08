@@ -1,5 +1,3 @@
-
-import { WorkspaceNavbar } from "@nexus-tools/design-system/components/workspace-navbar";
 import { THEME_STORAGE_KEY } from "@nexus-tools/design-system/lib/theme";
 import { Inter } from "next/font/google";
 import { cookies } from "next/headers";
@@ -39,10 +37,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={theme === "dark" ? "dark" : undefined}>
       <body className={inter.className}>
-        <Providers>
-          <WorkspaceNavbar title="Obo Playground" logoSrc="/brand/obo-playground-wordmark.webp" logoSrcDark="/brand/obo-playground-wordmark-dark.webp" />
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

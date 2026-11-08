@@ -3,3 +3,53 @@
 
 /* @source paths resolve relative to this file, so the package scan must live here. */
 @source '../../../../packages/design-system/src/**/*.{ts,tsx}';
+
+/*
+  Blockly overrides, the same set as obo-blocks. Deliberately unlayered: Blockly injects its own
+  unlayered stylesheet ahead of this file, and unlayered rules beat every @layer, so these win on
+  source order. Every selector is Blockly-specific, so none can collide with a utility.
+  Class names are Blockly 13's.
+*/
+.blocklyToolbox {
+  background-color: var(--card);
+}
+
+.blocklyToolboxCategory:hover:not(.blocklyToolboxSelected) {
+  opacity: 0.8;
+}
+
+/* BlocklyPanel supplies the scroll affordance; Blockly's own bars double up. */
+.blocklyScrollbarVertical,
+.blocklyScrollbarHorizontal {
+  display: none;
+}
+
+/* A block dragged near an edge must not be clipped by the workspace box. */
+.blocklySvg,
+.injectionDiv {
+  overflow: visible;
+}
+
+.blocklyFlyoutButton {
+  fill: var(--primary);
+  rx: var(--radius-md);
+  cursor: pointer;
+}
+
+.blocklyFlyoutButton .blocklyText {
+  fill: var(--primary-foreground);
+}
+
+.blocklyFlyoutButtonShadow {
+  fill: transparent;
+}
+
+@media (hover: hover) {
+  .blocklyFlyoutButton:hover {
+    fill: var(--tone-brand-contrast);
+  }
+}
+
+.blocklyFlyoutLabelText {
+  fill: var(--foreground);
+}
