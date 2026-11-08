@@ -91,11 +91,11 @@ export function WorkspaceNavbar({
             // Both carry the alt text: whichever is hidden is `display: none`, which takes it out of
             // the accessibility tree, so exactly one is announced in either theme.
             <>
-              <img src={logoSrc} alt={title} className="h-8 object-contain dark:hidden" />
-              <img src={logoSrcDark} alt={title} className="hidden h-8 object-contain dark:block" />
+              <img src={logoSrc} alt={title} className="h-8 max-w-full object-contain object-left dark:hidden" />
+              <img src={logoSrcDark} alt={title} className="hidden h-8 max-w-full object-contain object-left dark:block" />
             </>
           ) : (
-            <img src={logoSrc} alt={title} className="h-8 object-contain" />
+            <img src={logoSrc} alt={title} className="h-8 max-w-full object-contain object-left" />
           )
         ) : (
           <span className="text-base font-semibold">{title}</span>
@@ -110,14 +110,14 @@ export function WorkspaceNavbar({
           <ThemeToggle />
           {/* Nothing while loading, so Sign in doesn't flash for signed-in users. */}
           {status === "loading" ? null : isSignedIn ? (
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <Button variant="ghost" size="sm" onClick={handleLogout} aria-label="Log out">
               <LogOut aria-hidden="true" />
-              Log out
+              <span className="hidden sm:inline">Log out</span>
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" onClick={handleSignIn}>
+            <Button variant="ghost" size="sm" onClick={handleSignIn} aria-label="Sign in">
               <LogIn aria-hidden="true" />
-              Sign in
+              <span className="hidden sm:inline">Sign in</span>
             </Button>
           )}
         </>

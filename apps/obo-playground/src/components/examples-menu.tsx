@@ -25,7 +25,7 @@ export function ExamplesMenu({ onPick }: { onPick: (example: Example) => void })
           <ChevronDown aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
+      <DropdownMenuContent align="end" collisionPadding={8} className="w-72">
         <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
           Each example opens in its own world
         </DropdownMenuLabel>
