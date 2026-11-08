@@ -48,10 +48,17 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
+    type: "website",
+    url: "/",
     title: "Obo Code",
     description: "Write and run Python code in the browser, with turtle graphics and ESP32 device support.",
-
-    images: ["/brand/obo-code-wordmark.webp"],
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Obo Code" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Obo Code",
+    description: "Write and run Python code in the browser, with turtle graphics and ESP32 device support.",
+    images: ["/og-image.png"],
   },
 };
 

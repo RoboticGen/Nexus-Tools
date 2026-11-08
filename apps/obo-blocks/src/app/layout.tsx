@@ -51,11 +51,17 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
+    type: "website",
+    url: "/",
     title: "Obo Blocks",
-    description:
-      "Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions",
-
-    images: ["/brand/obo-blocks-wordmark.webp"],
+    description: "Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Obo Blocks" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Obo Blocks",
+    description: "Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions",
+    images: ["/og-image.png"],
   },
 };
 

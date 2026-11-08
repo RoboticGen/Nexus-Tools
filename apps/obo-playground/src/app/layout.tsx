@@ -11,8 +11,9 @@ import "@/styles/globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
   title: "OBO Playground",
-  description: "OBO Playground - Part of Nexus Tools",
+  description: "Program the OBO Car with blocks and watch it drive in a 3D simulator.",
   icons: {
     icon: [
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
@@ -24,6 +25,19 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/site.webmanifest",
+  openGraph: {
+    type: "website",
+    url: "/",
+    title: "OBO Playground",
+    description: "Program the OBO Car with blocks and watch it drive in a 3D simulator.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "OBO Playground" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "OBO Playground",
+    description: "Program the OBO Car with blocks and watch it drive in a 3D simulator.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default async function RootLayout({
