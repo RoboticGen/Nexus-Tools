@@ -59,10 +59,10 @@ export function Dashboard({
 }) {
   const sensors = snap?.sensors ?? { front: SENSOR_RANGE, left: SENSOR_RANGE, right: SENSOR_RANGE };
   return (
-    // -m-px p-px: the cards' outline is a 1px ring outside their box, which overflow-y-auto would clip.
-    // Cards don't shrink, so a short column scrolls instead of cutting their content off; the last one
-    // grows, so in a tall window the column ends level with the panels beside it.
-    <div className="-m-px flex h-full flex-col gap-2 overflow-y-auto p-px [&>*]:shrink-0 [&>*:last-child]:grow">
+    // p-px: the cards' outline is a 1px ring outside their box; the padding keeps overflow-y-auto from
+    // clipping it and lands it where the panels' borders are. Cards don't shrink, so a short column
+    // scrolls; the last one grows, so in a tall window the column ends level with the panels beside it.
+    <div className="flex h-full flex-col gap-2 overflow-y-auto p-px [&>*]:shrink-0 [&>*:last-child]:grow">
       <Card size="sm">
         <CardHeader>
           <CardTitle>Distance sensors</CardTitle>
