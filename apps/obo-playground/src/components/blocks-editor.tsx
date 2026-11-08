@@ -53,6 +53,12 @@ export function BlocksEditor({
   const [toolboxWidth, setToolboxWidth] = useState(0);
 
   useEffect(() => {
+    // Watched rather than read once: the toolbox widens after inject (font swap, category layout),
+    // and Blockly's getWidth() is cached. Hidden, it measures 0; keep the last width for showing it.
+    const toolboxObserver = new ResizeObserver(([entry]) => {
+      const width = (entry?.target as HTMLElement | undefined)?.offsetWidth ?? 0;
+      if (width > 0) setToolboxWidth(width);
+    });
     const div = divRef.current;
     if (!div) return;
     Blockly.registry.register(
@@ -86,13 +92,16 @@ export function BlocksEditor({
         save(workspace);
       });
       workspaceRef.current = workspace;
-      setToolboxWidth(workspace.getToolbox()?.getWidth() ?? 0);
+      setToolboxOpen(true);
+      const toolboxEl = div.querySelector(".blocklyToolbox");
+      if (toolboxEl) toolboxObserver.observe(toolboxEl);
       getCodeRef.current = () => compileWorkspace(workspace);
     });
     observer.observe(div);
 
     return () => {
       observer.disconnect();
+      toolboxObserver.disconnect();
       getCodeRef.current = null;
       workspaceRef.current?.dispose();
       workspaceRef.current = null;
@@ -154,8 +163,8 @@ export function BlocksEditor({
               <Button
                 size="icon-sm"
                 variant="ghost"
-                aria-label="Hide blocks"
-                title="Hide blocks"
+                aria-label="Hide block list"
+                title="Hide block list"
                 onClick={() => showToolbox(false)}
               >
                 <ChevronLeft aria-hidden="true" className="text-brand-teal" />
@@ -166,7 +175,7 @@ export function BlocksEditor({
               size="sm"
               variant="outline"
               className="bg-card absolute top-2 left-2 z-[80] shadow-sm"
-              title="Show blocks"
+              title="Show block list"
               onClick={() => showToolbox(true)}
             >
               <Puzzle aria-hidden="true" className="text-brand-teal" />
