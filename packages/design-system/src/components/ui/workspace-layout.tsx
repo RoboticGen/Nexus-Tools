@@ -1,4 +1,6 @@
-import { Children, cloneElement, Fragment, isValidElement, type ReactElement } from "react"
+"use client"
+
+import { Children, cloneElement, Fragment, isValidElement, useSyncExternalStore, type ReactElement } from "react"
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@nexus-tools/design-system/components/ui/resizable"
 import { cn } from "@nexus-tools/design-system/lib/utils"
@@ -80,6 +82,14 @@ function pxToPercent(width: string): number {
   return Math.min(40, Math.max(10, Math.round((px / 1600) * 100)))
 }
 
+const PHONE_QUERY = "(max-width: 767px)"
+
+function subscribePhone(onChange: () => void) {
+  const query = window.matchMedia(PHONE_QUERY)
+  query.addEventListener("change", onChange)
+  return () => query.removeEventListener("change", onChange)
+}
+
 /** The page shell shared by the workspace apps: header, a row of resizable panel columns, and an optional trailing rail. */
 function WorkspaceLayout({
   header,
@@ -89,6 +99,8 @@ function WorkspaceLayout({
   ...props
 }: WorkspaceLayoutProps) {
   const { columns, extras } = partitionColumns(children)
+  // Server render and first paint assume a desktop; phones switch right after hydration.
+  const isPhone = useSyncExternalStore(subscribePhone, () => window.matchMedia(PHONE_QUERY).matches, () => false)
 
   const pinnedTotal = columns.reduce(
     (sum, column) => sum + (column.props.width ? pxToPercent(column.props.width) : 0),
@@ -111,26 +123,45 @@ function WorkspaceLayout({
     >
       {header}
       <div className="flex min-h-0 flex-1">
-        <main className="flex min-w-0 flex-1 overflow-hidden">
-          <ResizablePanelGroup direction="horizontal">
-            {columns.map((column, index) => {
-              const { width, grow = 1 } = column.props
-              const size = width ? pxToPercent(width) : (remaining * grow) / (growTotal || 1)
+        {isPhone ? (
+          // Side-by-side columns are too narrow on a phone: stack them full width and let the page scroll.
+          <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+            {columns.map((column, index) => (
+              <section
+                key={column.key ?? index}
+                data-slot="workspace-column"
+                className="flex h-[85dvh] shrink-0 flex-col gap-2 p-2 [&:not(:first-child)]:pt-0 [&>*]:min-h-0 [&>*]:flex-1"
+              >
+                {column.props.children}
+              </section>
+            ))}
+            {/* The rail would leave the stacked columns a sliver of width; it goes last, full width. */}
+            {sidebar && (
+              <div className="shrink-0 p-2 pt-0 [&>aside]:w-full [&>aside]:rounded-xl [&>aside]:border">{sidebar}</div>
+            )}
+          </main>
+        ) : (
+          <main className="flex min-w-0 flex-1 overflow-hidden">
+            <ResizablePanelGroup direction="horizontal">
+              {columns.map((column, index) => {
+                const { width, grow = 1 } = column.props
+                const size = width ? pxToPercent(width) : (remaining * grow) / (growTotal || 1)
 
-              return (
-                <Fragment key={column.key}>
-                  {index > 0 && <ResizableHandle withHandle />}
-                  {cloneElement(column, {
-                    defaultSize: size,
-                    minSize: width ? size : 10,
-                    maxSize: width ? size : undefined,
-                  })}
-                </Fragment>
-              )
-            })}
-          </ResizablePanelGroup>
-        </main>
-        {sidebar}
+                return (
+                  <Fragment key={column.key}>
+                    {index > 0 && <ResizableHandle withHandle />}
+                    {cloneElement(column, {
+                      defaultSize: size,
+                      minSize: width ? size : 10,
+                      maxSize: width ? size : undefined,
+                    })}
+                  </Fragment>
+                )
+              })}
+            </ResizablePanelGroup>
+          </main>
+        )}
+        {!isPhone && sidebar}
       </div>
       {extras}
     </div>
