@@ -23,7 +23,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(
+    process.env.NEXTAUTH_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
+  ),
   title: "Obo Blocks",
   description:
     "Obo Blocks: Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions for seamless web-based Python execution.",
@@ -51,12 +53,13 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
+    type: "website",
+    url: "/",
     title: "Obo Blocks",
-    description:
-      "Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions",
-
-    images: ["/brand/obo-blocks-wordmark.webp"],
+    description: "Convert Scratch Blocks to Python with Pyodide interpretation support and MicroPython extensions",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Obo Blocks" }],
   },
+  twitter: { card: "summary_large_image" },
 };
 
 export default async function RootLayout({
