@@ -1,29 +1,33 @@
-import { describe, expect, it } from "vitest";
+import * as Blockly from "blockly";
+import { describe, expect, it, vi } from "vitest";
 
 import { MujocoWorld, SENSOR_RANGE } from "./mujoco-world";
 import { PlaygroundSim } from "./playground-sim";
 import { Race } from "./race";
 import { trackFromPreset, type Track } from "./track";
+import { compileWorkspace, EXAMPLE_XML } from "../blocks/robot-blocks";
 
-// A straight corridor along +x: wall 1 m to the car's left (+y), 3 m to its right, end wall at x = 5.
-const corridor: Track = {
-  name: "test corridor",
-  walls: [
-    { x1: -2, y1: 1, x2: 6, y2: 1 },
-    { x1: -2, y1: -3, x2: 6, y2: -3 },
-    { x1: 5, y1: -3, x2: 5, y2: 1 },
-  ],
+const track = (walls: Track["walls"]): Track => ({
+  name: "test",
+  walls,
   start: { x: 0, y: 0, heading: 0 },
-  extent: 8,
-  width: 4,
+  extent: 2,
+  width: 0.8,
   centerline: [],
   inner: [],
   outer: [],
   startLine: null,
-};
+});
+// A straight corridor along +x: wall 0.2 m to the car's left (+y), 0.6 m to its right, end wall at x = 1.5.
+const corridor = track([
+  { x1: -0.5, y1: 0.2, x2: 2, y2: 0.2 },
+  { x1: -0.5, y1: -0.6, x2: 2, y2: -0.6 },
+  { x1: 1.5, y1: -0.6, x2: 1.5, y2: 0.2 },
+]);
+const openFloor = track([]);
 
-async function worldOn(track: Track) {
-  const world = new MujocoWorld(track);
+async function worldOn(t: Track) {
+  const world = new MujocoWorld(t);
   await world.init();
   return world;
 }
@@ -35,40 +39,58 @@ function runFor(world: MujocoWorld, seconds: number, left: number, right: number
 
 describe("race", () => {
   it("counts a lap after one loop of the centerline", () => {
-    const track = trackFromPreset("oval");
-    const race = new Race(track, 3);
+    const t = trackFromPreset("oval");
+    const race = new Race(t, 3);
     race.start(0);
-    const events = track.centerline
-      .concat([track.centerline[0], track.centerline[1]])
+    const events = t.centerline
+      .concat([t.centerline[0], t.centerline[1]])
       .map(([x, y], i) => race.update({ x, y }, i * 100));
     expect(events).toContain("lap");
     expect(race.lap).toBe(2);
   });
 
   it("finishes the maze at the goal cell", () => {
-    const track = trackFromPreset("maze");
-    const race = new Race(track);
+    const t = trackFromPreset("maze");
+    const race = new Race(t);
     race.start(0);
-    expect(race.update(track.start, 1000)).toBeNull();
-    expect(race.update(track.goal!, 2000)).toBe("finish");
+    expect(race.update(t.start, 1000)).toBeNull();
+    expect(race.update(t.goal!, 2000)).toBe("finish");
   });
 });
 
 describe("physics", () => {
+  // Readings are measured from each HC-SR04's face to the wall's near side (walls are 2 cm thick).
   it("reads each wall on its own side", async () => {
     const world = await worldOn(corridor);
     const s = world.getSensors();
-    expect(s.left).toBeCloseTo(1 - 0.12 - 0.26, 1);
-    expect(s.right).toBeCloseTo(3 - 0.12 - 0.26, 1);
-    expect(s.front).toBeLessThan(SENSOR_RANGE);
+    expect(s.left).toBeCloseTo(0.2 - 0.05 - 0.01, 2);
+    expect(s.right).toBeCloseTo(0.6 - 0.0497 - 0.01, 2);
+    expect(s.front).toBeCloseTo(1.5 - 0.0836 - 0.01, 2);
     world.dispose();
+  });
+
+  it("gives blocks centimetres", async () => {
+    const sim = new PlaygroundSim(corridor);
+    await sim.setTrack(corridor);
+    sim.advance(0.02); // one control tick reads the sensors
+    expect(sim.api.sensor("left")).toBeCloseTo(14, 0);
+    sim.dispose();
   });
 
   it("drives toward the wall ahead", async () => {
     const world = await worldOn(corridor);
     const before = world.getSensors().front;
     runFor(world, 0.5, 0.5, 0.5);
-    expect(world.getSensors().front).toBeLessThan(before - 0.3);
+    expect(world.getSensors().front).toBeLessThan(before - 0.08);
+    world.dispose();
+  });
+
+  it("tops out near the real car's 0.51 m/s", async () => {
+    const world = await worldOn(openFloor);
+    runFor(world, 2, 1, 1);
+    expect(world.getPose().speed).toBeGreaterThan(0.45);
+    expect(world.getPose().speed).toBeLessThan(0.55);
+    expect(world.getWheelAngles()[0]).toBeGreaterThan(0); // rolling forward is positive
     world.dispose();
   });
 
@@ -79,10 +101,43 @@ describe("physics", () => {
     world.dispose();
   });
 
+  it("never sees the floor, even pitching through a hard stop", async () => {
+    const world = await worldOn(openFloor);
+    const seen: number[] = [];
+    world.setMotors(1, 1);
+    for (let i = 0; i < 500; i++) { world.step(); seen.push(...Object.values(world.getSensors())); }
+    world.setMotors(-1, -1);
+    for (let i = 0; i < 250; i++) { world.step(); seen.push(...Object.values(world.getSensors())); }
+    expect(Math.min(...seen)).toBe(SENSOR_RANGE);
+    world.dispose();
+  });
+
   it("drive() with a positive turn favours the left wheel", () => {
     const sim = new PlaygroundSim(corridor);
     sim.api.drive(0.5, 0.5);
     expect(sim.motorL).toBeGreaterThan(sim.motorR);
+  });
+});
+
+describe("example program", () => {
+  it("laps the oval without touching a wall", async () => {
+    const ws = new Blockly.Workspace();
+    Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(EXAMPLE_XML), ws);
+    const oval = trackFromPreset("oval");
+    const sim = new PlaygroundSim(oval);
+    await sim.setTrack(oval);
+    vi.useFakeTimers();
+    sim.run(compileWorkspace(ws));
+    vi.advanceTimersByTime(3000); // the 3-2-1-GO countdown
+    vi.useRealTimers();
+    let clearance = Infinity;
+    for (let i = 0; i < 40 * 60 && sim.race.lap < 2; i++) {
+      sim.advance(1 / 60);
+      clearance = Math.min(clearance, sim.sensors.left, sim.sensors.right);
+    }
+    expect(sim.race.lap).toBe(2);
+    expect(clearance).toBeGreaterThan(0.1);
+    sim.dispose();
   });
 });
 
@@ -91,8 +146,8 @@ describe("timing", () => {
     const sim = new PlaygroundSim(corridor);
     await sim.setTrack(corridor);
     for (let i = 0; i < fps; i++) sim.advance(1 / fps);
-    // within one 5 ms physics step; any leftover carries into the next frame
-    expect(Math.abs(sim.simTime - 1000)).toBeLessThanOrEqual(5.0001);
+    // within one 2 ms physics step; any leftover carries into the next frame
+    expect(Math.abs(sim.simTime - 1000)).toBeLessThanOrEqual(2.0001);
     sim.dispose();
   });
 });
