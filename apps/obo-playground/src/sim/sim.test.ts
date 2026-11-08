@@ -5,7 +5,7 @@ import { MujocoWorld, SENSOR_RANGE } from "./mujoco-world";
 import { PlaygroundSim } from "./playground-sim";
 import { Race } from "./race";
 import { trackFromPreset, type Track } from "./track";
-import { compileWorkspace, EXAMPLE_XML, LINE_EXAMPLE_XML } from "../blocks/robot-blocks";
+import { compileWorkspace, EXAMPLE_XML, EXAMPLES, LINE_EXAMPLE_XML } from "../blocks/robot-blocks";
 
 const track = (walls: Track["walls"]): Track => ({
   name: "test",
@@ -213,6 +213,26 @@ describe("example program", () => {
       found = sim.lineSensors.some(Boolean);
     }
     expect(found).toBe(true);
+  });
+});
+
+describe("examples menu", () => {
+  it.each(EXAMPLES.map((e) => [e.title, e] as const))("%s completes its own world", async (_, example) => {
+    const ws = new Blockly.Workspace();
+    cleanup.push(() => ws.dispose());
+    Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(example.xml), ws);
+    const sim = await simOn(trackFromPreset(example.track));
+    vi.useFakeTimers();
+    sim.run(compileWorkspace(ws));
+    vi.advanceTimersByTime(3000);
+    const done = () => (sim.race.isMaze ? sim.race.finished : sim.race.lap >= 2);
+    let clearance = Infinity;
+    for (let i = 0; i < 120 * 60 && !done(); i++) {
+      sim.advance(1 / 60);
+      clearance = Math.min(clearance, sim.sensors.left, sim.sensors.right);
+    }
+    expect(done()).toBe(true);
+    expect(clearance).toBeGreaterThan(0.01); // never scrapes a side wall
   });
 });
 

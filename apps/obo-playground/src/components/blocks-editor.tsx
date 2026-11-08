@@ -3,13 +3,21 @@
 import { OboCategory } from "@nexus-tools/blockly-python-generator";
 import { BlocklyPanel } from "@nexus-tools/design-system/components/ui/blockly-panel";
 import { Button } from "@nexus-tools/design-system/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@nexus-tools/design-system/components/ui/dropdown-menu";
 import * as Blockly from "blockly";
 import "blockly/blocks";
-import { Eraser, Lightbulb } from "lucide-react";
+import { ChevronDown, Eraser, Lightbulb } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { toast } from "sonner";
 
-import { compileWorkspace, EXAMPLE_XML, LINE_EXAMPLE_XML, theme, toolbox } from "@/blocks/robot-blocks";
+import { compileWorkspace, EXAMPLE_XML, EXAMPLES, theme, toolbox } from "@/blocks/robot-blocks";
+import { TRACK_PRESETS } from "@/sim/track";
 
 const STORAGE_KEY = "obo-playground.blocks";
 
@@ -42,10 +50,11 @@ function save(workspace: Blockly.WorkspaceSvg) {
 
 export function BlocksEditor({
   getCodeRef,
-  lineTrack,
+  onExampleTrack,
 }: {
   getCodeRef: RefObject<(() => string) | null>;
-  lineTrack: boolean;
+  /** Switches the world to the one the picked example was written for. */
+  onExampleTrack: (trackKey: string) => void;
 }) {
   const divRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -100,10 +109,11 @@ export function BlocksEditor({
     };
   }, [getCodeRef]);
 
-  const onExample = () => {
+  const onExample = (example: (typeof EXAMPLES)[number]) => {
     if (!workspaceRef.current) return;
-    loadExample(workspaceRef.current, lineTrack ? LINE_EXAMPLE_XML : EXAMPLE_XML);
-    toast.info(lineTrack ? "Loaded the line-following example." : "Loaded the wall-following example.");
+    loadExample(workspaceRef.current, example.xml);
+    onExampleTrack(example.track);
+    toast.success(`Loaded “${example.title}” on ${TRACK_PRESETS[example.track].name}. Press Run!`);
   };
 
   const onClear = () => {
@@ -121,10 +131,29 @@ export function BlocksEditor({
       workspace={workspace}
       actions={
         <>
-          <Button size="sm" variant="outline" onClick={onExample}>
-            <Lightbulb aria-hidden="true" className="text-brand-gold" />
-            Example
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                <Lightbulb aria-hidden="true" className="text-brand-gold" />
+                Examples
+                <ChevronDown aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-72">
+              <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+                Each example opens in its own world
+              </DropdownMenuLabel>
+              {EXAMPLES.map((example) => (
+                <DropdownMenuItem key={example.id} onSelect={() => onExample(example)} className="flex-col items-start gap-0.5">
+                  <span className="flex w-full items-center justify-between gap-2">
+                    <span className="font-medium">{example.title}</span>
+                    <span className="text-muted-foreground text-xs">{TRACK_PRESETS[example.track].name}</span>
+                  </span>
+                  <span className="text-muted-foreground text-xs whitespace-normal">{example.summary}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button size="sm" variant="outline" onClick={onClear}>
             <Eraser aria-hidden="true" className="text-brand-coral" />
             Clear

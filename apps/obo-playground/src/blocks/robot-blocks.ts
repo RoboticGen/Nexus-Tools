@@ -376,3 +376,69 @@ export const LINE_EXAMPLE_XML = `
     </next>
   </block>
 </xml>`;
+
+const sensor = (dir: string) => `<block type="robot_sensor"><field name="DIR">${dir}</field></block>`;
+const n = (v: number) => `<block type="math_number"><field name="NUM">${v}</field></block>`;
+const drive = (speed: string, turn: string) =>
+  `<block type="robot_drive"><value name="SPEED">${speed}</value><value name="TURN">${turn}</value></block>`;
+
+// Right-hand rule: in a maze with one path between any two cells, keeping a hand on the right wall
+// reaches every cell, the goal included. Spin left at a wall, take every opening on the right, and
+// otherwise hold 9 cm off the right wall (the corridor centre).
+export const MAZE_EXAMPLE_XML = `
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="controls_if" x="40" y="40">
+    <mutation elseif="1" else="1"></mutation>
+    <value name="IF0">
+      <block type="logic_compare"><field name="OP">LT</field><value name="A">${sensor("front")}</value><value name="B">${n(8)}</value></block>
+    </value>
+    <statement name="DO0">${drive(n(0), n(-0.4))}</statement>
+    <value name="IF1">
+      <block type="logic_compare"><field name="OP">GT</field><value name="A">${sensor("right")}</value><value name="B">${n(22)}</value></block>
+    </value>
+    <statement name="DO1">${drive(n(0.3), n(0.15))}</statement>
+    <statement name="ELSE">${drive(
+      n(0.4),
+      `<block type="math_arithmetic"><field name="OP">MULTIPLY</field><value name="A"><block type="math_arithmetic"><field name="OP">MINUS</field><value name="A">${sensor("right")}</value><value name="B">${n(9)}</value></block></value><value name="B">${n(0.04)}</value></block>`,
+    )}</statement>
+  </block>
+</xml>`;
+
+/** Each example runs in the world it was written for, as OBO Lab pairs examples with their circuits. */
+export const EXAMPLES = [
+  {
+    id: "wall-oval",
+    title: "Wall follower",
+    track: "oval",
+    summary: "Steer toward the open side and slow down when a wall is close.",
+    xml: EXAMPLE_XML,
+  },
+  {
+    id: "wall-clover",
+    title: "Wall follower: Clover",
+    track: "clover",
+    summary: "The same driver takes on four tight bends.",
+    xml: EXAMPLE_XML,
+  },
+  {
+    id: "wall-slalom",
+    title: "Wall follower: Slalom",
+    track: "slalom",
+    summary: "The same driver weaves left and right without touching a wall.",
+    xml: EXAMPLE_XML,
+  },
+  {
+    id: "line",
+    title: "Line follower",
+    track: "line",
+    summary: "Six IR sensors keep the car on the black line.",
+    xml: LINE_EXAMPLE_XML,
+  },
+  {
+    id: "maze",
+    title: "Maze solver",
+    track: "maze",
+    summary: "Keep a hand on the right wall to reach the centre of the maze.",
+    xml: MAZE_EXAMPLE_XML,
+  },
+] as const;
