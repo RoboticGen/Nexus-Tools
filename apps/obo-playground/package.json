@@ -3,32 +3,47 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3003",
-    "build": "next build",
+    "dev": "next dev --webpack --port 3003",
+    "build": "next build --webpack",
     "start": "next start --port 3003",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "type-check": "tsc --noEmit",
-    "clean": "rimraf .next .turbo node_modules"
+    "clean": "rimraf .next .turbo node_modules",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@mujoco/mujoco": "4.0.0",
     "@nexus-tools/auth": "workspace:*",
+    "@nexus-tools/blockly-python-generator": "workspace:*",
+    "@nexus-tools/design-system": "workspace:*",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
+    "blockly": "^13.2.1",
+    "lucide-react": "^1.32.0",
     "next": "^16.3.1",
     "next-auth": "^4.24.15",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "@nexus-tools/design-system": "workspace:*"
+    "sonner": "^2.0.8",
+    "three": "^0.186.1"
   },
   "devDependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "@gltf-transform/extensions": "4.5.1",
+    "@gltf-transform/functions": "4.5.1",
     "@nexus-tools/eslint-config": "workspace:*",
     "@nexus-tools/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "@types/three": "^0.186.0",
+    "meshoptimizer": "1.3.0",
     "postcss": "^8.5.26",
     "rimraf": "^6.1.3",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
-    "@tailwindcss/postcss": "^4.3.3"
+    "vitest": "^5.1.0"
   }
 }
