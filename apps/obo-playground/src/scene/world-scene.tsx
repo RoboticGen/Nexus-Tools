@@ -5,8 +5,9 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { BOOM, boomLift, booms, railHalfLength, TRAIN_LENGTH, trainSpan, type Crossing } from "@/sim/crossing";
 import { NEAR_WALL, RIDE_H, SENSOR_SITES, WALL_H, WALL_T, type SensorDir } from "@/sim/mujoco-world";
-import { offsetLoop, type Point, type Track } from "@/sim/track";
+import { offsetLoop, type Point, type Track, type Wall } from "@/sim/track";
 
 import { OboCar } from "./obo-car";
 
@@ -89,7 +90,110 @@ function Tape({ line, width, color }: { line: Point[]; width: number; color: str
   );
 }
 
-function TrackMeshes({ track, colors }: { track: Track; colors: SceneColors }) {
+// Open tape, one strip per segment; each runs half a width past its ends so joints come out square.
+function TapeSegments({ segments, width, color }: { segments: Wall[]; width: number; color: string }) {
+  return segments.map((w, i) => (
+    <mesh
+      key={i}
+      position={[(w.x1 + w.x2) / 2, 0.002, -(w.y1 + w.y2) / 2]}
+      rotation-y={Math.atan2(w.y2 - w.y1, w.x2 - w.x1)}
+      receiveShadow
+    >
+      <boxGeometry args={[Math.hypot(w.x2 - w.x1, w.y2 - w.y1) + width, 0.0005, width]} />
+      <meshStandardMaterial color={color} roughness={0.9} />
+    </mesh>
+  ));
+}
+
+const RAIL = { gauge: 0.09, color: "#8d949a", sleeper: "#6b5444", red: "#dc2626", white: "#f8fafc" };
+const TRAIN_CARS = ["#219cbc", "#022f49", "#219cbc"];
+// Red and white bands about 7 cm long, as many as fit the arm.
+const stripes = (reach: number) => {
+  const n = Math.max(1, Math.round(reach / 0.067));
+  return Array<number>(n).fill(reach / n);
+};
+
+// Rails, booms, warning lights and the train, all driven by the world's clock each frame.
+function CrossingMeshes({ sim, crossing, extent }: { sim: PlaygroundSim; crossing: Crossing; extent: number }) {
+  const armRefs = useRef<(THREE.Group | null)[]>([]);
+  const lightRefs = useRef<(THREE.MeshStandardMaterial | null)[]>([]);
+  const train = useRef<THREE.Group>(null);
+  const len = railHalfLength(extent) * 2;
+  const sleepers = useMemo(() => {
+    const ys: number[] = [];
+    for (let y = -len / 2; y <= len / 2; y += 0.07) {
+      if (crossing.roads.every((road) => Math.abs(y - road.y) > BOOM.side - 0.08)) ys.push(y);
+    }
+    return ys;
+  }, [len, crossing.roads]);
+  const gates = booms(crossing);
+
+  useFrame(() => {
+    const t = sim.worldTime();
+    const lift = boomLift(t);
+    gates.forEach((b, i) => {
+      const arm = armRefs.current[i];
+      if (arm) arm.rotation.x = (b.dir * lift * Math.PI) / 2;
+    });
+    const blink = lift < 1 && Math.floor(t * 2) % 2 === 0;
+    lightRefs.current.forEach((m, i) => m?.emissive.set(lift < 1 && (i % 2 === 0) === blink ? RAIL.red : "#000000"));
+    const span = trainSpan(t, len / 2);
+    if (train.current) {
+      train.current.visible = span !== null;
+      if (span) train.current.position.z = -(span[0] + span[1]) / 2; // three's z is -y
+    }
+  });
+
+  return (
+    <group>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[crossing.x + (side * RAIL.gauge) / 2, 0.005, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.006, 0.008, len]} />
+          <meshStandardMaterial color={RAIL.color} metalness={0.6} roughness={0.35} />
+        </mesh>
+      ))}
+      {sleepers.map((y) => (
+        <mesh key={y} position={[crossing.x, 0.002, -y]} receiveShadow>
+          <boxGeometry args={[RAIL.gauge + 0.05, 0.003, 0.025]} />
+          <meshStandardMaterial color={RAIL.sleeper} roughness={0.9} />
+        </mesh>
+      ))}
+      {gates.map((b, i) => (
+        <group key={i} position={[b.x, 0, -b.y]}>
+          <mesh position-y={(BOOM.height + 0.03) / 2} castShadow>
+            <boxGeometry args={[0.02, BOOM.height + 0.03, 0.02]} />
+            <meshStandardMaterial color={RAIL.white} roughness={0.5} />
+          </mesh>
+          {[0, 1].map((k) => (
+            <mesh key={k} position={[0, BOOM.height + 0.045, (k - 0.5) * 0.026]}>
+              <sphereGeometry args={[0.009, 16, 12]} />
+              <meshStandardMaterial ref={(m) => { lightRefs.current[i * 2 + k] = m; }} color="#3f1d1d" emissiveIntensity={2.5} />
+            </mesh>
+          ))}
+          {/* the arm swings about the road's direction; three's x is physics x, so the angle carries over */}
+          <group ref={(g) => { armRefs.current[i] = g; }} position-y={BOOM.height}>
+            {stripes(b.reach).map((len, k) => (
+              <mesh key={k} position-z={-b.dir * len * (k + 0.5)} castShadow>
+                <boxGeometry args={[BOOM.half * 2, BOOM.half * 2, len]} />
+                <meshStandardMaterial color={k % 2 ? RAIL.white : RAIL.red} roughness={0.5} />
+              </mesh>
+            ))}
+          </group>
+        </group>
+      ))}
+      <group ref={train} position-x={crossing.x} visible={false}>
+        {TRAIN_CARS.map((color, k) => (
+          <mesh key={k} position={[0, 0.045, (k - 1) * (TRAIN_LENGTH / 3)]} castShadow>
+            <boxGeometry args={[0.1, 0.07, TRAIN_LENGTH / 3 - 0.02]} />
+            <meshStandardMaterial color={color} roughness={0.45} />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  );
+}
+
+function TrackMeshes({ sim, track, colors }: { sim: PlaygroundSim; track: Track; colors: SceneColors }) {
   const wh = track.wallHeight ?? WALL_H;
   const size = track.extent * 2 + 1.5;
   const line = track.startLine;
@@ -119,9 +223,11 @@ function TrackMeshes({ track, colors }: { track: Track; colors: SceneColors }) {
         </mesh>
       ))}
       {track.line && <Tape line={track.line.points} width={track.line.width} color={colors.tape} />}
+      {track.tape && <TapeSegments segments={track.tape.segments} width={track.tape.width} color={colors.tape} />}
+      {track.crossing && <CrossingMeshes sim={sim} crossing={track.crossing} extent={track.extent} />}
       {track.goal && (
         <mesh position={[track.goal.x, 0.002, -track.goal.y]}>
-          <boxGeometry args={[(track.cell ?? 0.3) * 0.8, 0.003, (track.cell ?? 0.3) * 0.8]} />
+          <boxGeometry args={[track.goal.r * 1.6, 0.003, track.goal.r * 1.6]} />
           <meshStandardMaterial color={colors.goal} emissive={colors.goal} emissiveIntensity={0.3} />
         </mesh>
       )}
@@ -286,7 +392,7 @@ export function WorldScene({
         <Lightformer intensity={1.2} position={[-6, 2, 4]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} color="#e6f3ff" />
         <Lightformer intensity={0.8} position={[6, 3, 4]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} />
       </Environment>
-      <TrackMeshes track={track} colors={colors} />
+      <TrackMeshes sim={sim} track={track} colors={colors} />
       <Robot sim={sim} colors={colors} />
       <CameraRig sim={sim} track={track} view={view} />
     </Canvas>

@@ -1,7 +1,9 @@
-// A track is walls from a centerline + width, a tape line on an open floor, or a maze. Physics and
+// A track is walls from a centerline + width, tape on an open floor, or a maze. Physics and
 // rendering both read it; x/y on the ground in metres, sized for the 12 cm OBO Car.
 
-import { generateMaze } from "./maze";
+import { generateLineMaze, generateMaze } from "./maze";
+
+import type { Crossing } from "./crossing";
 
 export type Point = [number, number];
 
@@ -27,6 +29,8 @@ export interface Track {
   goal?: { x: number; y: number; r: number };
   cell?: number;
   line?: { points: Point[]; width: number }; // closed loop of tape
+  tape?: { segments: Wall[]; width: number }; // open tape: a line maze's branches and dead ends
+  crossing?: Crossing;
 }
 
 // Two straights joined by constant-radius semicircles; starts mid top straight heading +x.
@@ -113,8 +117,9 @@ function sampleFigureEight(A: number, B: number, n: number): Point[] {
 
 type Preset =
   | { name: string; width: number; centerline: Point[] }
-  | { name: string; line: Point[]; lineWidth: number }
-  | { name: string; maze: { cols: number; rows: number; cell: number; seed: number } };
+  | { name: string; line: Point[]; lineWidth: number; crossing?: Crossing }
+  | { name: string; maze: { cols: number; rows: number; cell: number; seed: number } }
+  | { name: string; lineMaze: { cols: number; rows: number; cell: number; seed: number } };
 
 export const TRACK_PRESETS: Record<string, Preset> = {
   oval: { name: "Speedway Oval", width: 0.5, centerline: sampleStadium(1.0, 0.75, 32) },
@@ -123,6 +128,14 @@ export const TRACK_PRESETS: Record<string, Preset> = {
   line: { name: "Line Follower", line: sampleBean(0.6, 0.2, 0.12, 120), lineWidth: 0.019 },
   figure8: { name: "Figure Eight", line: sampleFigureEight(1.1, 1.1, 160), lineWidth: 0.019 },
   maze: { name: "Micromouse Maze", maze: { cols: 7, rows: 7, cell: 0.3, seed: 7 } },
+  lineMaze: { name: "Line Maze", lineMaze: { cols: 5, rows: 5, cell: 0.3, seed: 1 } },
+  // The rails cross both straights, clear of the start at x = 0.
+  railway: {
+    name: "Railway Crossing",
+    line: sampleStadium(0.7, 0.55, 120),
+    lineWidth: 0.019,
+    crossing: { x: -0.35, roads: [{ y: -0.55, dir: -1 }, { y: 0.55, dir: 1 }] },
+  },
 };
 
 function norm(x: number, y: number): Point {
@@ -180,7 +193,7 @@ export function buildTrack(centerline: Point[], width: number, name = "Custom tr
 }
 
 // The tape doubles as the centerline so laps count. No walls: a line course is just tape on the floor.
-function buildLineTrack(line: Point[], lineWidth: number, name: string): Track {
+function buildLineTrack(line: Point[], lineWidth: number, name: string, crossing?: Crossing): Track {
   const margin = 0.4;
   const xs = line.map((p) => p[0]);
   const ys = line.map((p) => p[1]);
@@ -200,6 +213,7 @@ function buildLineTrack(line: Point[], lineWidth: number, name: string): Track {
     outer: [],
     startLine: { ax: a[0] - nx, ay: a[1] - ny, bx: a[0] + nx, by: a[1] + ny },
     line: { points: line, width: lineWidth },
+    crossing,
   };
 }
 
@@ -222,12 +236,30 @@ export function nearestOnLoop(loop: Point[], x: number, y: number): { f: number;
   return { f: bestF, d: Math.sqrt(bestD) };
 }
 
+export function distToSegment(w: Wall, x: number, y: number): number {
+  const ex = w.x2 - w.x1;
+  const ey = w.y2 - w.y1;
+  const t = Math.max(0, Math.min(1, ((x - w.x1) * ex + (y - w.y1) * ey) / (ex * ex + ey * ey || 1e-9)));
+  return Math.hypot(x - w.x1 - ex * t, y - w.y1 - ey * t);
+}
+
+// Whether a floor point lies on any tape, looped or open.
+export function onTape(track: Track, x: number, y: number): boolean {
+  const { line, tape } = track;
+  if (line && nearestOnLoop(line.points, x, y).d < line.width / 2) return true;
+  return !!tape && tape.segments.some((s) => distToSegment(s, x, y) < tape.width / 2);
+}
+
 export function trackFromPreset(key: string): Track {
   const p = TRACK_PRESETS[key] ?? TRACK_PRESETS.oval;
   if ("maze" in p) {
     const { cols, rows, cell, seed } = p.maze;
     return { ...generateMaze(cols, rows, cell, seed), name: p.name };
   }
-  if ("line" in p) return buildLineTrack(p.line, p.lineWidth, p.name);
+  if ("lineMaze" in p) {
+    const { cols, rows, cell, seed } = p.lineMaze;
+    return { ...generateLineMaze(cols, rows, cell, 0.019, seed), name: p.name };
+  }
+  if ("line" in p) return buildLineTrack(p.line, p.lineWidth, p.name, p.crossing);
   return buildTrack(p.centerline.map(([x, y]) => [x, y]), p.width, p.name);
 }

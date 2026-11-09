@@ -1,8 +1,9 @@
 // MJCF for the OBO Car (copied from RoboticGen/obo_car_description models/obo_car.xml; keep in
 // step) and the track walls. Frame: x forward, y left, z up, metres.
 
+import { BOOM, boomLift, booms } from "./crossing";
 import { loadMujoco } from "./load-mujoco";
-import { nearestOnLoop, type Track } from "./track";
+import { onTape, type Track } from "./track";
 
 import type { MainModule, MjData, MjModel } from "@mujoco/mujoco";
 
@@ -55,6 +56,17 @@ function buildMJCF(track: Track): string {
   const posts = (track.posts ?? [])
     .map(([x, y], i) => `<geom name="post${i}" type="box" pos="${x} ${y} ${wh / 2}" size="${WALL_T * 1.4} ${WALL_T * 1.4} ${wh / 2}"/>`)
     .join("\n");
+  // Mocap bodies: moved by the gate cycle, not by forces. They don't collide (contype 0), so a boom
+  // can never land on the car, but the rangefinders still see them.
+  const gates = track.crossing
+    ? booms(track.crossing)
+        .map(
+          (b, i) => `<body name="boom${i}" mocap="true" pos="${b.x} ${b.y} ${BOOM.height}">
+      <geom type="box" pos="0 ${(b.dir * b.reach) / 2} 0" size="${BOOM.half} ${b.reach / 2} ${BOOM.half}" contype="0" conaffinity="0"/>
+    </body>`,
+        )
+        .join("\n")
+    : "";
   const s = track.start;
   const wheel = (side: "left" | "right", y: number) => `
       <body name="wheel_${side}" pos="0 ${y} 0">
@@ -82,6 +94,7 @@ function buildMJCF(track: Track): string {
     <geom name="floor" type="plane" size="${track.extent + 0.5} ${track.extent + 0.5} 0.05" rgba="1 1 1 0"/>
     ${walls}
     ${posts}
+    ${gates}
     <body name="car" pos="${s.x} ${s.y} ${RIDE_H}" quat="${Math.cos(s.heading / 2)} 0 0 ${Math.sin(s.heading / 2)}">
       <freejoint name="root"/>
       <inertial pos="0.01273 0.00021 0.00353" mass="0.141" diaginertia="1.2539e-04 1.6636e-04 2.7269e-04"/>
@@ -147,6 +160,7 @@ export class MujocoWorld {
     const q = data.qpos;
     q[0] = s.x; q[1] = s.y; q[2] = RIDE_H;
     q[3] = Math.cos(s.heading / 2); q[4] = 0; q[5] = 0; q[6] = Math.sin(s.heading / 2);
+    this.placeBooms();
     mj.mj_forward(model, data);
     this.readPose();
   }
@@ -162,8 +176,20 @@ export class MujocoWorld {
     if (!mj || !model || !data) return;
     data.ctrl[0] = this.motorL * MAX_WHEEL_OMEGA;
     data.ctrl[1] = this.motorR * MAX_WHEEL_OMEGA;
+    this.placeBooms();
     mj.mj_step(model, data);
     this.readPose();
+  }
+
+  // Each boom turns about the road's direction (x): flat across the road when down, upright when up.
+  private placeBooms() {
+    const { crossing } = this.track;
+    if (!crossing || !this.data) return;
+    const a = (boomLift(this.data.time) * Math.PI) / 2;
+    booms(crossing).forEach((b, i) => {
+      const h = (b.dir * a) / 2;
+      this.data!.mocap_quat.set([Math.cos(h), Math.sin(h), 0, 0], i * 4);
+    });
   }
 
   private readPose() {
@@ -183,6 +209,11 @@ export class MujocoWorld {
     return this.pose;
   }
 
+  // Simulated seconds since the last reset; the crossing's cycle runs on it.
+  get time(): number {
+    return this.data?.time ?? 0;
+  }
+
   // Wheel rotation in radians about the car's left (+y) axis; positive rolls forward.
   getWheelAngles(): [number, number] {
     const q = this.data?.qpos;
@@ -199,13 +230,10 @@ export class MujocoWorld {
   // MuJoCo can't see floor colour, so each IR sensor reads 1 when its floor point (pitch and roll
   // ignored) lies on the tape.
   getLineSensors(): number[] {
-    const { line } = this.track;
     const { x, y, theta } = this.pose;
     const c = Math.cos(theta);
     const s = Math.sin(theta);
-    return LINE_SITES.map(([sx, sy]) =>
-      line && nearestOnLoop(line.points, x + c * sx - s * sy, y + s * sx + c * sy).d < line.width / 2 ? 1 : 0,
-    );
+    return LINE_SITES.map(([sx, sy]) => (onTape(this.track, x + c * sx - s * sy, y + s * sx + c * sy) ? 1 : 0));
   }
 
   dispose() {

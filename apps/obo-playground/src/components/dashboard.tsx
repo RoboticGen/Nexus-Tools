@@ -79,7 +79,7 @@ export function Dashboard({
         </CardContent>
       </Card>
 
-      {track.line && (
+      {(track.line || track.tape) && (
         <Card size="sm">
           <CardHeader>
             <CardTitle>Line sensors</CardTitle>

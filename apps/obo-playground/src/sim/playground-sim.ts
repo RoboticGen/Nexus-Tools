@@ -1,6 +1,7 @@
 // The playground's brain, outside React: owns the world, race, student program and motors.
 // The 3D view calls advance() every frame; React reads a snapshot refreshed ~10x a second.
 
+import { hitByTrain } from "./crossing";
 import { LINE_SITES, MujocoWorld, SENSOR_RANGE, type Pose, type SensorDir, type Sensors } from "./mujoco-world";
 import { Race } from "./race";
 
@@ -155,7 +156,10 @@ export class PlaygroundSim {
     }
     let compiled: (robot: RobotApi) => void;
     try {
-      compiled = new Function("robot", code) as (robot: RobotApi) => void;
+      // Blockly declares every variable on the first line. Declaring them once, outside the per-tick
+      // function, lets variables keep their values between ticks, like an Arduino sketch's globals.
+      const [, vars = "", body] = /^(var [\w$]+(?:, [\w$]+)*;)?([\s\S]*)$/.exec(code)!;
+      compiled = new Function(`${vars}\nreturn function (robot) {\n${body}\n};`)() as (robot: RobotApi) => void;
     } catch (err) {
       this.notify({ tone: "error", message: `Could not read your blocks: ${(err as Error).message}` });
       return;
@@ -206,6 +210,7 @@ export class PlaygroundSim {
       world.step();
       this.simTime += ts * 1000;
       this.raceTick(world.getPose());
+      this.crossingTick(world);
     }
     this.sinceSnapshot += dt * 1000;
     if (this.sinceSnapshot >= SNAPSHOT_MS) this.changed();
@@ -234,6 +239,21 @@ export class PlaygroundSim {
       this.motorR = 0;
     }
     world.setMotors(this.motorL, this.motorR);
+  }
+
+  // Simulated seconds since the car was last reset; the crossing's booms and train run on it.
+  worldTime(): number {
+    return this.world?.time ?? 0;
+  }
+
+  // A train that reaches the car on the rails sends it back to the start.
+  private crossingTick(world: MujocoWorld) {
+    const { crossing, extent } = this.track;
+    const { x, y } = world.getPose();
+    const driving = this.running || this.mode === "manual";
+    if (!crossing || !driving || !hitByTrain(crossing, extent, world.time, x, y)) return;
+    this.resetCar();
+    this.notify({ tone: "error", message: "The train came! Stop at the gate when your front sensor sees it down." });
   }
 
   private raceTick(pose: Pose) {

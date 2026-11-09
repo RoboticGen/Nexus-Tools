@@ -64,15 +64,16 @@ export const EXAMPLE_XML = `
 
 // Steer toward the half of the IR array that sees more of the line, slow down when an outer sensor
 // sees it (sharp curves), and spin in place to find it again when no sensor does.
-export const LINE_EXAMPLE_XML = `
-<xml xmlns="https://developers.google.com/blockly/xml">
+const LINE_VARIABLES = `
   <variables>
     <variable id="vleft">left</variable>
     <variable id="vright">right</variable>
     <variable id="vturn">turn</variable>
     <variable id="vspeed">speed</variable>
-  </variables>
-  <block type="variables_set" x="40" y="40">
+  </variables>`;
+
+const LINE_FOLLOW = `
+<block type="variables_set">
     <field name="VAR" id="vleft">left</field>
     <value name="VALUE">
       <block type="math_arithmetic">
@@ -193,8 +194,12 @@ export const LINE_EXAMPLE_XML = `
         </next>
       </block>
     </next>
-  </block>
-</xml>`;
+  </block>`;
+
+const xml = (variables: string, chain: string) =>
+  `<xml xmlns="https://developers.google.com/blockly/xml">${variables}${chain.trim().replace("<block ", '<block x="40" y="40" ')}</xml>`;
+
+export const LINE_EXAMPLE_XML = xml(LINE_VARIABLES, LINE_FOLLOW);
 
 const sensor = (dir: string) => `<block type="robot_sensor"><field name="DIR">${dir}</field></block>`;
 const n = (v: number) => `<block type="math_number"><field name="NUM">${v}</field></block>`;
@@ -222,6 +227,99 @@ export const MAZE_EXAMPLE_XML = `
     )}</statement>
   </block>
 </xml>`;
+
+// The line follower, but it stops while the front ultrasonic sensor sees a boom across the road.
+export const RAILWAY_EXAMPLE_XML = xml(
+  LINE_VARIABLES,
+  `<block type="controls_if">
+    <mutation else="1"></mutation>
+    <value name="IF0">
+      <block type="logic_compare"><field name="OP">LT</field><value name="A">${sensor("front")}</value><value name="B">${n(12)}</value></block>
+    </value>
+    <statement name="DO0"><block type="robot_stop"></block></statement>
+    <statement name="ELSE">${LINE_FOLLOW}</statement>
+  </block>`,
+);
+
+const line = (i: number) => `<block type="robot_line"><field name="INDEX">${i}</field></block>`;
+const get = (v: string) => `<block type="variables_get"><field name="VAR" id="v${v}">${v}</field></block>`;
+const set = (v: string, value: string) =>
+  `<block type="variables_set"><field name="VAR" id="v${v}">${v}</field><value name="VALUE">${value}</value></block>`;
+// Statement blocks run one after another: each next one hangs off the previous block's closing tag.
+const chain = (...blocks: string[]): string =>
+  blocks.reduceRight((rest, block) => (rest ? block.replace(/<\/block>$/, `<next>${rest}</next></block>`) : block), "");
+const cmp = (op: string, a: string, b: string) =>
+  `<block type="logic_compare"><field name="OP">${op}</field><value name="A">${a}</value><value name="B">${b}</value></block>`;
+const logic = (op: "AND" | "OR", a: string, b: string) =>
+  `<block type="logic_operation"><field name="OP">${op}</field><value name="A">${a}</value><value name="B">${b}</value></block>`;
+const math = (op: string, a: string, b: string) =>
+  `<block type="math_arithmetic"><field name="OP">${op}</field><value name="A">${a}</value><value name="B">${b}</value></block>`;
+// if / else if … / else; each branch is a statement chain.
+const ifs = (cases: [string, string][], otherwise?: string) =>
+  `<block type="controls_if"><mutation elseif="${cases.length - 1}" else="${otherwise ? 1 : 0}"></mutation>${cases
+    .map(([cond, then], i) => `<value name="IF${i}">${cond}</value><statement name="DO${i}">${then}</statement>`)
+    .join("")}${otherwise ? `<statement name="ELSE">${otherwise}</statement>` : ""}</block>`;
+const time = `<block type="robot_time"></block>`;
+const sinceT = math("MINUS", time, get("t"));
+const sees = (i: number) => cmp("EQ", line(i), n(1));
+const middle = math("ADD", line(2), line(3));
+
+// Right-hand rule on tape. The IR bar sits 8 cm ahead of the wheels, so at a junction or the end of
+// a line the car notes which side branches it saw, drives on until its wheels are over the junction,
+// then takes right, else straight, else left, else turns back, spinning until its middle sensors find
+// the new line. Variables keep their values from one tick to the next.
+export const LINE_MAZE_EXAMPLE_XML = xml(
+  `<variables>${["mode", "t", "sawLeft", "sawRight", "turn"].map((v) => `<variable id="v${v}">${v}</variable>`).join("")}</variables>`,
+  ifs(
+    [
+      [
+        cmp("EQ", get("mode"), n(1)),
+        chain(
+          set("sawLeft", logic("OR", get("sawLeft"), sees(0))),
+          set("sawRight", logic("OR", get("sawRight"), sees(5))),
+          drive(n(0.3), n(0)),
+          ifs([
+            [
+              cmp("GT", sinceT, n(0.25)),
+              chain(
+                set("mode", n(2)),
+                set("t", time),
+                ifs(
+                  [
+                    [get("sawRight"), set("turn", n(0.4))],
+                    [cmp("GT", middle, n(0)), set("mode", n(0))],
+                    [get("sawLeft"), set("turn", n(-0.4))],
+                  ],
+                  set("turn", n(0.4)),
+                ),
+              ),
+            ],
+          ]),
+        ),
+      ],
+      [
+        cmp("EQ", get("mode"), n(2)),
+        chain(
+          drive(n(0), get("turn")),
+          ifs([[logic("AND", cmp("GT", sinceT, n(0.25)), cmp("GT", middle, n(0))), set("mode", n(0))]]),
+        ),
+      ],
+    ],
+    ifs(
+      [
+        [
+          logic(
+            "OR",
+            logic("OR", logic("AND", sees(0), sees(2)), logic("AND", sees(5), sees(3))),
+            cmp("EQ", math("ADD", math("ADD", line(1), line(2)), math("ADD", line(3), line(4))), n(0)),
+          ),
+          chain(set("mode", n(1)), set("t", time), set("sawLeft", sees(0)), set("sawRight", sees(5))),
+        ],
+      ],
+      drive(n(0.5), math("MULTIPLY", math("MINUS", math("ADD", line(3), line(4)), math("ADD", line(1), line(2))), n(0.15))),
+    ),
+  ),
+);
 
 /** Each example runs in the world it was written for, as OBO Lab pairs examples with their circuits. */
 export const EXAMPLES = [
@@ -259,6 +357,20 @@ export const EXAMPLES = [
     track: "figure8",
     summary: "The same follower drives straight over the crossing.",
     xml: LINE_EXAMPLE_XML,
+  },
+  {
+    id: "railway",
+    title: "Railway crossing",
+    track: "railway",
+    summary: "Follow the line, and wait while the ultrasonic sensor sees the gate down.",
+    xml: RAILWAY_EXAMPLE_XML,
+  },
+  {
+    id: "line-maze",
+    title: "Line maze solver",
+    track: "lineMaze",
+    summary: "Drive to each junction, then take the right-most way to find the green goal.",
+    xml: LINE_MAZE_EXAMPLE_XML,
   },
   {
     id: "maze",

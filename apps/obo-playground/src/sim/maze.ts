@@ -17,7 +17,9 @@ function mulberry32(seed: number) {
 type Side = "N" | "E" | "S" | "W";
 const OPPOSITE: Record<Side, Side> = { N: "S", E: "W", S: "N", W: "E" };
 
-export function generateMaze(cols: number, rows: number, cell: number, seed = 1): Omit<Track, "name"> {
+type Open = Record<Side, boolean>[];
+
+function carve(cols: number, rows: number, seed: number): Open {
   const rnd = mulberry32(seed);
   const idx = (c: number, r: number) => r * cols + c;
   const visited = new Array<boolean>(cols * rows).fill(false);
@@ -39,6 +41,12 @@ export function generateMaze(cols: number, rows: number, cell: number, seed = 1)
     visited[idx(nc, nr)] = true;
     stack.push([nc, nr]);
   }
+  return open;
+}
+
+export function generateMaze(cols: number, rows: number, cell: number, seed = 1): Omit<Track, "name"> {
+  const idx = (c: number, r: number) => r * cols + c;
+  const open = carve(cols, rows, seed);
 
   // Centre the maze on the origin. Each cell owns its E and N walls; W/S only on the boundary.
   const W = cols * cell;
@@ -82,5 +90,38 @@ export function generateMaze(cols: number, rows: number, cell: number, seed = 1)
     inner: [],
     outer: [],
     startLine: null,
+  };
+}
+
+// The same maze drawn as tape between cell centres: junctions and dead ends instead of walls.
+// Start in the (0,0) corner, goal in the centre cell.
+export function generateLineMaze(cols: number, rows: number, cell: number, lineWidth: number, seed = 1): Omit<Track, "name"> {
+  const idx = (c: number, r: number) => r * cols + c;
+  const open = carve(cols, rows, seed);
+  const x0 = -(cols * cell) / 2;
+  const y0 = -(rows * cell) / 2;
+  const at = (c: number, r: number): Point => [x0 + (c + 0.5) * cell, y0 + (r + 0.5) * cell];
+  const segments: Wall[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const [x, y] = at(c, r);
+      if (open[idx(c, r)].E) segments.push({ x1: x, y1: y, x2: x + cell, y2: y });
+      if (open[idx(c, r)].N) segments.push({ x1: x, y1: y, x2: x, y2: y + cell });
+    }
+  }
+  const [sx, sy] = at(0, 0);
+  const [gx, gy] = at(Math.floor(cols / 2), Math.floor(rows / 2));
+  return {
+    walls: [],
+    start: { x: sx, y: sy, heading: open[idx(0, 0)].N ? Math.PI / 2 : 0 },
+    goal: { x: gx, y: gy, r: 0.06 },
+    extent: (Math.max(cols, rows) * cell) / 2 + 0.3,
+    width: lineWidth,
+    cell,
+    centerline: [],
+    inner: [],
+    outer: [],
+    startLine: null,
+    tape: { segments, width: lineWidth },
   };
 }
