@@ -1,17 +1,16 @@
-// Level crossings: one line of rails runs along y at x and crosses one-way roads running along x.
+// Level crossings: one line of rails runs along y at x and crosses two-way roads running along x.
 // Booms close each road on a fixed cycle while a train passes. The cycle runs on the world's own
 // clock, which restarts with every Run, so a program meets the gates the same way each time.
 
 export interface Crossing {
   x: number;
-  roads: { y: number; dir: 1 | -1 }[]; // dir: the way traffic drives along x
+  roads: { y: number }[];
 }
 
 export const BOOM = {
   offset: 0.14, // from the rails to each boom, along the road
   side: 0.24, // from the road to each boom's pivot
   reach: 0.4, // arm length, enough to span the road from the pivot
-  exitReach: 0.16, // the far side's half barrier stops short of the road, so a car can always drive out
   height: 0.043, // arm centre when down: level with the ultrasonic sensors
   half: 0.012, // arm half-thickness
 };
@@ -52,13 +51,24 @@ export function trainSpan(t: number, halfLength: number): [number, number] | nul
 // The floor is the track's extent plus 0.75 m each side; the rails run its full length.
 export const railHalfLength = (extent: number) => extent + 0.75;
 
-// Two booms per road, one each side of the rails, pivoting on opposite sides of the road: a full
-// barrier before the rails and a half barrier after them. `dir` is the way each arm points (y).
+// Two full booms per road, one each side of the rails, pivoting on opposite sides of the road.
+// Boom i belongs to road i >> 1. `dir` is the way each arm points (y).
 export function booms(c: Crossing) {
-  return c.roads.flatMap(({ y, dir }) => [
-    { x: c.x - dir * BOOM.offset, y: y + dir * BOOM.side, dir: -dir, reach: BOOM.reach },
-    { x: c.x + dir * BOOM.offset, y: y - dir * BOOM.side, dir, reach: BOOM.exitReach },
+  return c.roads.flatMap(({ y }) => [
+    { x: c.x - BOOM.offset, y: y + BOOM.side, dir: -1 },
+    { x: c.x + BOOM.offset, y: y - BOOM.side, dir: 1 },
   ]);
+}
+
+// Whether a car at (x, y) is between a road's two booms.
+export const betweenBooms = (c: Crossing, road: { y: number }, x: number, y: number) =>
+  Math.abs(x - c.x) < BOOM.offset + CAR_HALF && Math.abs(y - road.y) < BOOM.side;
+
+// Vehicle detection, as at crossings gated on both sides: the booms never come down on a car
+// between them, so it can always drive out, and they close behind it once it has left.
+export function heldLift(lift: number, t: number, dt: number, occupied: boolean): number {
+  const target = boomLift(t);
+  return occupied ? Math.max(lift, target) : Math.max(target, lift - dt / PHASES[1]);
 }
 
 // Whether a car at (x, y) is on the rails where the train is right now.

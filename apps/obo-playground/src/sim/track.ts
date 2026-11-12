@@ -134,7 +134,7 @@ export const TRACK_PRESETS: Record<string, Preset> = {
     name: "Railway Crossing",
     line: sampleStadium(0.7, 0.55, 120),
     lineWidth: 0.019,
-    crossing: { x: -0.35, roads: [{ y: -0.55, dir: -1 }, { y: 0.55, dir: 1 }] },
+    crossing: { x: -0.35, roads: [{ y: -0.55 }, { y: 0.55 }] },
   },
 };
 

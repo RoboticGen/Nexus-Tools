@@ -292,6 +292,16 @@ describe("railway crossing", () => {
     expect(world.getSensors().front).toBeLessThan(0.2);
   });
 
+  it("holds a road's booms up while a car is between them, and closes them once it leaves", async () => {
+    const { x, roads } = railway.crossing!;
+    const world = await worldOn({ ...railway, start: { x, y: roads[0].y, heading: Math.PI } }); // parked on the rails
+    while (world.time < 6) world.step();
+    expect(world.lifts).toEqual([1, 0]); // only the other road has closed
+    expect(world.getSensors().front).toBe(SENSOR_RANGE); // nothing blocks the way out
+    runFor(world, 1.5, 1, 1);
+    expect(world.lifts).toEqual([0, 0]);
+  });
+
   it("sends a car on the rails back to the start when the train comes", async () => {
     const notes: string[] = [];
     const sim = new PlaygroundSim(railway, (note) => notes.push(note.message));
@@ -308,8 +318,12 @@ describe("railway crossing", () => {
     expect(sim.running).toBe(false);
   });
 
-  it("the example waits at the booms and is never hit by the train", async () => {
-    const sim = await simOn(railway);
+  // The roads are two-way, so the example has to work round the loop either way.
+  it.each([
+    ["the way the start faces", 0],
+    ["the other way round", Math.PI],
+  ])("the example waits at the booms and is never hit by the train, driving %s", async (_, turn) => {
+    const sim = await simOn({ ...railway, start: { ...railway.start, heading: railway.start.heading + turn } });
     const ws = new Blockly.Workspace();
     cleanup.push(() => ws.dispose());
     Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(RAILWAY_EXAMPLE_XML), ws);

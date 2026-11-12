@@ -130,13 +130,15 @@ function CrossingMeshes({ sim, crossing, extent }: { sim: PlaygroundSim; crossin
 
   useFrame(() => {
     const t = sim.worldTime();
-    const lift = boomLift(t);
+    const lifts = sim.world?.lifts ?? [];
     gates.forEach((b, i) => {
       const arm = armRefs.current[i];
-      if (arm) arm.rotation.x = (b.dir * lift * Math.PI) / 2;
+      if (arm) arm.rotation.x = (b.dir * (lifts[i >> 1] ?? 1) * Math.PI) / 2;
     });
-    const blink = lift < 1 && Math.floor(t * 2) % 2 === 0;
-    lightRefs.current.forEach((m, i) => m?.emissive.set(lift < 1 && (i % 2 === 0) === blink ? RAIL.red : "#000000"));
+    // the lights warn on the cycle, even while the booms wait for a car to clear
+    const warn = boomLift(t) < 1;
+    const blink = Math.floor(t * 2) % 2 === 0;
+    lightRefs.current.forEach((m, i) => m?.emissive.set(warn && (i % 2 === 0) === blink ? RAIL.red : "#000000"));
     const span = trainSpan(t, len / 2);
     if (train.current) {
       train.current.visible = span !== null;
@@ -172,7 +174,7 @@ function CrossingMeshes({ sim, crossing, extent }: { sim: PlaygroundSim; crossin
           ))}
           {/* the arm swings about the road's direction; three's x is physics x, so the angle carries over */}
           <group ref={(g) => { armRefs.current[i] = g; }} position-y={BOOM.height}>
-            {stripes(b.reach).map((len, k) => (
+            {stripes(BOOM.reach).map((len, k) => (
               <mesh key={k} position-z={-b.dir * len * (k + 0.5)} castShadow>
                 <boxGeometry args={[BOOM.half * 2, BOOM.half * 2, len]} />
                 <meshStandardMaterial color={k % 2 ? RAIL.white : RAIL.red} roughness={0.5} />
