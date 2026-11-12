@@ -1,12 +1,15 @@
+import { createRequire } from "node:module";
+
 import * as Blockly from "blockly";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { boomLift, hitByTrain, trainProgress } from "./crossing";
 import { MujocoWorld, SENSOR_RANGE } from "./mujoco-world";
 import { PlaygroundSim } from "./playground-sim";
+import { pythonProgram } from "./python-program";
 import { Race } from "./race";
 import { trackFromPreset, type Track } from "./track";
-import { EXAMPLE_XML, EXAMPLES, LINE_EXAMPLE_XML, RAILWAY_EXAMPLE_XML } from "../blocks/examples";
+import { EXAMPLE_XML, EXAMPLES, LINE_EXAMPLE_XML, PYTHON_EXAMPLE, RAILWAY_EXAMPLE_XML } from "../blocks/examples";
 import { compileWorkspace } from "../blocks/robot-blocks";
 
 const track = (walls: Track["walls"]): Track => ({
@@ -336,5 +339,116 @@ describe("timing", () => {
     for (let i = 0; i < fps; i++) sim.advance(1 / fps);
     // within one 2 ms physics step; any leftover carries into the next frame
     expect(Math.abs(sim.simTime - 1000)).toBeLessThanOrEqual(2.0001);
+  });
+});
+
+// The browser loads Skulpt from skulpt.org (as obo-code does); tests use the npm build.
+const Sk = createRequire(import.meta.url)("skulpt");
+
+async function runPython(t: Track, code: string) {
+  const notes: string[] = [];
+  const sim = new PlaygroundSim(t, (n) => notes.push(n.message));
+  cleanup.push(() => sim.dispose());
+  await sim.setTrack(t);
+  let output = "";
+  vi.useFakeTimers();
+  sim.run(() => pythonProgram(Sk, code, (text) => (output += text)));
+  vi.advanceTimersByTime(3000);
+  return { sim, notes, output: () => output };
+}
+
+const seconds = (sim: PlaygroundSim, s: number, until = () => false) => {
+  for (let i = 0; i < s * 60 && !until(); i++) sim.advance(1 / 60);
+};
+
+describe("python program", () => {
+  it("stops before the wall ahead, written against the real car's SDK", async () => {
+    const { sim } = await runPython(
+      corridor,
+      `from obocar import OBOCar
+car = OBOCar()
+while car.get_front_distance() > 20:
+    car.move_forward(300)
+car.stop()
+`,
+    );
+    seconds(sim, 6);
+    expect(sim.motorL).toBe(0);
+    expect(sim.pose().speed).toBeLessThan(0.01);
+    expect(sim.sensors.front).toBeGreaterThan(0.1);
+    expect(sim.sensors.front).toBeLessThan(0.2);
+  });
+
+  it("time.sleep() waits on the sim clock", async () => {
+    const { sim } = await runPython(
+      openFloor,
+      `from obocar import OBOCar
+import time
+car = OBOCar()
+car.move_forward(512)
+time.sleep(1)
+car.turn_left(256)
+`,
+    );
+    seconds(sim, 0.9);
+    expect([sim.motorL, sim.motorR]).toEqual([1, 1]);
+    seconds(sim, 0.2);
+    expect([sim.motorL, sim.motorR]).toEqual([-0.5, 0.5]);
+  });
+
+  it("runs a loop without sleep() once per control tick", async () => {
+    const { sim, output } = await runPython(openFloor, "n = 0\nwhile True:\n    n += 1\n    print(n)\n");
+    seconds(sim, 1);
+    // one pass per 16 ms tick: about 62 in a second
+    expect(output().trim().split("\n").length).toBeGreaterThan(55);
+    expect(output().trim().split("\n").length).toBeLessThan(70);
+  });
+
+  it("laps the oval with the Code tab's starting program", async () => {
+    const { sim } = await runPython(trackFromPreset("oval"), PYTHON_EXAMPLE);
+    let clearance = Infinity;
+    seconds(sim, 40, () => {
+      clearance = Math.min(clearance, sim.sensors.left, sim.sensors.right);
+      return sim.race.lap >= 2;
+    });
+    expect(sim.race.lap).toBe(2);
+    expect(clearance).toBeGreaterThan(0.05);
+  });
+
+  it("follows the line track with ir_line()", async () => {
+    const { sim } = await runPython(
+      trackFromPreset("line"),
+      `from obocar import OBOCar
+car = OBOCar()
+while True:
+    line = car.ir_line()
+    left = line[0] + line[1] + line[2]
+    right = line[3] + line[4] + line[5]
+    if left + right == 0:
+        car.turn_right(205)
+        continue
+    speed = 205 if line[0] or line[5] else 512
+    turn = (right - left) * 128
+    car.move_forward(speed_left=speed + turn, speed_right=speed - turn)
+`,
+    );
+    seconds(sim, 40, () => sim.race.lap >= 2);
+    expect(sim.race.lap).toBe(2);
+  });
+
+  it("raises the car's TypeError for a float speed, with the line", async () => {
+    const { sim, notes } = await runPython(openFloor, "from obocar import OBOCar\ncar = OBOCar()\ncar.move_forward(100.5)\n");
+    seconds(sim, 0.1);
+    expect(sim.running).toBe(false);
+    expect(notes.join()).toMatch(/TypeError: can't convert float to int.*line 3/);
+  });
+
+  it("reports a syntax error at Run, before the countdown", async () => {
+    const notes: string[] = [];
+    const sim = new PlaygroundSim(openFloor, (n) => notes.push(n.message));
+    cleanup.push(() => sim.dispose());
+    sim.run(() => pythonProgram(Sk, "while True\n    pass\n", () => {}));
+    expect(sim.running).toBe(false);
+    expect(notes[0]).toMatch(/^Could not read your code: SyntaxError/);
   });
 });

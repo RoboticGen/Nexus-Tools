@@ -149,19 +149,25 @@ export class PlaygroundSim {
     this.stop();
   }
 
-  run(code: string) {
-    if (!code.trim()) {
+  // Block code, or a per-tick program built elsewhere (the Python runner).
+  run(code: string | (() => (robot: RobotApi) => void)) {
+    if (typeof code === "string" && !code.trim()) {
       this.notify({ tone: "info", message: "Add some blocks first!" });
       return;
     }
     let compiled: (robot: RobotApi) => void;
     try {
-      // Blockly declares every variable on the first line. Declaring them once, outside the per-tick
-      // function, lets variables keep their values between ticks, like an Arduino sketch's globals.
-      const [, vars = "", body] = /^(var [\w$]+(?:, [\w$]+)*;)?([\s\S]*)$/.exec(code)!;
-      compiled = new Function(`${vars}\nreturn function (robot) {\n${body}\n};`)() as (robot: RobotApi) => void;
+      if (typeof code === "string") {
+        // Blockly declares every variable on the first line. Declaring them once, outside the per-tick
+        // function, lets variables keep their values between ticks, like an Arduino sketch's globals.
+        const [, vars = "", body] = /^(var [\w$]+(?:, [\w$]+)*;)?([\s\S]*)$/.exec(code)!;
+        compiled = new Function(`${vars}\nreturn function (robot) {\n${body}\n};`)() as (robot: RobotApi) => void;
+      } else {
+        compiled = code();
+      }
     } catch (err) {
-      this.notify({ tone: "error", message: `Could not read your blocks: ${(err as Error).message}` });
+      const what = typeof code === "string" ? "your blocks" : "your code";
+      this.notify({ tone: "error", message: `Could not read ${what}: ${(err as Error).message}` });
       return;
     }
     this.resetCar();

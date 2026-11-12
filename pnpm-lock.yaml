@@ -190,6 +190,9 @@ importers:
       '@nexus-tools/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@nexus-tools/skulpt-executor':
+        specifier: workspace:*
+        version: link:../../packages/skulpt-executor
       '@react-three/drei':
         specifier: ^10.7.9
         version: 10.7.9(@react-three/fiber@9.8.2)(@types/react@19.2.18)(@types/three@0.186.0)(react-dom@19.2.8)(react@19.2.8)(three@0.186.1)
@@ -260,6 +263,9 @@ importers:
       rimraf:
         specifier: ^6.1.3
         version: 6.1.3
+      skulpt:
+        specifier: 1.2.0
+        version: 1.2.0
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -5062,6 +5068,10 @@ packages:
     dependencies:
       argparse: 2.0.1
 
+  /jsbi@3.2.5:
+    resolution: {integrity: sha512-aBE4n43IPvjaddScbvWRA2YlTzKEynHzu7MqOyTipdHucf/VxS63ViCjxYRg86M8Rxwbt/GfzHl1kKERkt45fQ==}
+    dev: true
+
   /jsdom@29.1.1:
     resolution: {integrity: sha512-ECi4Fi2f7BdJtUKTflYRTiaMxIB0O6zfR1fX0GXpUrf6flp8QIYn1UT20YQqdSOfk2dfkCwS8LAFoJDEppNK5Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24.0.0}
@@ -6372,6 +6382,13 @@ packages:
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
     dev: false
+
+  /skulpt@1.2.0:
+    resolution: {integrity: sha512-T0cv0sdSOXLlIJTuyXSeYJ3TFdWYSZfX2PcBLpRKrKZ3dTbVQXRMiYudSuko2xzcyMif47DS2ShatCwjCbsSsA==}
+    engines: {node: '>=10.4'}
+    dependencies:
+      jsbi: 3.2.5
+    dev: true
 
   /sonner@2.0.8(@types/react@19.2.18)(react-dom@19.2.8)(react@19.2.8):
     resolution: {integrity: sha512-UM/ByIoFra8yzV75n1o0Puu0bw5U/9UNnDacrJNspekBewIfsQ3D6ez1nvlWpt7aTsO6rujQtifBpycwIivqlg==}

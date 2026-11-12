@@ -322,6 +322,24 @@ export const LINE_MAZE_EXAMPLE_XML = xml(
 );
 
 /** Each example runs in the world it was written for, as OBO Lab pairs examples with their circuits. */
+// The Code tab's starting program: the wall follower above, written against the real car's SDK.
+export const PYTHON_EXAMPLE = `# Wall follower. Runs on the real OBO car too, with obocar.py on it.
+from obocar import OBOCar
+import time
+
+car = OBOCar()
+
+while True:
+    front = car.get_front_distance()  # centimetres
+    left = car.get_left_distance()
+    right = car.get_right_distance()
+
+    speed = min(front * 10, 435)  # slow down as the wall ahead gets close
+    turn = (right - left) * 20  # steer toward the open side
+    car.move_forward(speed_left=int(speed + turn), speed_right=int(speed - turn))
+    time.sleep(0.02)
+`;
+
 export const EXAMPLES = [
   {
     id: "wall-oval",

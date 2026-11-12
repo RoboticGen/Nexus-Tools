@@ -254,16 +254,18 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
               <Download aria-hidden="true" />
               Export
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleSaveToDevice}
-              disabled={!isConnected}
-              title={isConnected ? "Save to ESP32 Device" : "Connect device first"}
-            >
-              <Save aria-hidden="true" />
-              Save Device
-            </Button>
+            {onSaveToDevice && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSaveToDevice}
+                disabled={!isConnected}
+                title={isConnected ? "Save to ESP32 Device" : "Connect device first"}
+              >
+                <Save aria-hidden="true" />
+                Save Device
+              </Button>
+            )}
           </>
         }
       >
