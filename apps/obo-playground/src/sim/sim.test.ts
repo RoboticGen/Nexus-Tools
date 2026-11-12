@@ -2,11 +2,12 @@ import * as Blockly from "blockly";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { boomLift, hitByTrain, trainProgress } from "./crossing";
+import { mulberry32 } from "./maze";
 import { MujocoWorld, SENSOR_RANGE } from "./mujoco-world";
 import { PlaygroundSim } from "./playground-sim";
 import { Race } from "./race";
 import { trackFromPreset, type Track } from "./track";
-import { EXAMPLE_XML, EXAMPLES, LINE_EXAMPLE_XML, RAILWAY_EXAMPLE_XML } from "../blocks/examples";
+import { EXAMPLE_XML, EXAMPLES, LINE_EXAMPLE_XML, RAILWAY_EXAMPLE_XML, ROOMBA_EXAMPLE_XML } from "../blocks/examples";
 import { compileWorkspace } from "../blocks/robot-blocks";
 
 const track = (walls: Track["walls"]): Track => ({
@@ -35,6 +36,7 @@ const cleanup: (() => void)[] = [];
 afterEach(() => {
   cleanup.splice(0).forEach((dispose) => dispose());
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 async function worldOn(t: Track) {
@@ -239,17 +241,19 @@ describe("examples menu", () => {
     cleanup.push(() => ws.dispose());
     Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(example.xml), ws);
     const sim = await simOn(trackFromPreset(example.track));
+    vi.spyOn(Math, "random").mockImplementation(mulberry32(1));
     vi.useFakeTimers();
     sim.run(compileWorkspace(ws));
     vi.advanceTimersByTime(3000);
-    const done = () => (sim.race.isMaze ? sim.race.finished : sim.race.lap >= 2);
+    const done = () => (sim.race.isMaze || sim.race.coverage ? sim.race.finished : sim.race.lap >= 2);
     let clearance = Infinity;
-    for (let i = 0; i < 120 * 60 && !done(); i++) {
+    for (let i = 0; i < 180 * 60 && !done(); i++) {
       sim.advance(1 / 60);
       clearance = Math.min(clearance, sim.sensors.left, sim.sensors.right);
     }
     expect(done()).toBe(true);
-    expect(clearance).toBeGreaterThan(0.01); // never scrapes a side wall
+    // never scrapes a side wall; a robot vacuum bumps into things by design
+    if (!sim.race.coverage) expect(clearance).toBeGreaterThan(0.01);
   });
 });
 
@@ -327,6 +331,70 @@ describe("railway crossing", () => {
     }
     expect(sim.race.finished).toBe(true);
     expect(waited).toBeGreaterThan(1);
+  });
+});
+
+describe("living room", () => {
+  const room = trackFromPreset("room");
+  const runBlocks = async (code: string) => {
+    const notes: string[] = [];
+    const sim = new PlaygroundSim(room, (note) => notes.push(note.message));
+    cleanup.push(() => sim.dispose());
+    await sim.setTrack(room);
+    vi.useFakeTimers();
+    sim.run(code);
+    vi.advanceTimersByTime(3000);
+    return { sim, notes };
+  };
+  const roomba = () => {
+    const ws = new Blockly.Workspace();
+    cleanup.push(() => ws.dispose());
+    Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(ROOMBA_EXAMPLE_XML), ws);
+    return compileWorkspace(ws);
+  };
+
+  it("puts furniture in front of the ultrasonic sensors and leaves it out of the floor to clean", async () => {
+    const world = await worldOn(room);
+    const stool = room.furniture![3];
+    expect(world.getSensors().front).toBeCloseTo(stool.x - stool.hx - room.start.x - 0.0836, 2);
+    const { dirty } = room.clean!;
+    expect(dirty.includes(0)).toBe(true);
+    expect(dirty.includes(1)).toBe(true);
+  });
+
+  it("starts with a dirty floor and cleans more of it as the car drives", async () => {
+    const { sim } = await runBlocks("robot.drive(0.6, 0.1);");
+    const coverage = sim.race.coverage!;
+    expect(coverage.fraction).toBe(0);
+    const seen: number[] = [];
+    for (let s = 0; s < 4; s++) {
+      for (let i = 0; i < 60; i++) sim.advance(1 / 60);
+      seen.push(coverage.fraction);
+    }
+    expect(seen[0]).toBeGreaterThan(0);
+    expect(seen).toEqual([...seen].sort((a, b) => a - b));
+    expect(seen[3]).toBeGreaterThan(seen[0]);
+    sim.resetCar();
+    expect(coverage.fraction).toBe(0);
+  });
+
+  it("stops with a notice when time runs out", async () => {
+    const { sim, notes } = await runBlocks("robot.drive(0, 0.3);"); // spins on the spot
+    for (let i = 0; i < (room.clean!.seconds + 1) * 60 && sim.running; i++) sim.advance(1 / 60);
+    expect(sim.running).toBe(false);
+    expect(sim.race.finished).toBe(true);
+    expect(sim.race.coverage!.fraction).toBeLessThan(room.clean!.target);
+    expect(notes.some((m) => m.startsWith("Time's up!"))).toBe(true);
+  });
+
+  // Its turns are random, so try a few seeds: each run took 68 to 128 s over 30 seeds.
+  it.each([1, 2, 3])("the robot vacuum example cleans the target share in time (seed %i)", async (seed) => {
+    vi.spyOn(Math, "random").mockImplementation(mulberry32(seed));
+    const { sim, notes } = await runBlocks(roomba());
+    for (let i = 0; i < (room.clean!.seconds + 1) * 60 && sim.running; i++) sim.advance(1 / 60);
+    expect(sim.race.coverage!.fraction).toBeGreaterThanOrEqual(room.clean!.target);
+    expect(sim.race.elapsed).toBeLessThan(150);
+    expect(notes.some((m) => m.startsWith("Room clean!"))).toBe(true);
   });
 });
 

@@ -321,6 +321,42 @@ export const LINE_MAZE_EXAMPLE_XML = xml(
   ),
 );
 
+// Bump and turn, like the first robot vacuums: drive straight until something is close ahead (or
+// the car has stalled against something its one front sensor missed), back off, then spin toward
+// the more open side for a random time. Random turns send it across the room at new angles, so
+// over time it sweeps most of the floor.
+const goTo = (mode: number) => [set("mode", n(mode)), set("t", time)];
+export const ROOMBA_EXAMPLE_XML = xml(
+  `<variables>${["mode", "t", "turn", "spin"].map((v) => `<variable id="v${v}">${v}</variable>`).join("")}</variables>`,
+  ifs(
+    [
+      [
+        cmp("EQ", get("mode"), n(0)),
+        chain(
+          drive(n(0.9), n(0)),
+          ifs([
+            [
+              logic(
+                "OR",
+                cmp("LT", sensor("front"), n(4)),
+                logic("AND", cmp("GT", sinceT, n(0.5)), cmp("LT", `<block type="robot_speed"></block>`, n(5))),
+              ),
+              chain(
+                ...goTo(1),
+                ifs([[cmp("LT", sensor("left"), sensor("right")), set("turn", n(0.4))]], set("turn", n(-0.4))),
+                set("spin", math("ADD", n(0.25), math("MULTIPLY", `<block type="math_random_float"></block>`, n(0.7)))),
+              ),
+            ],
+          ]),
+        ),
+      ],
+      [cmp("EQ", get("mode"), n(1)), chain(drive(n(-0.4), n(0)), ifs([[cmp("GT", sinceT, n(0.25)), chain(...goTo(2))]]))],
+      [cmp("EQ", get("mode"), n(2)), chain(drive(n(0), get("turn")), ifs([[cmp("GT", sinceT, get("spin")), chain(...goTo(0))]]))],
+    ],
+    chain(...goTo(0)),
+  ),
+);
+
 /** Each example runs in the world it was written for, as OBO Lab pairs examples with their circuits. */
 export const EXAMPLES = [
   {
@@ -378,5 +414,12 @@ export const EXAMPLES = [
     track: "maze",
     summary: "Keep a hand on the right wall to reach the centre of the maze.",
     xml: MAZE_EXAMPLE_XML,
+  },
+  {
+    id: "roomba",
+    title: "Robot vacuum",
+    track: "room",
+    summary: "Drive straight, back off and turn a random amount at each bump, until the floor is clean.",
+    xml: ROOMBA_EXAMPLE_XML,
   },
 ] as const;

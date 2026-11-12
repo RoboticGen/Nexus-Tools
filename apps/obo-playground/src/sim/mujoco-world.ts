@@ -56,6 +56,9 @@ function buildMJCF(track: Track): string {
   const posts = (track.posts ?? [])
     .map(([x, y], i) => `<geom name="post${i}" type="box" pos="${x} ${y} ${wh / 2}" size="${WALL_T * 1.4} ${WALL_T * 1.4} ${wh / 2}"/>`)
     .join("\n");
+  const furniture = (track.furniture ?? [])
+    .map((f, i) => `<geom name="furniture${i}" type="box" pos="${f.x} ${f.y} ${f.h / 2}" size="${f.hx} ${f.hy} ${f.h / 2}"/>`)
+    .join("\n");
   // Mocap bodies: moved by the gate cycle, not by forces. They don't collide (contype 0), so a boom
   // can never land on the car, but the rangefinders still see them.
   const gates = track.crossing
@@ -94,6 +97,7 @@ function buildMJCF(track: Track): string {
     <geom name="floor" type="plane" size="${track.extent + 0.5} ${track.extent + 0.5} 0.05" rgba="1 1 1 0"/>
     ${walls}
     ${posts}
+    ${furniture}
     ${gates}
     <body name="car" pos="${s.x} ${s.y} ${RIDE_H}" quat="${Math.cos(s.heading / 2)} 0 0 ${Math.sin(s.heading / 2)}">
       <freejoint name="root"/>
