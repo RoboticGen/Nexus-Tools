@@ -2,6 +2,7 @@
 
 import {
   blocks,
+  darkTheme,
   theme,
   toolbox,
   OboCategory,
@@ -11,6 +12,10 @@ import {
   importJson,
   getActiveWorkspace,
 } from "@nexus-tools/blockly-python-generator";
+import { BlocklyPanel } from "@nexus-tools/design-system/components/ui/blockly-panel";
+import { Button } from "@nexus-tools/design-system/components/ui/button";
+import { useTheme } from "@nexus-tools/design-system/hooks/use-theme";
+import { DARK_CLASS } from "@nexus-tools/design-system/lib/theme";
 import {
   createPinButtonCallback,
   createADCButtonCallback,
@@ -27,8 +32,6 @@ import "blockly/blocks";
 import { Download, Upload } from "lucide-react";
 import { useEffect, useRef, useCallback, useState } from "react";
 
-import { BlocklyPanel } from "@nexus-tools/design-system/components/ui/blockly-panel";
-import { Button } from "@nexus-tools/design-system/components/ui/button";
 import { useEditorHandlers } from "@/hooks/use-editor-handlers";
 
 interface BlocklyEditorProps {
@@ -47,13 +50,20 @@ export function BlocklyEditor({
   const workspaceRef = useRef<Blockly.Workspace | null>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
   const { downloadJsonFile } = useEditorHandlers();
+  const blocklyTheme = useTheme().resolvedTheme === "dark" ? darkTheme : theme;
+
+  // setTheme, not re-inject: re-injecting would drop the blocks.
+  useEffect(() => {
+    if (workspace && workspace.getTheme() !== blocklyTheme) workspace.setTheme(blocklyTheme);
+  }, [workspace, blocklyTheme]);
 
   const initBlockly = useCallback((div: HTMLDivElement) => {
     const isMobile = window.innerWidth <= 768;
     
     const options = {
       toolbox: toolbox,
-      theme: theme,
+      // Read off <html> so the first paint is already right; the effect above handles later toggles.
+      theme: document.documentElement.classList.contains(DARK_CLASS) ? darkTheme : theme,
       media: "media",
       grid: {
         spacing: 20,

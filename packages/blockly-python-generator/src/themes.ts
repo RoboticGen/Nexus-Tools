@@ -1,4 +1,4 @@
-import { BRAND, BRAND_DEEP, TONE } from "@nexus-tools/design-system/lib/palette";
+import { BRAND, BRAND_DEEP, SURFACE_DARK, TONE } from "@nexus-tools/design-system/lib/palette";
 import * as Blockly from "blockly";
 
 // Literal hex, not `var(--brand-teal)`: Blockly derives gradients and borders in JS at inject time, where a CSS variable resolves to empty and blocks render black. Deep variants rather than the bright brand hues because Blockly's BlockStyle has no text-colour field — block labels come from one global white rule, so every block colour must clear 4.5:1 against white.
@@ -82,4 +82,21 @@ export const theme = Blockly.Theme.defineTheme("mytheme", {
   base: Blockly.Themes.Classic,
   categoryStyles: categoryStyles,
   blockStyles: blockStyles,
+});
+
+// Classic leaves these unset, so the light theme keeps Blockly's own white canvas and grey flyout.
+export const darkComponentStyles: Blockly.Theme.ComponentStyle = {
+  workspaceBackgroundColour: BRAND.ink,
+  flyoutBackgroundColour: SURFACE_DARK.accent,
+  flyoutOpacity: 1,
+  scrollbarColour: SURFACE_DARK.border,
+  // Classic's black marker is invisible on a dark canvas.
+  insertionMarkerColour: SURFACE_DARK.mutedForeground,
+  insertionMarkerOpacity: 0.5,
+};
+
+export const darkTheme = Blockly.Theme.defineTheme("mytheme-dark", {
+  name: "mytheme-dark",
+  base: theme,
+  componentStyles: darkComponentStyles,
 });
