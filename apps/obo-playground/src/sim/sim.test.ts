@@ -12,6 +12,7 @@ import { Race } from "./race";
 import { trackFromPreset, type Track } from "./track";
 import { EXAMPLE_XML, EXAMPLES, LINE_EXAMPLE_XML, PYTHON_EXAMPLE, RAILWAY_EXAMPLE_XML, ROOMBA_EXAMPLE_XML } from "../blocks/examples";
 import { compileWorkspace } from "../blocks/robot-blocks";
+import { xmlToPython } from "../blocks/robot-python";
 
 const track = (walls: Track["walls"]): Track => ({
   name: "test",
@@ -457,6 +458,17 @@ async function runPython(t: Track, code: string) {
 const seconds = (sim: PlaygroundSim, s: number, until = () => false) => {
   for (let i = 0; i < s * 60 && !until(); i++) sim.advance(1 / 60);
 };
+
+describe("examples as Python", () => {
+  it.each(EXAMPLES.map((e) => [e.title, e] as const))("%s, converted from its blocks, completes its own world", async (_, example) => {
+    const code = xmlToPython(example.xml).replace("import random\n", "import random\nrandom.seed(1)\n");
+    const { sim, notes } = await runPython(trackFromPreset(example.track), code);
+    const done = () => (sim.race.isMaze || sim.race.coverage ? sim.race.finished : sim.race.lap >= 2);
+    seconds(sim, 180, () => done() || !sim.running);
+    expect(notes.filter((m) => /error|Could not/i.test(m))).toEqual([]);
+    expect(done()).toBe(true);
+  });
+});
 
 describe("python program", () => {
   it("stops before the wall ahead, written against the real car's SDK", async () => {
