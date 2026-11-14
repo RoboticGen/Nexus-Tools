@@ -15,7 +15,7 @@ import { DARK_CLASS } from "@nexus-tools/design-system/lib/theme";
 import * as Blockly from "blockly";
 import "blockly/blocks";
 import { ChevronDown, Download, Eraser, FolderOpen, Upload } from "lucide-react";
-import { useEffect, useRef, useState, type ChangeEvent, type RefObject } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from "react";
 import { toast } from "sonner";
 
 import { EXAMPLE_XML } from "@/blocks/examples";
@@ -58,6 +58,7 @@ export function BlocksEditor({
   loadBlocksRef,
   world,
   onImportWorld,
+  title = "Blocks",
 }: {
   getCodeRef: RefObject<(() => string) | null>;
   /** Set once the workspace exists; replaces its blocks with the given XML. */
@@ -66,6 +67,7 @@ export function BlocksEditor({
   world: { key: string; track: Track };
   /** Switches to the world an imported file was saved with. */
   onImportWorld: (key: string, track: Track) => void;
+  title?: ReactNode;
 }) {
   const divRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -177,7 +179,7 @@ export function BlocksEditor({
 
   return (
     <BlocklyPanel
-      title="Blocks"
+      title={title}
       className="h-full"
       workspace={workspace}
       actions={

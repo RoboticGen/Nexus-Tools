@@ -2,12 +2,13 @@
 
 import { BlocklyDialogs } from "@nexus-tools/design-system/components/blockly-dialogs";
 import { CodeEditor } from "@nexus-tools/design-system/components/code-editor";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@nexus-tools/design-system/components/ui/tabs";
 import { Terminal } from "@nexus-tools/design-system/components/ui/terminal";
+import { ToggleGroup, ToggleGroupItem } from "@nexus-tools/design-system/components/ui/toggle-group";
 import { WorkspaceColumn, WorkspaceLayout } from "@nexus-tools/design-system/components/ui/workspace-layout";
 import { WorkspaceNavbar } from "@nexus-tools/design-system/components/workspace-navbar";
 import { useTheme } from "@nexus-tools/design-system/hooks/use-theme";
 import { getSkulpt, loadSkulptLibrary } from "@nexus-tools/skulpt-executor";
+import { Code, Puzzle } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
@@ -168,6 +169,26 @@ export default function Home() {
     toast.success(`Loaded “${example.title}” on ${TRACK_PRESETS[example.track].name}. Press Run!`);
   };
 
+  const modeSwitch = (
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      size="sm"
+      value={editor}
+      onValueChange={(v) => v && setEditor(v as typeof editor)}
+      aria-label="Program with"
+    >
+      <ToggleGroupItem value="blocks" title="Program with blocks">
+        <Puzzle aria-hidden="true" className="text-brand-teal" />
+        Blocks
+      </ToggleGroupItem>
+      <ToggleGroupItem value="python" title="Program in Python, with the OBO car SDK">
+        <Code aria-hidden="true" className="text-brand-sky" />
+        Python
+      </ToggleGroupItem>
+    </ToggleGroup>
+  );
+
   return (
     <WorkspaceLayout
       header={
@@ -180,31 +201,34 @@ export default function Home() {
       }
     >
       <WorkspaceColumn grow={3} collapsible collapsedSize={0}>
-        <Tabs value={editor} onValueChange={(v) => setEditor(v as typeof editor)} className="h-full flex-col gap-1">
-          <TabsList className="mx-1 mt-1 shrink-0">
-            <TabsTrigger value="blocks">Blocks</TabsTrigger>
-            <TabsTrigger value="python">Python</TabsTrigger>
-          </TabsList>
-          {/* Both stay mounted so switching keeps the Blockly workspace and the editor's undo history. */}
-          <TabsContent value="blocks" forceMount className="min-h-0 data-[state=inactive]:hidden">
-            <BlocksEditor
-              getCodeRef={getCodeRef}
-              loadBlocksRef={loadBlocksRef}
-              world={{ key: trackKey, track }}
-              onImportWorld={(key, t) => applyTrack(t, key)}
+        {/* Both stay mounted so switching keeps the Blockly workspace and the editor's undo history. */}
+        <div className={editor === "blocks" ? "h-full" : "hidden"}>
+          <BlocksEditor
+            getCodeRef={getCodeRef}
+            loadBlocksRef={loadBlocksRef}
+            world={{ key: trackKey, track }}
+            onImportWorld={(key, t) => applyTrack(t, key)}
+            title={modeSwitch}
+          />
+        </div>
+        <CodeEditor
+          className={editor === "python" ? "h-full" : "hidden"}
+          title={modeSwitch}
+          singleFile
+          code={pyCode}
+          onChange={onPyChange}
+          onCopy={onCopyPython}
+          onExport={onExportPython}
+          footer={
+            <Terminal
+              className="shrink-0 rounded-none border-x-0 border-b-0"
+              output={pyOutput}
+              label="Program output"
+              placeholder="Your print() output shows here."
+              rows={5}
             />
-          </TabsContent>
-          <TabsContent value="python" forceMount className="flex min-h-0 flex-col gap-1 data-[state=inactive]:hidden">
-            <CodeEditor
-              className="min-h-0 flex-1"
-              code={pyCode}
-              onChange={onPyChange}
-              onCopy={onCopyPython}
-              onExport={onExportPython}
-            />
-            <Terminal output={pyOutput} label="Program output" placeholder="Your print() output shows here." rows={5} />
-          </TabsContent>
-        </Tabs>
+          }
+        />
       </WorkspaceColumn>
       <WorkspaceColumn grow={4}>
         <WorldPanel

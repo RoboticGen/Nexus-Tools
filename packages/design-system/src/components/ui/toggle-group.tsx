@@ -53,7 +53,7 @@ function ToggleGroupItem({
       data-size={resolvedSize}
       className={cn(
         toggleVariants({ variant: resolvedVariant, size: resolvedSize }),
-        "min-w-0 flex-1 shrink-0 rounded-none shadow-none focus:z-10 focus-visible:z-10 first:rounded-l-md last:rounded-r-md data-[variant=outline]:border-l-0 data-[variant=outline]:first:border-l",
+        "min-w-0 flex-1 shrink-0 rounded-none shadow-none data-[state=on]:z-10 focus:z-20 focus-visible:z-20 first:rounded-l-md last:rounded-r-md data-[variant=outline]:-ml-px data-[variant=outline]:first:ml-0",
         className
       )}
       {...props}
