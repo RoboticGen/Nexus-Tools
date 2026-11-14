@@ -10,6 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@nexus-tools/design-system/components/ui/dropdown-menu";
+import { useTheme } from "@nexus-tools/design-system/hooks/use-theme";
+import { DARK_CLASS } from "@nexus-tools/design-system/lib/theme";
 import * as Blockly from "blockly";
 import "blockly/blocks";
 import { ChevronDown, Download, Eraser, FolderOpen, Upload } from "lucide-react";
@@ -18,7 +20,8 @@ import { toast } from "sonner";
 
 import { EXAMPLE_XML } from "@/blocks/examples";
 import { projectFile, readProjectFile } from "@/blocks/project-file";
-import { compileWorkspace, theme, toolbox } from "@/blocks/robot-blocks";
+import { compileWorkspace, darkTheme, theme, toolbox } from "@/blocks/robot-blocks";
+
 import type { Track } from "@/sim/track";
 
 const STORAGE_KEY = "obo-playground.blocks";
@@ -68,6 +71,12 @@ export function BlocksEditor({
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
+  const blocklyTheme = useTheme().resolvedTheme === "dark" ? darkTheme : theme;
+
+  // setTheme, not re-inject: re-injecting would drop the blocks.
+  useEffect(() => {
+    if (workspace && workspace.getTheme() !== blocklyTheme) workspace.setTheme(blocklyTheme);
+  }, [workspace, blocklyTheme]);
 
   useEffect(() => {
     const div = divRef.current;
@@ -90,7 +99,8 @@ export function BlocksEditor({
       }
       const workspace = Blockly.inject(div, {
         toolbox,
-        theme,
+        // Read off <html> so the first paint is already right; the effect above handles later toggles.
+        theme: document.documentElement.classList.contains(DARK_CLASS) ? darkTheme : theme,
         renderer: "zelos",
         trashcan: true,
         grid: { spacing: 20, length: 1, colour: "#888", snap: false },

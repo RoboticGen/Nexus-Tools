@@ -26,6 +26,14 @@ export const BRAND_DEEP = {
   violet: "#5b3f8f",
 } as const;
 
+/** Dark-mode surfaces, from `.dark` in theme.css. `--background` there is BRAND.ink. */
+export const SURFACE_DARK = {
+  card: "#2a2c2e",
+  accent: "#2f3437",
+  border: "#383b3e",
+  mutedForeground: "#a9abae",
+} as const;
+
 /** Semantic tones that are not brand hues. `--tone-danger*` in theme.css. */
 export const TONE = {
   danger: "#dc2626",

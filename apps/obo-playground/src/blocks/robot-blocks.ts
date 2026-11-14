@@ -2,6 +2,7 @@
 // function that runs once per control tick with a `robot` object (see `RobotApi`).
 // Client-only: Blockly's server build pulls in jsdom.
 
+import { darkComponentStyles } from "@nexus-tools/blockly-python-generator";
 import { BRAND, BRAND_DEEP, TONE } from "@nexus-tools/design-system/lib/palette";
 import * as Blockly from "blockly";
 import { javascriptGenerator, Order } from "blockly/javascript";
@@ -124,6 +125,12 @@ export const theme = Blockly.Theme.defineTheme("obo-playground", {
     variable_dynamic_blocks: { colourPrimary: BRAND_DEEP.coral },
     procedure_blocks: { colourPrimary: TONE.danger },
   },
+});
+
+export const darkTheme = Blockly.Theme.defineTheme("obo-playground-dark", {
+  name: "obo-playground-dark",
+  base: theme,
+  componentStyles: darkComponentStyles,
 });
 
 const num = (n: number) => ({ shadow: { type: "math_number", fields: { NUM: n } } });

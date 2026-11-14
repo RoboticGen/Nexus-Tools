@@ -24,6 +24,12 @@
   display: none;
 }
 
+/* Blockly's zoom and trashcan sprites are dark grey, which vanishes on the dark canvas. */
+.dark .blocklyZoom image,
+.dark .blocklyTrash image {
+  filter: invert(1);
+}
+
 /* A block dragged near an edge must not be clipped by the workspace box. */
 .blocklySvg,
 .injectionDiv {

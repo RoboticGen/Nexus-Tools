@@ -8,7 +8,7 @@ export { blocks } from './blocks';
 
 // Export key utilities and classes
 export { OboCategory } from './categories';
-export { theme } from './themes';
+export { darkComponentStyles, darkTheme, theme } from './themes';
 export { toolbox } from './toolbox';
 export { forBlock } from './generator';
 export {
