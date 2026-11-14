@@ -1,6 +1,5 @@
-// Runs a student's Python program, written against the real car's SDK (`from obocar import OBOCar`,
-// github.com/RoboticGen/obo-car-sdk), in lockstep with the sim: Skulpt pauses the program at every
-// time.sleep() and every pass of a while loop, and the sim resumes it on its fixed 16 ms control tick.
+// Runs a Python program written for the real car's SDK (github.com/RoboticGen/obo-car-sdk) in step
+// with the sim: Skulpt pauses at every time.sleep() and while-loop pass, and each 16 ms tick resumes it.
 
 import type { RobotApi } from "./playground-sim";
 
@@ -184,8 +183,13 @@ export function pythonProgram(Sk: Skulpt, code: string, print: (text: string) =>
   Sk.configure({
     output: (text: string) => {
       // a program printing every tick shouldn't grow the page without bound
-      if (printed < MAX_OUTPUT) print(text);
-      printed += text.length;
+      if (printed < MAX_OUTPUT) {
+        print(text);
+        printed += text.length;
+      } else if (printed !== Infinity) {
+        print("\n[Output limit reached: later print() calls aren't shown.]\n");
+        printed = Infinity;
+      }
     },
     read: (file: string) => {
       const source = FILES[file] ?? Sk.builtinFiles?.files[file];

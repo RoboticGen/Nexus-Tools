@@ -230,7 +230,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
               </Button>
             )}
             {onRun && (
-              <Button size="sm" variant="default" onClick={onRun} title="Run Python Code (Ctrl+Enter)">
+              <Button size="sm" variant="default" onClick={onRun} title="Run Python Code">
                 <Play aria-hidden="true" />
                 Run
               </Button>

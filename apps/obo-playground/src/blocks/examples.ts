@@ -321,7 +321,6 @@ export const LINE_MAZE_EXAMPLE_XML = xml(
   ),
 );
 
-/** Each example runs in the world it was written for, as OBO Lab pairs examples with their circuits. */
 // The Code tab's starting program: the wall follower above, written against the real car's SDK.
 export const PYTHON_EXAMPLE = `# Wall follower. Runs on the real OBO car too, with obocar.py on it.
 from obocar import OBOCar
@@ -340,6 +339,7 @@ while True:
     time.sleep(0.02)
 `;
 
+/** Each example runs in the world it was written for, as OBO Lab pairs examples with their circuits. */
 export const EXAMPLES = [
   {
     id: "wall-oval",

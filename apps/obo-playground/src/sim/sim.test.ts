@@ -404,6 +404,13 @@ car.turn_left(256)
     expect(output().trim().split("\n").length).toBeLessThan(70);
   });
 
+  it("says once when print() output passes the limit", async () => {
+    const { sim, output } = await runPython(openFloor, 'while True:\n    print("x" * 1000)\n');
+    seconds(sim, 1);
+    expect(output().split("Output limit reached")).toHaveLength(2);
+    expect(output().length).toBeLessThan(22_000);
+  });
+
   it("laps the oval with the Code tab's starting program", async () => {
     const { sim } = await runPython(trackFromPreset("oval"), PYTHON_EXAMPLE);
     let clearance = Infinity;
