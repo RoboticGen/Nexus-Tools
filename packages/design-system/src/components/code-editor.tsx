@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Download, Pencil, Play, Save, Zap } from "lucide-react";
+import { Copy, Download, Eraser, Pencil, Play, Save, Zap } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState, forwardRef, useImperativeHandle } from "react";
 
@@ -46,6 +46,7 @@ interface CodeEditorProps {
   onRunInESP32?: () => void;
   onCopy: () => void;
   onExport: () => void;
+  onClear?: () => void;
   onSaveToDevice?: (filename: string, content: string) => void;
   isConnected?: boolean;
   /** Name of the tab the editor opens with. */
@@ -75,6 +76,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
       onRunInESP32,
       onCopy,
       onExport,
+      onClear,
       onSaveToDevice,
       isConnected = false,
       defaultFileName = "main.py",
@@ -264,6 +266,12 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
               <Download aria-hidden="true" />
               Export
             </Button>
+            {onClear && (
+              <Button size="sm" variant="outline" onClick={onClear} title="Clear the code">
+                <Eraser aria-hidden="true" />
+                Clear
+              </Button>
+            )}
             {onSaveToDevice && (
               <Button
                 size="sm"
