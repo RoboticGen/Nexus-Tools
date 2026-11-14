@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { buildTrack, trackFromPreset } from "../sim/track";
 import { projectFile, readProjectFile } from "./project-file";
+import { buildTrack, trackFromPreset } from "../sim/track";
 
 const blocks = { blocks: { languageVersion: 0, blocks: [{ type: "robot_stop", x: 0, y: 0 }] } };
 const roundTrip = (file: object) => readProjectFile(JSON.stringify(file));

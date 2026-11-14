@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
-import { Inter } from "next/font/google";
-
 import { THEME_STORAGE_KEY } from "@nexus-tools/design-system/lib/theme";
+import { Inter } from "next/font/google";
+import { cookies } from "next/headers";
+
 
 import { Providers } from "./providers";
 

@@ -1,24 +1,23 @@
 "use client";
 
-import { serialStreamManager, type SerialPort } from "@nexus-tools/esp32-uploader";
-import { useState, useCallback, useEffect, useRef } from "react";
-import { toast } from "sonner";
-
+import { BlocklyDialogs } from "@nexus-tools/design-system/components/blockly-dialogs";
 import { CodeEditor, type CodeEditorHandle } from "@nexus-tools/design-system/components/code-editor";
 import { DeviceFileManager, type DeviceFileManagerHandle } from "@nexus-tools/design-system/components/device-file-manager";
 import { ESP32OutputPanel, type ESP32OutputPanelHandle } from "@nexus-tools/design-system/components/esp32-output-panel";
-import { BlocklyDialogs } from "@nexus-tools/design-system/components/blockly-dialogs";
-import { WorkspaceNavbar } from "@nexus-tools/design-system/components/workspace-navbar";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@nexus-tools/design-system/components/ui/resizable";
 import { WorkspaceLayout, WorkspaceColumn } from "@nexus-tools/design-system/components/ui/workspace-layout";
+import { WorkspaceNavbar } from "@nexus-tools/design-system/components/workspace-navbar";
+import { serialStreamManager, type SerialPort } from "@nexus-tools/esp32-uploader";
+import dynamic from "next/dynamic";
+import { useState, useCallback, useRef, useSyncExternalStore } from "react";
+import { toast } from "sonner";
+
 import { useBlocklyHandlers } from "@/hooks/use-blockly-handlers";
 import { useEditorHandlers } from "@/hooks/use-editor-handlers";
-
-import dynamic from "next/dynamic";
 
 const BlocklyEditor = dynamic(
   () => import("@/components/blockly-editor").then((mod) => ({ default: mod.BlocklyEditor })),
@@ -32,10 +31,13 @@ const BlocklyEditor = dynamic(
   }
 );
 
+const subscribeNever = () => () => {};
+
 export default function Home() {
   const [code, setCode] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  // Blockly renders through a dynamic import and measures its own container, so it can only mount client-side: false on the server and during hydration, true after.
+  const isClient = useSyncExternalStore(subscribeNever, () => true, () => false);
   const [isDeviceConnected, setIsDeviceConnected] = useState(false);
   const [serialPort, setSerialPort] = useState<SerialPort | null>(null);
   const [activeEditorFileName, setActiveEditorFileName] = useState<string | null>(null);
@@ -60,11 +62,6 @@ export default function Home() {
     handleStopCode,
     output,
   } = useBlocklyHandlers(code, isEditing, showNotification, copyTextToClipboard, downloadPythonFile);
-
-  // Blockly renders through a dynamic import and measures its own container, so it can only mount client-side. The Pyodide worker is no longer started here — `usePyodideRunner` (inside `useBlocklyHandlers`) owns its lifecycle.
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const handleCodeChange = useCallback((newCode: string) => {
     setCode(newCode);
