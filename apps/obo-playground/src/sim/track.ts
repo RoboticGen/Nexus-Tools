@@ -2,6 +2,7 @@
 // rendering both read it; x/y on the ground in metres, sized for the 12 cm OBO Car.
 
 import { generateLineMaze, generateMaze } from "./maze";
+import { generateRoom, type CleanGrid, type Furniture } from "./room";
 
 import type { Crossing } from "./crossing";
 
@@ -31,6 +32,8 @@ export interface Track {
   line?: { points: Point[]; width: number }; // closed loop of tape
   tape?: { segments: Wall[]; width: number }; // open tape: a line maze's branches and dead ends
   crossing?: Crossing;
+  furniture?: Furniture[];
+  clean?: CleanGrid;
 }
 
 // Two straights joined by constant-radius semicircles; starts mid top straight heading +x.
@@ -119,7 +122,8 @@ type Preset =
   | { name: string; width: number; centerline: Point[] }
   | { name: string; line: Point[]; lineWidth: number; crossing?: Crossing }
   | { name: string; maze: { cols: number; rows: number; cell: number; seed: number } }
-  | { name: string; lineMaze: { cols: number; rows: number; cell: number; seed: number } };
+  | { name: string; lineMaze: { cols: number; rows: number; cell: number; seed: number } }
+  | { name: string; room: { w: number; h: number; furniture: Furniture[]; start: Track["start"] } };
 
 export const TRACK_PRESETS: Record<string, Preset> = {
   oval: { name: "Speedway Oval", width: 0.5, centerline: sampleStadium(1.0, 0.75, 32) },
@@ -135,6 +139,21 @@ export const TRACK_PRESETS: Record<string, Preset> = {
     line: sampleStadium(0.7, 0.55, 120),
     lineWidth: 0.019,
     crossing: { x: -0.35, roads: [{ y: -0.55 }, { y: 0.55 }] },
+  },
+  // Sofa on the back wall, a bookshelf, an armchair in a corner and a footstool in the middle.
+  room: {
+    name: "Living Room",
+    room: {
+      w: 1.5,
+      h: 1.2,
+      furniture: [
+        { x: -0.15, y: 0.48, hx: 0.3, hy: 0.12, h: 0.12 },
+        { x: 0.66, y: 0.05, hx: 0.09, hy: 0.22, h: 0.22 },
+        { x: -0.6, y: -0.45, hx: 0.15, hy: 0.15, h: 0.11 },
+        { x: 0.15, y: -0.1, hx: 0.11, hy: 0.11, h: 0.07 },
+      ],
+      start: { x: -0.4, y: 0, heading: 0 },
+    },
   },
 };
 
@@ -259,6 +278,10 @@ export function trackFromPreset(key: string): Track {
   if ("lineMaze" in p) {
     const { cols, rows, cell, seed } = p.lineMaze;
     return { ...generateLineMaze(cols, rows, cell, 0.019, seed), name: p.name };
+  }
+  if ("room" in p) {
+    const { w, h, furniture, start } = p.room;
+    return { ...generateRoom(w, h, furniture, start), name: p.name };
   }
   if ("line" in p) return buildLineTrack(p.line, p.lineWidth, p.name, p.crossing);
   return buildTrack(p.centerline.map(([x, y]) => [x, y]), p.width, p.name);

@@ -1,18 +1,21 @@
-// Lap counting by progress along the centerline (any racing line counts), or reaching the
-// maze goal. Times are simulated milliseconds.
+// Lap counting by progress along the centerline (any racing line counts), reaching the maze
+// goal, or cleaning enough of a room in time. Times are simulated milliseconds.
 
+import { CLEAN_AHEAD, Coverage } from "./room";
 import { nearestOnLoop, type Track } from "./track";
 
-export type RaceEvent = "lap" | "finish" | null;
+export type RaceEvent = "lap" | "finish" | "timeout" | null;
 
 export class Race {
   readonly isMaze: boolean;
   readonly totalLaps: number;
+  readonly coverage: Coverage | null;
   best: number | null = null;
   lap = 0;
   elapsed = 0;
   finished = false;
   started = false;
+  private timed = true;
   private progress = 0;
   private lapStartProgress = 0;
   private prevF: number | null = null;
@@ -20,7 +23,8 @@ export class Race {
 
   constructor(private track: Track, totalLaps = 3) {
     this.isMaze = !!track.goal;
-    this.totalLaps = this.isMaze ? 1 : totalLaps;
+    this.coverage = track.clean ? new Coverage(track.clean) : null;
+    this.totalLaps = this.isMaze || this.coverage ? 1 : totalLaps;
   }
 
   reset() {
@@ -32,18 +36,36 @@ export class Race {
     this.elapsed = 0;
     this.finished = false;
     this.started = false;
+    this.coverage?.reset();
   }
 
-  start(now: number) {
+  // Driving by hand isn't timed: the room's clock only limits a program.
+  start(now: number, timed = true) {
     this.reset();
     this.started = true;
-    this.lap = this.isMaze ? 0 : 1;
+    this.timed = timed;
+    this.lap = this.isMaze || this.coverage ? 0 : 1;
     this.lapStart = now;
   }
 
-  update(pose: { x: number; y: number }, now: number): RaceEvent {
+  update(pose: { x: number; y: number; theta?: number }, now: number): RaceEvent {
     if (!this.started || this.finished) return null;
     this.elapsed = (now - this.lapStart) / 1000;
+
+    const { coverage } = this;
+    if (coverage) {
+      const a = pose.theta ?? 0;
+      coverage.sweep(pose.x + Math.cos(a) * CLEAN_AHEAD, pose.y + Math.sin(a) * CLEAN_AHEAD);
+      if (coverage.fraction >= coverage.grid.target) {
+        this.finished = true;
+        this.lap = 1;
+        this.best = this.best === null ? this.elapsed : Math.min(this.best, this.elapsed);
+        return "finish";
+      }
+      if (!this.timed || this.elapsed < coverage.grid.seconds) return null;
+      this.finished = true;
+      return "timeout";
+    }
 
     const goal = this.track.goal;
     if (goal) {
