@@ -66,6 +66,7 @@ export default function Home() {
   const [editor, setEditor] = useState<"blocks" | "python">("blocks");
   const [ranProgram, setRanProgram] = useState(editor); // the program started last, whichever tab is open now
   const [pyCode, setPyCode] = useState(loadPython);
+  const [pyKey, setPyKey] = useState(0); // bumped to reload the editor with an example
   const [pyOutput, setPyOutput] = useState("");
 
   const onPyChange = useCallback((code: string) => {
@@ -161,10 +162,21 @@ export default function Home() {
     toast.success("Saved main.py. Copy it to the car next to obocar.py.");
   };
 
-  // An example sets up both halves, as in OBO Lab: its blocks and the world they were written for.
-  const onPickExample = (example: Example) => {
-    loadBlocksRef.current?.(example.xml);
-    setEditor("blocks");
+  // An example sets up its world and the program, in whichever editor is open: Python is
+  // converted from the example's blocks.
+  const onPickExample = async (example: Example) => {
+    if (editor === "python") {
+      try {
+        const { xmlToPython } = await import("@/blocks/robot-python");
+        onPyChange(xmlToPython(example.xml));
+        setPyKey((k) => k + 1);
+      } catch {
+        toast.error("Couldn't load that example. Try again.");
+        return;
+      }
+    } else {
+      loadBlocksRef.current?.(example.xml);
+    }
     applyTrack(trackFromPreset(example.track), example.track);
     toast.success(`Loaded “${example.title}” on ${TRACK_PRESETS[example.track].name}. Press Run!`);
   };
@@ -212,6 +224,7 @@ export default function Home() {
           />
         </div>
         <CodeEditor
+          key={pyKey}
           className={editor === "python" ? "h-full" : "hidden"}
           title={modeSwitch}
           singleFile
