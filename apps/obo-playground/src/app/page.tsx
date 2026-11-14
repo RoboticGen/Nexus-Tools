@@ -63,6 +63,7 @@ export default function Home() {
   const loadBlocksRef = useRef<((xml: string) => void) | null>(null);
   const snap = useSyncExternalStore(sim.subscribe, sim.getSnapshot, sim.getSnapshot);
   const [editor, setEditor] = useState<"blocks" | "python">("blocks");
+  const [running, setRunning] = useState(editor); // the program started last, whichever tab is open now
   const [pyCode, setPyCode] = useState(loadPython);
   const [pyOutput, setPyOutput] = useState("");
 
@@ -133,8 +134,9 @@ export default function Home() {
       toast.info(`Switch to Program mode to run your ${editor === "python" ? "code" : "blocks"}.`);
       return;
     }
-    if (sim.running) sim.stop();
-    else if (editor === "python") void runPython();
+    if (sim.running) return sim.stop();
+    setRunning(editor);
+    if (editor === "python") void runPython();
     else sim.run(getCodeRef.current?.() ?? "");
   }, [sim, editor, runPython]);
 
@@ -213,6 +215,7 @@ export default function Home() {
           view={view}
           colors={colors}
           onRun={onRun}
+          program={(snap?.running ? running : editor) === "python" ? "Python" : "blocks"}
           onTrackChange={(key) => applyTrack(trackFromPreset(key), key)}
           onViewChange={(name) => setView((v) => ({ name, nonce: v.nonce + 1 }))}
         />
