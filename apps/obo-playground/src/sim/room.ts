@@ -91,6 +91,7 @@ export class Coverage {
     const reach = Math.ceil(CLEAN_RADIUS / cell);
     const cc = Math.floor((x - x0) / cell);
     const cr = Math.floor((y - y0) / cell);
+    const before = this.count;
     for (let r = Math.max(0, cr - reach); r <= Math.min(rows - 1, cr + reach); r++) {
       for (let c = Math.max(0, cc - reach); c <= Math.min(cols - 1, cc + reach); c++) {
         const i = r * cols + c;
@@ -98,8 +99,8 @@ export class Coverage {
         if (Math.hypot(x0 + (c + 0.5) * cell - x, y0 + (r + 0.5) * cell - y) > CLEAN_RADIUS) continue;
         this.cleaned[i] = 1;
         this.count++;
-        this.version++;
       }
     }
+    if (this.count !== before) this.version++;
   }
 }

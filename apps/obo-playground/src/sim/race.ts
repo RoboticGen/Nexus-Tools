@@ -15,6 +15,7 @@ export class Race {
   elapsed = 0;
   finished = false;
   started = false;
+  private timed = true;
   private progress = 0;
   private lapStartProgress = 0;
   private prevF: number | null = null;
@@ -38,9 +39,11 @@ export class Race {
     this.coverage?.reset();
   }
 
-  start(now: number) {
+  // Driving by hand isn't timed: the room's clock only limits a program.
+  start(now: number, timed = true) {
     this.reset();
     this.started = true;
+    this.timed = timed;
     this.lap = this.isMaze || this.coverage ? 0 : 1;
     this.lapStart = now;
   }
@@ -59,7 +62,7 @@ export class Race {
         this.best = this.best === null ? this.elapsed : Math.min(this.best, this.elapsed);
         return "finish";
       }
-      if (this.elapsed < coverage.grid.seconds) return null;
+      if (!this.timed || this.elapsed < coverage.grid.seconds) return null;
       this.finished = true;
       return "timeout";
     }

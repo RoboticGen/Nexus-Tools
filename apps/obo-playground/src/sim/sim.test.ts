@@ -378,6 +378,13 @@ describe("living room", () => {
     expect(coverage.fraction).toBe(0);
   });
 
+  it("doesn't time out while driving by hand", async () => {
+    const sim = await simOn(room);
+    sim.setMode("manual");
+    for (let i = 0; i < (room.clean!.seconds + 1) * 60; i++) sim.advance(1 / 60);
+    expect(sim.race.finished).toBe(false);
+  });
+
   it("stops with a notice when time runs out", async () => {
     const { sim, notes } = await runBlocks("robot.drive(0, 0.3);"); // spins on the spot
     for (let i = 0; i < (room.clean!.seconds + 1) * 60 && sim.running; i++) sim.advance(1 / 60);

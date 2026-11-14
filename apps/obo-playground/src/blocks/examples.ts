@@ -321,10 +321,8 @@ export const LINE_MAZE_EXAMPLE_XML = xml(
   ),
 );
 
-// Bump and turn, like the first robot vacuums: drive straight until something is close ahead (or
-// the car has stalled against something its one front sensor missed), back off, then spin toward
-// the more open side for a random time. Random turns send it across the room at new angles, so
-// over time it sweeps most of the floor.
+// Bump and turn, like the first robot vacuums: drive until something is close or the car stalls,
+// back off, then spin toward the open side for a random time, so it crosses the room at new angles.
 const goTo = (mode: number) => [set("mode", n(mode)), set("t", time)];
 export const ROOMBA_EXAMPLE_XML = xml(
   `<variables>${["mode", "t", "turn", "spin"].map((v) => `<variable id="v${v}">${v}</variable>`).join("")}</variables>`,

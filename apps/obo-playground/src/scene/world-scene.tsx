@@ -220,8 +220,11 @@ function Dirt({ sim, grid, color }: { sim: PlaygroundSim; grid: CleanGrid; color
     painted.current = { cov, version: cov.version, color };
     const c = new THREE.Color(color);
     const px = (map as THREE.DataTexture).image.data as Uint8Array;
-    for (let i = 0; i < grid.dirty.length; i++) {
-      px.set([c.r * 255, c.g * 255, c.b * 255, grid.dirty[i] && !cov.cleaned[i] ? 150 : 0], i * 4);
+    for (let i = 0, o = 0; i < grid.dirty.length; i++, o += 4) {
+      px[o] = c.r * 255;
+      px[o + 1] = c.g * 255;
+      px[o + 2] = c.b * 255;
+      px[o + 3] = grid.dirty[i] && !cov.cleaned[i] ? 150 : 0;
     }
     map.needsUpdate = true;
   });

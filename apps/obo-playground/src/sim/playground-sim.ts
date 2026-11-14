@@ -192,7 +192,7 @@ export class PlaygroundSim {
     this.mode = mode;
     if (mode === "manual") {
       this.stop();
-      this.race.start(this.simTime);
+      this.race.start(this.simTime, false);
       this.startTime = this.simTime;
     }
     this.changed();
