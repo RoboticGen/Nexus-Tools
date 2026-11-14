@@ -16,7 +16,7 @@ type CodeEditorTab = {
 
 type CodeEditorPanelProps = Omit<React.ComponentProps<"div">, "title"> & {
   /** Title shown in the toolbar. */
-  title?: string
+  title?: React.ReactNode
   /** Names the toolbar for assistive tech. */
   toolbarLabel?: string
   /** Action buttons — passed to the toolbar's right-hand slot. */
@@ -140,7 +140,8 @@ function CodeEditorPanel({
                       value={tab.id}
                       style={{ order: index * 2 }}
                       className={cn(
-                        "px-3 text-xs",
+                        // The underline sits on the bar's bottom edge; the default -5px overflows the h-8 row into a scrollbar.
+                        "px-3 text-xs group-data-[orientation=horizontal]/tabs:after:bottom-0",
                         canClose && "pr-6",
                         // A hairline between adjacent tabs — `variant="line"`'s 4px
                         // gap alone doesn't read as a boundary between two files.

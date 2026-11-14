@@ -50,6 +50,11 @@ interface CodeEditorProps {
   isConnected?: boolean;
   /** Name of the tab the editor opens with. */
   defaultFileName?: string;
+  title?: React.ReactNode;
+  /** One buffer and no file tabs, for an app that only ever runs one program. */
+  singleFile?: boolean;
+  /** Docked under the editor, inside the panel. */
+  footer?: React.ReactNode;
   className?: string;
 }
 
@@ -73,6 +78,9 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
       onSaveToDevice,
       isConnected = false,
       defaultFileName = "main.py",
+      title = "Python Code",
+      singleFile = false,
+      footer,
       className,
     },
     ref
@@ -204,11 +212,11 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
 
     return (
       <CodeEditorPanel
-        title="Python Code"
+        title={title}
         toolbarLabel="Editor actions"
         className={className}
         readOnly={!editable}
-        tabs={tabs.map((tab) => ({ id: tab.id, label: tab.name }))}
+        tabs={singleFile ? undefined : tabs.map((tab) => ({ id: tab.id, label: tab.name }))}
         activeTab={activeTabId}
         onTabChange={handleSwitchTab}
         onTabClose={handleCloseTab}
@@ -271,15 +279,18 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
           </>
         }
       >
-        <MonacoCodeEditorComponent
-          code={activeTab.code}
-          onChange={handleChange}
-          language="python"
-          theme={resolvedTheme === "dark" ? "vs-dark" : "vs-light"}
-          height="100%"
-          showMinimap={false}
-          readOnly={!editable}
-        />
+        <div className="min-h-0 flex-1">
+          <MonacoCodeEditorComponent
+            code={activeTab.code}
+            onChange={handleChange}
+            language="python"
+            theme={resolvedTheme === "dark" ? "vs-dark" : "vs-light"}
+            height="100%"
+            showMinimap={false}
+            readOnly={!editable}
+          />
+        </div>
+        {footer}
       </CodeEditorPanel>
     );
   }

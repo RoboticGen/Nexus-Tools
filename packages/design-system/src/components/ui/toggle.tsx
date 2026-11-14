@@ -4,7 +4,7 @@ import { Toggle as TogglePrimitive } from "radix-ui"
 import { cn } from "@nexus-tools/design-system/lib/utils"
 
 const toggleVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap outline-none transition-[color,box-shadow] hover:bg-muted hover:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap outline-none transition-[color,box-shadow] hover:bg-muted hover:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[state=on]:border-brand-teal data-[state=on]:bg-brand-teal/15 data-[state=on]:text-foreground dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -25,7 +25,7 @@ const toggleVariants = cva(
   }
 )
 
-/** A two-state button; also the item `ToggleGroup` is built from. */
+/** A two-state button; also the item `ToggleGroup` is built from. On is a teal tint and border, so it reads as selected next to a filled primary button. */
 function Toggle({
   className,
   variant,

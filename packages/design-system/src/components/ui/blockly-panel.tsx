@@ -15,7 +15,7 @@ type ToolboxWorkspace = {
 
 type BlocklyPanelProps = Omit<React.ComponentProps<"div">, "title"> & {
   /** Title shown in the toolbar. */
-  title?: string
+  title?: React.ReactNode
   /** Names the toolbar for assistive tech. */
   toolbarLabel?: string
   /** Action buttons — Import, Export. */
