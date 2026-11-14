@@ -1,7 +1,7 @@
 import * as Blockly from "blockly";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { boomLift, hitByTrain, trainProgress } from "./crossing";
+import { boomLift, hitByTrain, railHalfLength, trainProgress, trainSpan } from "./crossing";
 import { mulberry32 } from "./maze";
 import { MujocoWorld, SENSOR_RANGE } from "./mujoco-world";
 import { PlaygroundSim } from "./playground-sim";
@@ -296,6 +296,24 @@ describe("railway crossing", () => {
     expect(world.getSensors().front).toBeLessThan(0.2);
   });
 
+  it("holds a road's booms up while a car is between them, and closes them once it leaves", async () => {
+    const { x, roads } = railway.crossing!;
+    const world = await worldOn({ ...railway, start: { x, y: roads[0].y, heading: Math.PI } }); // parked on the rails
+    while (world.time < 6) world.step();
+    expect(world.lifts).toEqual([1, 0]); // only the other road has closed
+    expect(world.getSensors().front).toBe(SENSOR_RANGE); // nothing blocks the way out
+    runFor(world, 1.5, 1, 1);
+    expect(world.lifts).toEqual([0, 0]);
+  });
+
+  it("hits a car whose nose is on the rails, not only its axle", () => {
+    const c = railway.crossing!;
+    const [tail, head] = trainSpan(6, railHalfLength(railway.extent))!;
+    const y = (tail + head) / 2;
+    expect(hitByTrain(c, railway.extent, 6, c.x - 0.12, y, 0)).toBe(true); // facing the rails
+    expect(hitByTrain(c, railway.extent, 6, c.x - 0.12, y, Math.PI)).toBe(false); // facing away
+  });
+
   it("sends a car on the rails back to the start when the train comes", async () => {
     const notes: string[] = [];
     const sim = new PlaygroundSim(railway, (note) => notes.push(note.message));
@@ -312,8 +330,12 @@ describe("railway crossing", () => {
     expect(sim.running).toBe(false);
   });
 
-  it("the example waits at the booms and is never hit by the train", async () => {
-    const sim = await simOn(railway);
+  // The roads are two-way, so the example has to work round the loop either way.
+  it.each([
+    ["the way the start faces", 0],
+    ["the other way round", Math.PI],
+  ])("the example waits at the booms and is never hit by the train, driving %s", async (_, turn) => {
+    const sim = await simOn({ ...railway, start: { ...railway.start, heading: railway.start.heading + turn } });
     const ws = new Blockly.Workspace();
     cleanup.push(() => ws.dispose());
     Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(RAILWAY_EXAMPLE_XML), ws);
@@ -325,7 +347,7 @@ describe("railway crossing", () => {
       sim.advance(1 / 60);
       const p = sim.pose();
       if (trainProgress(sim.worldTime()) !== null) {
-        expect(hitByTrain(railway.crossing!, railway.extent, sim.worldTime(), p.x, p.y)).toBe(false);
+        expect(hitByTrain(railway.crossing!, railway.extent, sim.worldTime(), p.x, p.y, p.theta)).toBe(false);
         if (p.speed < 0.01 && Math.abs(p.x - railway.crossing!.x) < 0.4) waited += 1 / 60;
       }
     }
