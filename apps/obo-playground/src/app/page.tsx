@@ -197,10 +197,6 @@ export default function Home() {
               className="min-h-0 flex-1"
               code={pyCode}
               onChange={onPyChange}
-              onRun={() => {
-                sim.stop();
-                onRun();
-              }}
               onCopy={onCopyPython}
               onExport={onExportPython}
             />
