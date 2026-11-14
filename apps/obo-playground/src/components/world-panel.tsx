@@ -111,9 +111,17 @@ export function WorldPanel({
       <div className="relative h-full min-h-0">
         {sim && <WorldScene sim={sim} track={track} view={view} colors={colors} />}
 
-        <div className="pointer-events-none absolute top-2 left-2 flex flex-wrap gap-1.5">
-          <Badge variant="secondary">{snap?.isMaze ? (snap.finished ? "Goal reached" : "Find the goal") : `Lap ${snap?.lap ?? 0}/${snap?.totalLaps ?? 3}`}</Badge>
-          <Badge variant="secondary" className="font-mono tabular-nums">{(snap?.elapsed ?? 0).toFixed(2)}s</Badge>
+        <div className="pointer-events-none absolute top-2 right-12 left-2 flex flex-wrap gap-1.5">
+          <Badge variant="secondary">
+            {snap?.clean
+              ? `Cleaned ${Math.floor(snap.clean.fraction * 100)}% · goal ${Math.round(snap.clean.target * 100)}%`
+              : snap?.isMaze
+                ? snap.finished ? "Goal reached" : "Find the goal"
+                : `Lap ${snap?.lap ?? 0}/${snap?.totalLaps ?? 3}`}
+          </Badge>
+          <Badge variant="secondary" className="font-mono tabular-nums">
+            {(snap?.elapsed ?? 0).toFixed(2)}s{snap?.clean && ` / ${snap.clean.seconds}s`}
+          </Badge>
           <Badge variant="secondary" className="font-mono tabular-nums">Best {snap?.best ? `${snap.best.toFixed(2)}s` : "-"}</Badge>
           <Badge variant="secondary" className="font-mono tabular-nums">{Math.round((snap?.speed ?? 0) * 100)} cm/s</Badge>
         </div>

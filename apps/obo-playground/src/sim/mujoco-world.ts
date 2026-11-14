@@ -1,7 +1,7 @@
 // MJCF for the OBO Car (copied from RoboticGen/obo_car_description models/obo_car.xml; keep in
 // step) and the track walls. Frame: x forward, y left, z up, metres.
 
-import { BOOM, boomLift, booms } from "./crossing";
+import { BOOM, betweenBooms, booms, heldLift } from "./crossing";
 import { loadMujoco } from "./load-mujoco";
 import { onTape, type Track } from "./track";
 
@@ -56,13 +56,16 @@ function buildMJCF(track: Track): string {
   const posts = (track.posts ?? [])
     .map(([x, y], i) => `<geom name="post${i}" type="box" pos="${x} ${y} ${wh / 2}" size="${WALL_T * 1.4} ${WALL_T * 1.4} ${wh / 2}"/>`)
     .join("\n");
+  const furniture = (track.furniture ?? [])
+    .map((f, i) => `<geom name="furniture${i}" type="box" pos="${f.x} ${f.y} ${f.h / 2}" size="${f.hx} ${f.hy} ${f.h / 2}"/>`)
+    .join("\n");
   // Mocap bodies: moved by the gate cycle, not by forces. They don't collide (contype 0), so a boom
   // can never land on the car, but the rangefinders still see them.
   const gates = track.crossing
     ? booms(track.crossing)
         .map(
           (b, i) => `<body name="boom${i}" mocap="true" pos="${b.x} ${b.y} ${BOOM.height}">
-      <geom type="box" pos="0 ${(b.dir * b.reach) / 2} 0" size="${BOOM.half} ${b.reach / 2} ${BOOM.half}" contype="0" conaffinity="0"/>
+      <geom type="box" pos="0 ${(b.dir * BOOM.reach) / 2} 0" size="${BOOM.half} ${BOOM.reach / 2} ${BOOM.half}" contype="0" conaffinity="0"/>
     </body>`,
         )
         .join("\n")
@@ -94,6 +97,7 @@ function buildMJCF(track: Track): string {
     <geom name="floor" type="plane" size="${track.extent + 0.5} ${track.extent + 0.5} 0.05" rgba="1 1 1 0"/>
     ${walls}
     ${posts}
+    ${furniture}
     ${gates}
     <body name="car" pos="${s.x} ${s.y} ${RIDE_H}" quat="${Math.cos(s.heading / 2)} 0 0 ${Math.sin(s.heading / 2)}">
       <freejoint name="root"/>
@@ -128,6 +132,7 @@ const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
 export class MujocoWorld {
   ready = false;
   timestep = 0.002;
+  lifts: number[] = []; // each crossing road's booms: 1 up, 0 down
   private mj: MainModule | null = null;
   private model: MjModel | null = null;
   private data: MjData | null = null;
@@ -135,9 +140,11 @@ export class MujocoWorld {
   private motorR = 0;
   private wheelQpos: [number, number] = [0, 0];
   private pose: Pose;
+  private gates: ReturnType<typeof booms>;
 
   constructor(private track: Track) {
     this.pose = { x: track.start.x, y: track.start.y, theta: track.start.heading, speed: 0, omega: 0 };
+    this.gates = track.crossing ? booms(track.crossing) : [];
   }
 
   async init(): Promise<void> {
@@ -160,6 +167,7 @@ export class MujocoWorld {
     const q = data.qpos;
     q[0] = s.x; q[1] = s.y; q[2] = RIDE_H;
     q[3] = Math.cos(s.heading / 2); q[4] = 0; q[5] = 0; q[6] = Math.sin(s.heading / 2);
+    this.lifts = this.track.crossing?.roads.map(() => 1) ?? [];
     this.placeBooms();
     mj.mj_forward(model, data);
     this.readPose();
@@ -176,6 +184,11 @@ export class MujocoWorld {
     if (!mj || !model || !data) return;
     data.ctrl[0] = this.motorL * MAX_WHEEL_OMEGA;
     data.ctrl[1] = this.motorR * MAX_WHEEL_OMEGA;
+    const { crossing } = this.track;
+    const { x, y } = this.pose;
+    crossing?.roads.forEach((road, i) => {
+      this.lifts[i] = heldLift(this.lifts[i], data.time, this.timestep, betweenBooms(crossing, road, x, y));
+    });
     this.placeBooms();
     mj.mj_step(model, data);
     this.readPose();
@@ -183,11 +196,9 @@ export class MujocoWorld {
 
   // Each boom turns about the road's direction (x): flat across the road when down, upright when up.
   private placeBooms() {
-    const { crossing } = this.track;
-    if (!crossing || !this.data) return;
-    const a = (boomLift(this.data.time) * Math.PI) / 2;
-    booms(crossing).forEach((b, i) => {
-      const h = (b.dir * a) / 2;
+    if (!this.data) return;
+    this.gates.forEach((b, i) => {
+      const h = (b.dir * this.lifts[i >> 1] * Math.PI) / 4;
       this.data!.mocap_quat.set([Math.cos(h), Math.sin(h), 0, 0], i * 4);
     });
   }

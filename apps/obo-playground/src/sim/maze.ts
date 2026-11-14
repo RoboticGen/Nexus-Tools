@@ -3,7 +3,7 @@
 
 import type { Point, Track, Wall } from "./track";
 
-function mulberry32(seed: number) {
+export function mulberry32(seed: number) {
   let s = seed >>> 0;
   return () => {
     s = (s + 0x6d2b79f5) >>> 0;

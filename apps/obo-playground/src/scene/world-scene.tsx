@@ -12,6 +12,7 @@ import { offsetLoop, type Point, type Track, type Wall } from "@/sim/track";
 import { OboCar } from "./obo-car";
 
 import type { PlaygroundSim } from "@/sim/playground-sim";
+import type { CleanGrid, Coverage } from "@/sim/room";
 
 // Physics is x forward, y left, z up; three.js is y up. Every position below maps
 // physics (x, y, z) to three (x, z, -y): a rotation, so left stays left on screen.
@@ -27,6 +28,7 @@ export interface SceneColors {
   goal: string;
   startLine: string;
   tape: string;
+  dirt: string;
   nose: string;
   rayClear: string;
   rayNear: string;
@@ -42,6 +44,7 @@ export const SCENE_COLORS: Record<"light" | "dark", SceneColors> = {
     goal: "#43b268",
     startLine: "#ffffff",
     tape: "#1f2022",
+    dirt: "#a68a64",
     nose: "#fdb713",
     rayClear: "#1c6e3d",
     rayNear: "#dc2626",
@@ -55,6 +58,7 @@ export const SCENE_COLORS: Record<"light" | "dark", SceneColors> = {
     goal: "#43b268",
     startLine: "#e3e8eb",
     tape: "#c4cacf",
+    dirt: "#7a6448",
     nose: "#fdb713",
     rayClear: "#43b268",
     rayNear: "#f87171",
@@ -130,13 +134,15 @@ function CrossingMeshes({ sim, crossing, extent }: { sim: PlaygroundSim; crossin
 
   useFrame(() => {
     const t = sim.worldTime();
-    const lift = boomLift(t);
+    const lifts = sim.world?.lifts ?? [];
     gates.forEach((b, i) => {
       const arm = armRefs.current[i];
-      if (arm) arm.rotation.x = (b.dir * lift * Math.PI) / 2;
+      if (arm) arm.rotation.x = (b.dir * (lifts[i >> 1] ?? 1) * Math.PI) / 2;
     });
-    const blink = lift < 1 && Math.floor(t * 2) % 2 === 0;
-    lightRefs.current.forEach((m, i) => m?.emissive.set(lift < 1 && (i % 2 === 0) === blink ? RAIL.red : "#000000"));
+    // the lights warn on the cycle, even while the booms wait for a car to clear
+    const warn = boomLift(t) < 1;
+    const blink = Math.floor(t * 2) % 2 === 0;
+    lightRefs.current.forEach((m, i) => m?.emissive.set(warn && (i % 2 === 0) === blink ? RAIL.red : "#000000"));
     const span = trainSpan(t, len / 2);
     if (train.current) {
       train.current.visible = span !== null;
@@ -172,9 +178,9 @@ function CrossingMeshes({ sim, crossing, extent }: { sim: PlaygroundSim; crossin
           ))}
           {/* the arm swings about the road's direction; three's x is physics x, so the angle carries over */}
           <group ref={(g) => { armRefs.current[i] = g; }} position-y={BOOM.height}>
-            {stripes(b.reach).map((len, k) => (
-              <mesh key={k} position-z={-b.dir * len * (k + 0.5)} castShadow>
-                <boxGeometry args={[BOOM.half * 2, BOOM.half * 2, len]} />
+            {stripes(BOOM.reach).map((stripe, k) => (
+              <mesh key={k} position-z={-b.dir * stripe * (k + 0.5)} castShadow>
+                <boxGeometry args={[BOOM.half * 2, BOOM.half * 2, stripe]} />
                 <meshStandardMaterial color={k % 2 ? RAIL.white : RAIL.red} roughness={0.5} />
               </mesh>
             ))}
@@ -190,6 +196,46 @@ function CrossingMeshes({ sim, crossing, extent }: { sim: PlaygroundSim; crossin
         ))}
       </group>
     </group>
+  );
+}
+
+const FURNITURE = ["#b5654a", "#8a6a4f", "#219cbc", "#fdb713"];
+
+// Dust over the floor that still needs cleaning, repainted only when the coverage changes.
+function Dirt({ sim, grid, color }: { sim: PlaygroundSim; grid: CleanGrid; color: string }) {
+  const { cols, rows, cell, x0, y0 } = grid;
+  const texture = useMemo(() => {
+    const t = new THREE.DataTexture(new Uint8Array(cols * rows * 4), cols, rows);
+    t.magFilter = THREE.LinearFilter;
+    t.minFilter = THREE.LinearFilter;
+    return t;
+  }, [cols, rows]);
+  useEffect(() => () => texture.dispose(), [texture]);
+  const material = useRef<THREE.MeshStandardMaterial>(null);
+  const painted = useRef<{ cov: Coverage | null; version: number; color: string }>({ cov: null, version: -1, color });
+
+  useFrame(() => {
+    const cov = sim.race.coverage;
+    const map = material.current?.map;
+    const last = painted.current;
+    if (!cov || !map || cov.grid !== grid || (cov === last.cov && cov.version === last.version && color === last.color)) return;
+    painted.current = { cov, version: cov.version, color };
+    const c = new THREE.Color(color);
+    const px = (map as THREE.DataTexture).image.data as Uint8Array;
+    for (let i = 0, o = 0; i < grid.dirty.length; i++, o += 4) {
+      px[o] = c.r * 255;
+      px[o + 1] = c.g * 255;
+      px[o + 2] = c.b * 255;
+      px[o + 3] = grid.dirty[i] && !cov.cleaned[i] ? 150 : 0;
+    }
+    map.needsUpdate = true;
+  });
+
+  return (
+    <mesh rotation-x={-Math.PI / 2} position={[x0 + (cols * cell) / 2, 0.0015, -(y0 + (rows * cell) / 2)]} receiveShadow>
+      <planeGeometry args={[cols * cell, rows * cell]} />
+      <meshStandardMaterial ref={material} map={texture} transparent depthWrite={false} roughness={1} />
+    </mesh>
   );
 }
 
@@ -222,6 +268,13 @@ function TrackMeshes({ sim, track, colors }: { sim: PlaygroundSim; track: Track;
           <meshStandardMaterial color={colors.post} roughness={0.5} />
         </mesh>
       ))}
+      {track.furniture?.map((f, i) => (
+        <mesh key={i} position={[f.x, f.h / 2, -f.y]} castShadow receiveShadow>
+          <boxGeometry args={[f.hx * 2, f.h, f.hy * 2]} />
+          <meshStandardMaterial color={FURNITURE[i % FURNITURE.length]} roughness={0.8} />
+        </mesh>
+      ))}
+      {track.clean && <Dirt sim={sim} grid={track.clean} color={colors.dirt} />}
       {track.line && <Tape line={track.line.points} width={track.line.width} color={colors.tape} />}
       {track.tape && <TapeSegments segments={track.tape.segments} width={track.tape.width} color={colors.tape} />}
       {track.crossing && <CrossingMeshes sim={sim} crossing={track.crossing} extent={track.extent} />}

@@ -30,7 +30,7 @@ export function TrackBuilder({
   const scale = useRef(8); // px per metre
 
   // Load each new corridor track; the maze and line track aren't, so keep the last corridor instead.
-  const disabled = !!track.goal || !!track.line;
+  const disabled = !!track.goal || !!track.line || !!track.clean;
   if (track !== loaded && !disabled) {
     setLoaded(track);
     setPoints(track.centerline.map(([x, y]) => [x, y]));
@@ -141,7 +141,7 @@ export function TrackBuilder({
     <div className="flex flex-col gap-3">
       {disabled && (
         <p className="text-muted-foreground text-sm">
-          {track.goal ? "The maze" : "The line track"} can&apos;t be edited. Pick a racing track to edit it.
+          {track.clean ? "The room" : track.goal ? "The maze" : "The line track"} can&apos;t be edited. Pick a racing track to edit it.
         </p>
       )}
       <canvas

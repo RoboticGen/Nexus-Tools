@@ -264,10 +264,8 @@ const sinceT = math("MINUS", time, get("t"));
 const sees = (i: number) => cmp("EQ", line(i), n(1));
 const middle = math("ADD", line(2), line(3));
 
-// Right-hand rule on tape. The IR bar sits 8 cm ahead of the wheels, so at a junction or the end of
-// a line the car notes which side branches it saw, drives on until its wheels are over the junction,
-// then takes right, else straight, else left, else turns back, spinning until its middle sensors find
-// the new line. Variables keep their values from one tick to the next.
+// Right-hand rule on tape. The IR bar is 8 cm ahead of the wheels, so the car notes the branches it
+// saw, drives on until its wheels are over the junction, then turns right, straight, left or back.
 export const LINE_MAZE_EXAMPLE_XML = xml(
   `<variables>${["mode", "t", "sawLeft", "sawRight", "turn"].map((v) => `<variable id="v${v}">${v}</variable>`).join("")}</variables>`,
   ifs(
@@ -318,6 +316,40 @@ export const LINE_MAZE_EXAMPLE_XML = xml(
       ],
       drive(n(0.5), math("MULTIPLY", math("MINUS", math("ADD", line(3), line(4)), math("ADD", line(1), line(2))), n(0.15))),
     ),
+  ),
+);
+
+// Bump and turn, like the first robot vacuums: drive until something is close or the car stalls,
+// back off, then spin toward the open side for a random time, so it crosses the room at new angles.
+const goTo = (mode: number) => [set("mode", n(mode)), set("t", time)];
+export const ROOMBA_EXAMPLE_XML = xml(
+  `<variables>${["mode", "t", "turn", "spin"].map((v) => `<variable id="v${v}">${v}</variable>`).join("")}</variables>`,
+  ifs(
+    [
+      [
+        cmp("EQ", get("mode"), n(0)),
+        chain(
+          drive(n(0.9), n(0)),
+          ifs([
+            [
+              logic(
+                "OR",
+                cmp("LT", sensor("front"), n(4)),
+                logic("AND", cmp("GT", sinceT, n(0.5)), cmp("LT", `<block type="robot_speed"></block>`, n(5))),
+              ),
+              chain(
+                ...goTo(1),
+                ifs([[cmp("LT", sensor("left"), sensor("right")), set("turn", n(0.4))]], set("turn", n(-0.4))),
+                set("spin", math("ADD", n(0.25), math("MULTIPLY", `<block type="math_random_float"></block>`, n(0.7)))),
+              ),
+            ],
+          ]),
+        ),
+      ],
+      [cmp("EQ", get("mode"), n(1)), chain(drive(n(-0.4), n(0)), ifs([[cmp("GT", sinceT, n(0.25)), chain(...goTo(2))]]))],
+      [cmp("EQ", get("mode"), n(2)), chain(drive(n(0), get("turn")), ifs([[cmp("GT", sinceT, get("spin")), chain(...goTo(0))]]))],
+    ],
+    chain(...goTo(0)),
   ),
 );
 
@@ -396,5 +428,12 @@ export const EXAMPLES = [
     track: "maze",
     summary: "Keep a hand on the right wall to reach the centre of the maze.",
     xml: MAZE_EXAMPLE_XML,
+  },
+  {
+    id: "roomba",
+    title: "Robot vacuum",
+    track: "room",
+    summary: "Drive straight, back off and turn a random amount at each bump, until the floor is clean.",
+    xml: ROOMBA_EXAMPLE_XML,
   },
 ] as const;

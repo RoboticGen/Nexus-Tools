@@ -35,6 +35,7 @@ export interface Snapshot {
   elapsed: number;
   best: number | null;
   finished: boolean;
+  clean: { fraction: number; target: number; seconds: number } | null;
   speed: number;
   omega: number;
   sensors: Sensors;
@@ -51,6 +52,7 @@ const COUNTDOWN = ["3", "2", "1", "GO!"];
 
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
 const num = (v: unknown) => Number(v) || 0;
+const percent = (f: number) => `${Math.round(f * 100)}%`;
 
 export class PlaygroundSim {
   track: Track;
@@ -196,7 +198,7 @@ export class PlaygroundSim {
     this.mode = mode;
     if (mode === "manual") {
       this.stop();
-      this.race.start(this.simTime);
+      this.race.start(this.simTime, false);
       this.startTime = this.simTime;
     }
     this.changed();
@@ -255,9 +257,9 @@ export class PlaygroundSim {
   // A train that reaches the car on the rails sends it back to the start.
   private crossingTick(world: MujocoWorld) {
     const { crossing, extent } = this.track;
-    const { x, y } = world.getPose();
+    const { x, y, theta } = world.getPose();
     const driving = this.running || this.mode === "manual";
-    if (!crossing || !driving || !hitByTrain(crossing, extent, world.time, x, y)) return;
+    if (!crossing || !driving || !hitByTrain(crossing, extent, world.time, x, y, theta)) return;
     this.resetCar();
     this.notify({ tone: "error", message: "The train came! Stop at the gate when your front sensor sees it down." });
   }
@@ -266,14 +268,19 @@ export class PlaygroundSim {
     const evt = this.race.update(pose, this.simTime);
     if (evt === "lap") {
       this.notify({ tone: "success", message: `Lap ${this.race.lap - 1} complete!` });
+    } else if (evt === "timeout") {
+      this.stop();
+      this.notify({ tone: "info", message: `Time's up! You cleaned ${percent(this.race.coverage!.fraction)} of the floor.` });
     } else if (evt === "finish") {
       this.stop();
       const best = this.race.best?.toFixed(2);
       this.notify({
         tone: "success",
-        message: this.race.isMaze
-          ? `Maze solved in ${this.race.elapsed.toFixed(2)}s!`
-          : `Race finished! Best lap: ${best ? `${best}s` : "none yet"}`,
+        message: this.race.coverage
+          ? `Room clean! ${percent(this.race.coverage.fraction)} of the floor in ${this.race.elapsed.toFixed(2)}s.`
+          : this.race.isMaze
+            ? `Maze solved in ${this.race.elapsed.toFixed(2)}s!`
+            : `Race finished! Best lap: ${best ? `${best}s` : "none yet"}`,
       });
     }
   }
@@ -324,6 +331,11 @@ export class PlaygroundSim {
       elapsed: this.race.elapsed,
       best: this.race.best,
       finished: this.race.finished,
+      clean: this.race.coverage && {
+        fraction: this.race.coverage.fraction,
+        target: this.race.coverage.grid.target,
+        seconds: this.race.coverage.grid.seconds,
+      },
       speed: pose.speed,
       omega: pose.omega,
       sensors: this.sensors,

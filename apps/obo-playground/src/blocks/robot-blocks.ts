@@ -170,6 +170,7 @@ export const toolbox = {
       contents: [
         { kind: "block", type: "math_number", fields: { NUM: 0.5 } },
         { kind: "block", type: "math_arithmetic", inputs: { A: num(1), B: num(1) } },
+        { kind: "block", type: "math_random_float" },
       ],
     },
     {
