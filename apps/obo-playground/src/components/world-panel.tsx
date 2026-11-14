@@ -34,6 +34,7 @@ export function WorldPanel({
   view,
   colors,
   onRun,
+  program,
   onTrackChange,
   onViewChange,
 }: {
@@ -44,6 +45,7 @@ export function WorldPanel({
   view: { name: CameraView; nonce: number };
   colors: SceneColors;
   onRun: () => void;
+  program: string;
   onTrackChange: (key: string) => void;
   onViewChange: (name: CameraView) => void;
 }) {
@@ -80,7 +82,7 @@ export function WorldPanel({
           <ToolbarSeparator />
           <Button size="sm" onClick={onRun} disabled={engine !== "ready"}>
             {snap?.running ? <Square aria-hidden="true" /> : <Play aria-hidden="true" />}
-            {snap?.running ? "Stop" : "Run"}
+            {snap?.running ? "Stop" : "Run"} {program}
           </Button>
           <Button size="icon-sm" variant="outline" aria-label="Reset robot" title="Reset robot" onClick={() => sim?.resetCar()}>
             <RotateCcw aria-hidden="true" />

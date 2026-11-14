@@ -42,7 +42,7 @@ interface CodeEditorProps {
   onEditToggle?: (editing: boolean) => void;
   /** Fires when the active file changes, so a device sidebar can highlight it. */
   onActiveTabChange?: (filename: string) => void;
-  onRun: () => void;
+  onRun?: () => void;
   onRunInESP32?: () => void;
   onCopy: () => void;
   onExport: () => void;
@@ -229,10 +229,12 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
                 {editable ? "Editing" : "Edit"}
               </Button>
             )}
-            <Button size="sm" variant="default" onClick={onRun} title="Run Python Code (Ctrl+Enter)">
-              <Play aria-hidden="true" />
-              Run
-            </Button>
+            {onRun && (
+              <Button size="sm" variant="default" onClick={onRun} title="Run Python Code">
+                <Play aria-hidden="true" />
+                Run
+              </Button>
+            )}
             {onRunInESP32 && (
               <Button
                 size="sm"
@@ -254,16 +256,18 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
               <Download aria-hidden="true" />
               Export
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleSaveToDevice}
-              disabled={!isConnected}
-              title={isConnected ? "Save to ESP32 Device" : "Connect device first"}
-            >
-              <Save aria-hidden="true" />
-              Save Device
-            </Button>
+            {onSaveToDevice && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSaveToDevice}
+                disabled={!isConnected}
+                title={isConnected ? "Save to ESP32 Device" : "Connect device first"}
+              >
+                <Save aria-hidden="true" />
+                Save Device
+              </Button>
+            )}
           </>
         }
       >
