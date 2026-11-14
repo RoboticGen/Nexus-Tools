@@ -1,7 +1,7 @@
 import * as Blockly from "blockly";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { boomLift, hitByTrain, trainProgress } from "./crossing";
+import { boomLift, hitByTrain, railHalfLength, trainProgress, trainSpan } from "./crossing";
 import { MujocoWorld, SENSOR_RANGE } from "./mujoco-world";
 import { PlaygroundSim } from "./playground-sim";
 import { Race } from "./race";
@@ -302,6 +302,14 @@ describe("railway crossing", () => {
     expect(world.lifts).toEqual([0, 0]);
   });
 
+  it("hits a car whose nose is on the rails, not only its axle", () => {
+    const c = railway.crossing!;
+    const [tail, head] = trainSpan(6, railHalfLength(railway.extent))!;
+    const y = (tail + head) / 2;
+    expect(hitByTrain(c, railway.extent, 6, c.x - 0.12, y, 0)).toBe(true); // facing the rails
+    expect(hitByTrain(c, railway.extent, 6, c.x - 0.12, y, Math.PI)).toBe(false); // facing away
+  });
+
   it("sends a car on the rails back to the start when the train comes", async () => {
     const notes: string[] = [];
     const sim = new PlaygroundSim(railway, (note) => notes.push(note.message));
@@ -335,7 +343,7 @@ describe("railway crossing", () => {
       sim.advance(1 / 60);
       const p = sim.pose();
       if (trainProgress(sim.worldTime()) !== null) {
-        expect(hitByTrain(railway.crossing!, railway.extent, sim.worldTime(), p.x, p.y)).toBe(false);
+        expect(hitByTrain(railway.crossing!, railway.extent, sim.worldTime(), p.x, p.y, p.theta)).toBe(false);
         if (p.speed < 0.01 && Math.abs(p.x - railway.crossing!.x) < 0.4) waited += 1 / 60;
       }
     }

@@ -264,10 +264,8 @@ const sinceT = math("MINUS", time, get("t"));
 const sees = (i: number) => cmp("EQ", line(i), n(1));
 const middle = math("ADD", line(2), line(3));
 
-// Right-hand rule on tape. The IR bar sits 8 cm ahead of the wheels, so at a junction or the end of
-// a line the car notes which side branches it saw, drives on until its wheels are over the junction,
-// then takes right, else straight, else left, else turns back, spinning until its middle sensors find
-// the new line. Variables keep their values from one tick to the next.
+// Right-hand rule on tape. The IR bar is 8 cm ahead of the wheels, so the car notes the branches it
+// saw, drives on until its wheels are over the junction, then turns right, straight, left or back.
 export const LINE_MAZE_EXAMPLE_XML = xml(
   `<variables>${["mode", "t", "sawLeft", "sawRight", "turn"].map((v) => `<variable id="v${v}">${v}</variable>`).join("")}</variables>`,
   ifs(

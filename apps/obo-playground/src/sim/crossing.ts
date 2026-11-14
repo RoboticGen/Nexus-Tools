@@ -1,6 +1,5 @@
-// Level crossings: one line of rails runs along y at x and crosses two-way roads running along x.
-// Booms close each road on a fixed cycle while a train passes. The cycle runs on the world's own
-// clock, which restarts with every Run, so a program meets the gates the same way each time.
+// Rails along y at x cross two-way roads along x. The booms cycle on the world clock, which
+// restarts with every Run, so a program meets the gates the same way each time.
 
 export interface Crossing {
   x: number;
@@ -19,6 +18,8 @@ const PHASES = [3.5, 1, 4, 1] as const;
 const PERIOD = PHASES.reduce((a, b) => a + b, 0);
 const RAIL_ZONE = 0.09; // the car is on the rails when its axle is this close to them
 const CAR_HALF = 0.08;
+const NOSE = 0.09; // the chassis front, ahead of the axle
+const TRAIN_HALF = 0.05;
 export const TRAIN_LENGTH = 0.9;
 
 // 1 with the booms up, 0 with them down.
@@ -72,7 +73,9 @@ export function heldLift(lift: number, t: number, dt: number, occupied: boolean)
 }
 
 // Whether a car at (x, y) is on the rails where the train is right now.
-export function hitByTrain(c: Crossing, extent: number, t: number, x: number, y: number): boolean {
+export function hitByTrain(c: Crossing, extent: number, t: number, x: number, y: number, heading: number): boolean {
   const span = trainSpan(t, railHalfLength(extent));
-  return !!span && Math.abs(x - c.x) < RAIL_ZONE && y > span[0] - CAR_HALF && y < span[1] + CAR_HALF;
+  if (!span || y <= span[0] - CAR_HALF || y >= span[1] + CAR_HALF) return false;
+  const nose = x + Math.cos(heading) * NOSE;
+  return Math.abs(x - c.x) < RAIL_ZONE || (Math.min(x, nose) < c.x + TRAIN_HALF && Math.max(x, nose) > c.x - TRAIN_HALF);
 }

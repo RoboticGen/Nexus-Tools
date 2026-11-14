@@ -136,9 +136,11 @@ export class MujocoWorld {
   private motorR = 0;
   private wheelQpos: [number, number] = [0, 0];
   private pose: Pose;
+  private gates: ReturnType<typeof booms>;
 
   constructor(private track: Track) {
     this.pose = { x: track.start.x, y: track.start.y, theta: track.start.heading, speed: 0, omega: 0 };
+    this.gates = track.crossing ? booms(track.crossing) : [];
   }
 
   async init(): Promise<void> {
@@ -190,9 +192,8 @@ export class MujocoWorld {
 
   // Each boom turns about the road's direction (x): flat across the road when down, upright when up.
   private placeBooms() {
-    const { crossing } = this.track;
-    if (!crossing || !this.data) return;
-    booms(crossing).forEach((b, i) => {
+    if (!this.data) return;
+    this.gates.forEach((b, i) => {
       const h = (b.dir * this.lifts[i >> 1] * Math.PI) / 4;
       this.data!.mocap_quat.set([Math.cos(h), Math.sin(h), 0, 0], i * 4);
     });

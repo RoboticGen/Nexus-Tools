@@ -249,9 +249,9 @@ export class PlaygroundSim {
   // A train that reaches the car on the rails sends it back to the start.
   private crossingTick(world: MujocoWorld) {
     const { crossing, extent } = this.track;
-    const { x, y } = world.getPose();
+    const { x, y, theta } = world.getPose();
     const driving = this.running || this.mode === "manual";
-    if (!crossing || !driving || !hitByTrain(crossing, extent, world.time, x, y)) return;
+    if (!crossing || !driving || !hitByTrain(crossing, extent, world.time, x, y, theta)) return;
     this.resetCar();
     this.notify({ tone: "error", message: "The train came! Stop at the gate when your front sensor sees it down." });
   }

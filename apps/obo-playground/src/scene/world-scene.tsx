@@ -174,9 +174,9 @@ function CrossingMeshes({ sim, crossing, extent }: { sim: PlaygroundSim; crossin
           ))}
           {/* the arm swings about the road's direction; three's x is physics x, so the angle carries over */}
           <group ref={(g) => { armRefs.current[i] = g; }} position-y={BOOM.height}>
-            {stripes(BOOM.reach).map((len, k) => (
-              <mesh key={k} position-z={-b.dir * len * (k + 0.5)} castShadow>
-                <boxGeometry args={[BOOM.half * 2, BOOM.half * 2, len]} />
+            {stripes(BOOM.reach).map((stripe, k) => (
+              <mesh key={k} position-z={-b.dir * stripe * (k + 0.5)} castShadow>
+                <boxGeometry args={[BOOM.half * 2, BOOM.half * 2, stripe]} />
                 <meshStandardMaterial color={k % 2 ? RAIL.white : RAIL.red} roughness={0.5} />
               </mesh>
             ))}
