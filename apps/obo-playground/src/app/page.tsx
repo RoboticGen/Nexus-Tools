@@ -2,6 +2,7 @@
 
 import { BlocklyDialogs } from "@nexus-tools/design-system/components/blockly-dialogs";
 import { CodeEditor } from "@nexus-tools/design-system/components/code-editor";
+import { ConfirmDialog } from "@nexus-tools/design-system/components/ui/confirm-dialog";
 import { Terminal } from "@nexus-tools/design-system/components/ui/terminal";
 import { ToggleGroup, ToggleGroupItem } from "@nexus-tools/design-system/components/ui/toggle-group";
 import { WorkspaceColumn, WorkspaceLayout } from "@nexus-tools/design-system/components/ui/workspace-layout";
@@ -33,6 +34,7 @@ declare global {
   }
 }
 
+const PYTHON_START = "from obocar import OBOCar\nimport time\n\ncar = OBOCar()\n";
 const PYTHON_KEY = "obo-playground.python";
 
 // Storage can throw (blocked site data, sandboxed iframes); the editor must still work.
@@ -67,6 +69,7 @@ export default function Home() {
   const [ranProgram, setRanProgram] = useState(editor); // the program started last, whichever tab is open now
   const [pyCode, setPyCode] = useState(loadPython);
   const [pyKey, setPyKey] = useState(0); // bumped to reload the editor with an example
+  const [confirmClear, setConfirmClear] = useState(false);
   const [pyOutput, setPyOutput] = useState("");
 
   const onPyChange = useCallback((code: string) => {
@@ -232,6 +235,7 @@ export default function Home() {
           onChange={onPyChange}
           onCopy={onCopyPython}
           onExport={onExportPython}
+          onClear={() => setConfirmClear(true)}
           footer={
             <Terminal
               className="shrink-0 rounded-none border-x-0 border-b-0"
@@ -266,6 +270,19 @@ export default function Home() {
 
       {/* Routes Blockly's prompt/confirm through design-system dialogs; rendered outside the panel group. */}
       <BlocklyDialogs />
+      <ConfirmDialog
+        open={confirmClear}
+        onOpenChange={setConfirmClear}
+        title="Clear the code?"
+        description="This keeps the two lines every program needs to talk to the car, and removes the rest."
+        confirmLabel="Clear"
+        tone="danger"
+        onConfirm={() => {
+          onPyChange(PYTHON_START);
+          setPyKey((k) => k + 1);
+          setConfirmClear(false);
+        }}
+      />
     </WorkspaceLayout>
   );
 }
