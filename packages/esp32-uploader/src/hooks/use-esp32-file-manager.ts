@@ -130,31 +130,7 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
         try {
           await ensureReady();
 
-          const safeName = escapePath(filename);
-
-          // Read file as hex using binascii
-          const pythonCode = [
-            `import binascii`,
-            `with open('${safeName}','rb') as f:`,
-            `  print(binascii.hexlify(f.read()).decode())`,
-          ].join("\n");
-
-          const result = await serialStreamManager.executeRawREPL(pythonCode, 15000);
-
-          if (result.error) {
-            throw new Error(result.error);
-          }
-
-          const hexData = result.output.trim();
-          if (!hexData || !/^[0-9a-fA-F]+$/.test(hexData)) {
-            throw new Error("Failed to read file content from device");
-          }
-
-          // Convert hex → binary
-          const bytes = new Uint8Array(hexData.length / 2);
-          for (let i = 0; i < hexData.length; i += 2) {
-            bytes[i / 2] = parseInt(hexData.substring(i, i + 2), 16);
-          }
+          const bytes = await serialStreamManager.readFile(filename);
 
           // Try File System Access API first (modern browsers)
           try {
@@ -219,20 +195,12 @@ export function useESP32FileManager({ serialPort }: UseESP32FileManagerOptions) 
         try {
           await ensureReady();
 
-          const safeName = escapePath(filename);
-
-          const pythonCode = [
-            `with open('${safeName}','r') as f:`,
-            `  print(f.read())`,
-          ].join("\n");
-
-          const result = await serialStreamManager.executeRawREPL(pythonCode, 15000);
-
-          if (result.error) {
-            throw new Error(`Failed to view file: ${result.error}`);
+          try {
+            return new TextDecoder().decode(await serialStreamManager.readFile(filename));
+          } catch (err) {
+            if (err instanceof Error && err.message.toLowerCase().includes("timeout")) throw err;
+            throw new Error(`Failed to view file: ${err instanceof Error ? err.message : String(err)}`);
           }
-
-          return result.output; // Success
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           const isTimeout = msg.toLowerCase().includes("timeout");

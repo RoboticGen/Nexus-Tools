@@ -9,7 +9,8 @@ export interface RawREPLResult {
   error: string;
 }
 
-export type RawExec = (code: string, timeout?: number) => Promise<RawREPLResult>;
+/** `onStdout` receives stdout as it arrives instead of in the result; pass `Infinity` as the timeout for programs that run until stopped. */
+export type RawExec = (code: string, timeout?: number, onStdout?: (text: string) => void) => Promise<RawREPLResult>;
 
 const RAW_REPL_BANNER = "raw REPL; CTRL-B to exit\r\n";
 const WRITE_CHUNK = 128;
@@ -35,6 +36,9 @@ class SerialStreamManager {
   private initPromise: Promise<void> | null = null;
 
   private _mode: PortMode = "idle";
+  private running = false;
+  private starting = false;
+  private stopRequested = false;
 
   get mode(): PortMode {
     return this._mode;
@@ -134,6 +138,8 @@ class SerialStreamManager {
 
   /** Operations run sequentially; overlapping them is what produces "stream is locked". */
   enqueue<T>(label: string, operation: () => Promise<T>): Promise<T> {
+    // A running program holds the queue until it ends, so any other device action stops it first.
+    if (this.running) void this.writeInterrupt();
     return new Promise<T>((resolve, reject) => {
       this.operationQueue.push({
         label,
@@ -172,7 +178,11 @@ class SerialStreamManager {
   }
 
   /** One raw-REPL session for several commands; globals set by one exec are visible to the next. */
-  async withRawREPL<T>(label: string, fn: (exec: RawExec) => Promise<T>): Promise<T> {
+  async withRawREPL<T>(
+    label: string,
+    fn: (exec: RawExec) => Promise<T>,
+    options?: { softReset?: boolean },
+  ): Promise<T> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
     }
@@ -204,13 +214,34 @@ class SerialStreamManager {
         }
         buffer = buffer.slice(buffer.indexOf(RAW_REPL_BANNER) + RAW_REPL_BANNER.length);
 
-        const exec: RawExec = async (code, timeout = 8000) => {
+        if (options?.softReset) {
+          // Ctrl-D on an empty raw-REPL line soft-reboots: boot.py runs, main.py does not, and the board comes back in raw mode.
+          buffer = "";
+          await this.write(REPL_CONTROL.CTRL_D);
+          await waitFor(() => buffer.includes(RAW_REPL_BANNER), 10000);
+          buffer = buffer.slice(buffer.indexOf(RAW_REPL_BANNER) + RAW_REPL_BANNER.length);
+        }
+
+        const exec: RawExec = async (code, timeout = 8000, onStdout) => {
           await waitFor(() => buffer.includes(">"), timeout);
           buffer = "";
           await this.write(code);
           await this.write(REPL_CONTROL.CTRL_D);
           // Response is "OK" <stdout> \x04 <stderr> \x04, then ">" when ready for the next command.
-          await waitFor(() => rawResponseEnd(buffer) !== -1, timeout);
+          await waitFor(() => {
+            if (!this.reader || !this.isReading) throw new Error("Device disconnected");
+            const ok = buffer.indexOf("OK");
+            if (onStdout && ok !== -1) {
+              const eot = buffer.indexOf("\x04", ok + 2);
+              const upto = eot === -1 ? buffer.length : eot;
+              if (upto > ok + 2) {
+                onStdout(buffer.slice(ok + 2, upto));
+                // Drop what was handed over, so a program printing for hours doesn't grow the buffer.
+                buffer = "OK" + buffer.slice(upto);
+              }
+            }
+            return rawResponseEnd(buffer) !== -1;
+          }, timeout);
           const end = rawResponseEnd(buffer);
           const result = parseRawREPLResponse(buffer.slice(0, end));
           buffer = buffer.slice(end);
@@ -259,10 +290,62 @@ class SerialStreamManager {
     });
   }
 
-  /** Fire-and-forget write, for interactive REPL keystrokes. */
+  /** Exact bytes of a file, read in small pieces so the board never holds the whole file in RAM. */
+  async readFile(path: string): Promise<Uint8Array<ArrayBuffer>> {
+    const { output, error } = await this.executeRawREPL(
+      `import binascii\nwith open(${JSON.stringify(path)},'rb') as f:\n while 1:\n  b=f.read(256)\n  if not b: break\n  print(binascii.hexlify(b).decode(),end='')`,
+      120000,
+    );
+    if (error) throw new Error(error);
+    if (!/^([0-9a-f]{2})*$/i.test(output)) throw new Error(`Unexpected reply while reading ${path}`);
+    return new Uint8Array((output.match(/../g) ?? []).map((h) => parseInt(h, 16)));
+  }
+
+  /** Runs `code` on a freshly soft-reset board until it ends or `interrupt()` stops it; stdout streams to `onOutput`. */
+  async runCode(code: string, onOutput: (text: string) => void): Promise<RawREPLResult> {
+    this.starting = true;
+    this.stopRequested = false;
+    try {
+      return await this.withRawREPL(
+        "runCode",
+        async (exec) => {
+          this.starting = false;
+          if (this.stopRequested) return { output: "", error: "KeyboardInterrupt" };
+          this.running = true;
+          try {
+            return await exec(code.replace(/\r\n/g, "\n"), Infinity, onOutput);
+          } finally {
+            this.running = false;
+          }
+        },
+        { softReset: true },
+      );
+    } finally {
+      this.starting = false;
+    }
+  }
+
+  /** Stops a running program, or one still waiting for the board. */
+  async interrupt(): Promise<void> {
+    // Before the program starts, a queued Ctrl-C would wait behind the run itself.
+    if (this.starting) this.stopRequested = true;
+    if (this.running) await this.writeInterrupt();
+    else if (!this.starting && this.isReady()) await this.sendData("\r" + REPL_CONTROL.CTRL_C + REPL_CONTROL.CTRL_C);
+  }
+
+  /** Written straight to the port, since a running program holds the queue. */
+  private async writeInterrupt(): Promise<void> {
+    await this.writer?.write(this.encoder.encode("\r" + REPL_CONTROL.CTRL_C + REPL_CONTROL.CTRL_C));
+  }
+
+  /** Fire-and-forget write, for interactive REPL keystrokes. While a program runs they go straight to its stdin. */
   async sendData(data: string): Promise<void> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
+    }
+    if (this.running) {
+      await this.writer?.write(this.encoder.encode(data));
+      return;
     }
 
     return this.enqueue("sendData", async () => {
@@ -324,6 +407,8 @@ class SerialStreamManager {
   async cleanup(): Promise<void> {
     this.isReading = false;
     this._mode = "idle";
+    this.running = false;
+    this.starting = false;
     this.operationQueue = [];
     this.isProcessing = false;
     this.listeners.clear();
@@ -496,7 +581,11 @@ function waitFor(condition: () => boolean, timeout: number): Promise<void> {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const check = () => {
-      if (condition()) return resolve();
+      try {
+        if (condition()) return resolve();
+      } catch (err) {
+        return reject(err);
+      }
       const elapsed = Date.now() - start;
       if (elapsed > timeout) {
         const seconds = (timeout / 1000).toFixed(1);

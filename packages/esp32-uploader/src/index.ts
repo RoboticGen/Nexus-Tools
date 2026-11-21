@@ -5,6 +5,7 @@ export { useESP32Serial } from "./hooks/use-esp32-serial";
 export { useESP32REPL } from "./hooks/use-esp32-repl";
 export { useESP32FileManager } from "./hooks/use-esp32-file-manager";
 export { useESP32Flasher } from "./hooks/use-esp32-flasher";
+export { useESP32Runner, type ESP32RunOutcome } from "./hooks/use-esp32-runner";
 
 // Types
 export type {
