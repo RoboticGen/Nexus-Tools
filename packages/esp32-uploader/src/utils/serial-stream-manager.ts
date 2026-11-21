@@ -223,7 +223,10 @@ class SerialStreamManager {
           buffer = "";
           await this.write(REPL_CONTROL.CTRL_D);
           // boot.py may wait on Wi-Fi.
-          await waitFor(() => buffer.includes(RAW_REPL_BANNER), 30000);
+          await waitFor(() => {
+            if (this.stopRequested) throw new Error("KeyboardInterrupt");
+            return buffer.includes(RAW_REPL_BANNER);
+          }, 30000);
           const bannerAt = buffer.indexOf(RAW_REPL_BANNER);
           const boot = buffer.slice(0, bannerAt).replace(/^[\s\S]*?soft reboot\r?\n/, "");
           if (boot.trim()) options.onBootOutput?.(boot);
@@ -332,6 +335,9 @@ class SerialStreamManager {
         },
         { softReset: true, onBootOutput: onOutput },
       );
+    } catch (err) {
+      if (this.stopRequested) return { output: "", error: "KeyboardInterrupt" };
+      throw err;
     } finally {
       this.starting = false;
       this.boardWasReset = false;
@@ -363,11 +369,22 @@ class SerialStreamManager {
       await this.port?.setSignals?.({ dataTerminalReady: false, requestToSend: true });
       await delay(100);
       await this.port?.setSignals?.({ dataTerminalReady: false, requestToSend: false });
+      // A fresh boot runs main.py (on a robot, maybe its motors); interrupt it until the board is idle at ">>> ".
+      let seen = "";
+      const unsub = this.addListener((data) => (seen += data));
+      try {
+        for (const until = Date.now() + 4000; Date.now() < until && !seen.endsWith(">>> "); ) {
+          await this.writer?.write(this.encoder.encode(REPL_CONTROL.CTRL_C));
+          await delay(100);
+        }
+      } finally {
+        unsub();
+      }
     } catch (err) {
       console.warn("[SerialStreamManager] Board reset failed:", err);
     }
     // Only now end the run, so the next queued action doesn't start on a board still held in reset.
-    this.boardWasReset = true;
+    if (this.running) this.boardWasReset = true;
   }
 
   /** Fire-and-forget write, for interactive REPL keystrokes. Queued, so it stops a running program first. */
