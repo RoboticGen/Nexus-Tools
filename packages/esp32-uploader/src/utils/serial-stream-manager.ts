@@ -9,6 +9,11 @@ export interface RawREPLResult {
   error: string;
 }
 
+export type RawExec = (code: string, timeout?: number) => Promise<RawREPLResult>;
+
+const RAW_REPL_BANNER = "raw REPL; CTRL-B to exit\r\n";
+const WRITE_CHUNK = 128;
+
 type QueuedOperation = {
   execute: () => Promise<void>;
   label: string;
@@ -163,56 +168,93 @@ class SerialStreamManager {
 
   /** Raw REPL: Ctrl-A enter, code, Ctrl-D execute, Ctrl-B exit. Unlike the normal REPL this returns no echo or prompts in the output. */
   async executeRawREPL(code: string, timeout = 8000): Promise<RawREPLResult> {
+    return this.withRawREPL(`rawREPL: ${code.substring(0, 40)}`, (exec) => exec(code, timeout));
+  }
+
+  /** One raw-REPL session for several commands; globals set by one exec are visible to the next. */
+  async withRawREPL<T>(label: string, fn: (exec: RawExec) => Promise<T>): Promise<T> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
     }
 
-    return this.enqueue<RawREPLResult>(`rawREPL: ${code.substring(0, 40)}`, async () => {
+    return this.enqueue<T>(label, async () => {
       const prevMode = this._mode;
       this._mode = "busy";
 
+      let buffer = "";
+      const unsub = this.addListener((data) => {
+        buffer += data;
+      });
+
       try {
-        let buffer = "";
-        const onData = (data: string) => {
-          buffer += data;
-        };
-        const unsub = this.addListener(onData);
-
-        try {
+        // Any ">" also matches the friendly ">>> " prompt, so wait for the banner itself. A busy
+        // board can miss the first Ctrl-A; 6s covers the boot output of a freshly flashed one.
+        const deadline = Date.now() + 6000;
+        for (;;) {
           buffer = "";
-          await this.write(REPL_CONTROL.CTRL_C);
+          await this.write("\r" + REPL_CONTROL.CTRL_C);
           await delay(50);
-          await this.write(REPL_CONTROL.CTRL_A);
-          // 6s: a freshly-flashed device prints seconds of boot output before the Raw REPL prompt.
-          await waitFor(() => buffer.includes(">"), 6000);
-          buffer = "";
+          await this.write("\r" + REPL_CONTROL.CTRL_A);
+          try {
+            await waitFor(() => buffer.includes(RAW_REPL_BANNER), 2000);
+            break;
+          } catch (err) {
+            if (Date.now() >= deadline) throw err;
+          }
+        }
+        buffer = buffer.slice(buffer.indexOf(RAW_REPL_BANNER) + RAW_REPL_BANNER.length);
 
+        const exec: RawExec = async (code, timeout = 8000) => {
+          await waitFor(() => buffer.includes(">"), timeout);
+          buffer = "";
           await this.write(code);
           await this.write(REPL_CONTROL.CTRL_D);
+          // Response is "OK" <stdout> \x04 <stderr> \x04, then ">" when ready for the next command.
+          await waitFor(() => rawResponseEnd(buffer) !== -1, timeout);
+          const end = rawResponseEnd(buffer);
+          const result = parseRawREPLResponse(buffer.slice(0, end));
+          buffer = buffer.slice(end);
+          return result;
+        };
 
-          // Wait for the two \x04 markers framing stdout and stderr.
-          await waitFor(() => {
-            const okIdx = buffer.indexOf("OK");
-            if (okIdx === -1) return false;
-            const afterOK = buffer.substring(okIdx + 2);
-            // Need two \x04 markers
-            const first04 = afterOK.indexOf("\x04");
-            if (first04 === -1) return false;
-            const second04 = afterOK.indexOf("\x04", first04 + 1);
-            return second04 !== -1;
-          }, timeout);
-
-          const result = parseRawREPLResponse(buffer);
-
+        return await fn(exec);
+      } finally {
+        unsub();
+        try {
           await this.write(REPL_CONTROL.CTRL_B);
           await delay(50);
-
-          return result;
-        } finally {
-          unsub();
+        } catch {
+          // Port gone; nothing to leave
         }
-      } finally {
         this._mode = prevMode;
+      }
+    });
+  }
+
+  /** Writes in small chunks to a temp file, then renames it over `path`, so a failed save leaves the old file intact. */
+  async writeFile(path: string, content: string | Uint8Array): Promise<void> {
+    const bytes = typeof content === "string" ? this.encoder.encode(content) : content;
+    const target = JSON.stringify(path);
+    const tmp = JSON.stringify(`${path.slice(0, path.lastIndexOf("/") + 1)}.obo_upload.tmp`);
+
+    await this.withRawREPL(`writeFile: ${path}`, async (exec) => {
+      const run = async (code: string) => {
+        const { error } = await exec(code, 5000);
+        if (error) throw new Error(error);
+      };
+
+      await run(`import os,binascii\nf=open(${tmp},'wb')\nw=lambda d:f.write(binascii.unhexlify(d))\no=f.write`);
+      try {
+        // Each chunk waits for the board's OK, which is the only flow control a raw REPL has.
+        for (let i = 0; i < bytes.length; i += WRITE_CHUNK) {
+          await run(chunkCommand(bytes.subarray(i, i + WRITE_CHUNK)));
+        }
+        // Some filesystems refuse to rename over an existing file; only then remove the old one first.
+        await run(`f.close()\ntry: os.rename(${tmp},${target})\nexcept OSError:\n os.remove(${target})\n os.rename(${tmp},${target})`);
+      } catch (err) {
+        // Keep the temp file if the target is already gone: it is then the only copy left.
+        await exec(`try: f.close()\nexcept: pass\ntry:\n os.stat(${target})\n os.remove(${tmp})\nexcept: pass`, 5000).catch(() => {});
+        throw err;
       }
     });
   }
@@ -486,6 +528,28 @@ function parseRawREPLResponse(buffer: string): RawREPLResult {
       : "";
 
   return { output, error };
+}
+
+/** Index just past the second \x04 after "OK", or -1 while the response is incomplete. */
+function rawResponseEnd(buffer: string): number {
+  const okIdx = buffer.indexOf("OK");
+  if (okIdx === -1) return -1;
+  const first04 = buffer.indexOf("\x04", okIdx + 2);
+  if (first04 === -1) return -1;
+  const second04 = buffer.indexOf("\x04", first04 + 1);
+  return second04 === -1 ? -1 : second04 + 1;
+}
+
+/** The shorter of a hex chunk and a bytes literal; text is mostly printable ASCII, so usually the literal. */
+export function chunkCommand(chunk: Uint8Array): string {
+  const hex = Array.from(chunk, (b) => b.toString(16).padStart(2, "0")).join("");
+  let repr = "";
+  for (const b of chunk) {
+    if (b === 0x5c || b === 0x27) repr += "\\" + String.fromCharCode(b);
+    else if (b >= 0x20 && b <= 0x7e) repr += String.fromCharCode(b);
+    else repr += "\\x" + b.toString(16).padStart(2, "0");
+  }
+  return hex.length < repr.length ? `w(b'${hex}')` : `o(b'${repr}')`;
 }
 
 function hasReplPrompt(buffer: string): boolean {
