@@ -14,6 +14,8 @@ export type RawExec = (code: string, timeout?: number, onStdout?: (text: string)
 
 const RAW_REPL_BANNER = "raw REPL; CTRL-B to exit\r\n";
 const WRITE_CHUNK = 128;
+const FORCE_STOP_AFTER = 3000;
+export const BOARD_WAS_RESET = "KeyboardInterrupt: the program ignored Stop, so the board was reset";
 
 type QueuedOperation = {
   execute: () => Promise<void>;
@@ -39,6 +41,9 @@ class SerialStreamManager {
   private running = false;
   private starting = false;
   private stopRequested = false;
+  private boardWasReset = false;
+  private resetting = false;
+  private forceStopTimer: ReturnType<typeof setTimeout> | null = null;
 
   get mode(): PortMode {
     return this._mode;
@@ -181,7 +186,7 @@ class SerialStreamManager {
   async withRawREPL<T>(
     label: string,
     fn: (exec: RawExec) => Promise<T>,
-    options?: { softReset?: boolean },
+    options?: { softReset?: boolean; onBootOutput?: (text: string) => void },
   ): Promise<T> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
@@ -218,8 +223,15 @@ class SerialStreamManager {
           // Ctrl-D on an empty raw-REPL line soft-reboots: boot.py runs, main.py does not, and the board comes back in raw mode.
           buffer = "";
           await this.write(REPL_CONTROL.CTRL_D);
-          await waitFor(() => buffer.includes(RAW_REPL_BANNER), 10000);
-          buffer = buffer.slice(buffer.indexOf(RAW_REPL_BANNER) + RAW_REPL_BANNER.length);
+          // boot.py may wait on Wi-Fi.
+          await waitFor(() => {
+            if (this.stopRequested) throw new Error("KeyboardInterrupt");
+            return buffer.includes(RAW_REPL_BANNER);
+          }, 30000);
+          const bannerAt = buffer.indexOf(RAW_REPL_BANNER);
+          const boot = buffer.slice(0, bannerAt).replace(/^[\s\S]*?soft reboot\r?\n/, "");
+          if (boot.trim()) options.onBootOutput?.(boot);
+          buffer = buffer.slice(bannerAt + RAW_REPL_BANNER.length);
         }
 
         const exec: RawExec = async (code, timeout = 8000, onStdout) => {
@@ -230,8 +242,10 @@ class SerialStreamManager {
           // Response is "OK" <stdout> \x04 <stderr> \x04, then ">" when ready for the next command.
           await waitFor(() => {
             if (!this.reader || !this.isReading) throw new Error("Device disconnected");
+            if (this.boardWasReset) throw new Error(BOARD_WAS_RESET);
             const ok = buffer.indexOf("OK");
-            if (onStdout && ok !== -1) {
+            // The reboot's boot log isn't the program's output.
+            if (onStdout && ok !== -1 && !this.resetting) {
               const eot = buffer.indexOf("\x04", ok + 2);
               const upto = eot === -1 ? buffer.length : eot;
               if (upto > ok + 2) {
@@ -314,14 +328,24 @@ class SerialStreamManager {
           this.running = true;
           try {
             return await exec(code.replace(/\r\n/g, "\n"), Infinity, onOutput);
+          } catch (err) {
+            if (this.boardWasReset) return { output: "", error: BOARD_WAS_RESET };
+            throw err;
           } finally {
             this.running = false;
           }
         },
-        { softReset: true },
+        { softReset: true, onBootOutput: onOutput },
       );
+    } catch (err) {
+      if (this.stopRequested) return { output: "", error: "KeyboardInterrupt" };
+      throw err;
     } finally {
       this.starting = false;
+      this.boardWasReset = false;
+      this.resetting = false;
+      if (this.forceStopTimer) clearTimeout(this.forceStopTimer);
+      this.forceStopTimer = null;
     }
   }
 
@@ -335,17 +359,43 @@ class SerialStreamManager {
 
   /** Written straight to the port, since a running program holds the queue. */
   private async writeInterrupt(): Promise<void> {
+    // A program that catches KeyboardInterrupt would hold the queue forever, so reset the board if it is still running.
+    this.forceStopTimer ??= setTimeout(() => void this.forceStop(), FORCE_STOP_AFTER);
     await this.writer?.write(this.encoder.encode("\r" + REPL_CONTROL.CTRL_C + REPL_CONTROL.CTRL_C));
   }
 
-  /** Fire-and-forget write, for interactive REPL keystrokes. While a program runs they go straight to its stdin. */
+  private async forceStop(): Promise<void> {
+    this.forceStopTimer = null;
+    if (!this.running) return;
+    this.resetting = true;
+    try {
+      // ESP32 dev boards wire EN to RTS: RTS on with DTR off holds the reset button, and DTR off keeps it out of the bootloader.
+      await this.port?.setSignals?.({ dataTerminalReady: false, requestToSend: true });
+      await delay(100);
+      await this.port?.setSignals?.({ dataTerminalReady: false, requestToSend: false });
+      // A fresh boot runs main.py (on a robot, maybe its motors); interrupt it until the board is idle at ">>> ".
+      let seen = "";
+      const unsub = this.addListener((data) => (seen += data));
+      try {
+        for (const until = Date.now() + 4000; Date.now() < until && !seen.endsWith(">>> "); ) {
+          await this.writer?.write(this.encoder.encode(REPL_CONTROL.CTRL_C));
+          await delay(100);
+        }
+      } finally {
+        unsub();
+      }
+    } catch (err) {
+      console.warn("[SerialStreamManager] Board reset failed:", err);
+    }
+    // Only now end the run, so the next queued action doesn't start on a board still held in reset.
+    if (this.running) this.boardWasReset = true;
+    else this.resetting = false;
+  }
+
+  /** Fire-and-forget write, for interactive REPL keystrokes. Queued, so it stops a running program first. */
   async sendData(data: string): Promise<void> {
     if (!this.isReady()) {
       throw new Error("Serial stream manager not initialized");
-    }
-    if (this.running) {
-      await this.writer?.write(this.encoder.encode(data));
-      return;
     }
 
     return this.enqueue("sendData", async () => {
@@ -409,6 +459,9 @@ class SerialStreamManager {
     this._mode = "idle";
     this.running = false;
     this.starting = false;
+    this.resetting = false;
+    if (this.forceStopTimer) clearTimeout(this.forceStopTimer);
+    this.forceStopTimer = null;
     this.operationQueue = [];
     this.isProcessing = false;
     this.listeners.clear();

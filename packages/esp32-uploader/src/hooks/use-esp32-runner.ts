@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 
-import { serialStreamManager } from "../utils/serial-stream-manager";
+import { BOARD_WAS_RESET, serialStreamManager } from "../utils/serial-stream-manager";
 
 const OUTPUT_LIMIT = 20000;
 
@@ -31,7 +31,9 @@ export function useESP32Runner() {
     try {
       const { error } = await serialStreamManager.runCode(code, append);
       const outcome: ESP32RunOutcome = !error ? "finished" : error.includes("KeyboardInterrupt") ? "stopped" : "error";
-      finish(outcome === "error" ? `${error.trimEnd()}\n--- Error ---` : `--- ${outcome === "stopped" ? "Stopped" : "Finished"} ---`);
+      if (outcome === "error") finish(`${error.trimEnd()}\n--- Error ---`);
+      else if (error === BOARD_WAS_RESET) finish("The program ignored Stop, so the board was reset.\n--- Stopped ---");
+      else finish(`--- ${outcome === "stopped" ? "Stopped" : "Finished"} ---`);
       return outcome;
     } catch (err) {
       finish(`${err instanceof Error ? err.message : String(err)}\n--- Error ---`);
