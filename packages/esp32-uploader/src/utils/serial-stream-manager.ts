@@ -42,6 +42,7 @@ class SerialStreamManager {
   private starting = false;
   private stopRequested = false;
   private boardWasReset = false;
+  private resetting = false;
   private forceStopTimer: ReturnType<typeof setTimeout> | null = null;
 
   get mode(): PortMode {
@@ -243,7 +244,8 @@ class SerialStreamManager {
             if (!this.reader || !this.isReading) throw new Error("Device disconnected");
             if (this.boardWasReset) throw new Error(BOARD_WAS_RESET);
             const ok = buffer.indexOf("OK");
-            if (onStdout && ok !== -1) {
+            // The reboot's boot log isn't the program's output.
+            if (onStdout && ok !== -1 && !this.resetting) {
               const eot = buffer.indexOf("\x04", ok + 2);
               const upto = eot === -1 ? buffer.length : eot;
               if (upto > ok + 2) {
@@ -341,6 +343,7 @@ class SerialStreamManager {
     } finally {
       this.starting = false;
       this.boardWasReset = false;
+      this.resetting = false;
       if (this.forceStopTimer) clearTimeout(this.forceStopTimer);
       this.forceStopTimer = null;
     }
@@ -364,6 +367,7 @@ class SerialStreamManager {
   private async forceStop(): Promise<void> {
     this.forceStopTimer = null;
     if (!this.running) return;
+    this.resetting = true;
     try {
       // ESP32 dev boards wire EN to RTS: RTS on with DTR off holds the reset button, and DTR off keeps it out of the bootloader.
       await this.port?.setSignals?.({ dataTerminalReady: false, requestToSend: true });
@@ -385,6 +389,7 @@ class SerialStreamManager {
     }
     // Only now end the run, so the next queued action doesn't start on a board still held in reset.
     if (this.running) this.boardWasReset = true;
+    else this.resetting = false;
   }
 
   /** Fire-and-forget write, for interactive REPL keystrokes. Queued, so it stops a running program first. */
@@ -454,6 +459,7 @@ class SerialStreamManager {
     this._mode = "idle";
     this.running = false;
     this.starting = false;
+    this.resetting = false;
     if (this.forceStopTimer) clearTimeout(this.forceStopTimer);
     this.forceStopTimer = null;
     this.operationQueue = [];
