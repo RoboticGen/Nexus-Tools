@@ -10,7 +10,7 @@ import {
 } from "@nexus-tools/design-system/components/ui/resizable";
 import { WorkspaceLayout, WorkspaceColumn } from "@nexus-tools/design-system/components/ui/workspace-layout";
 import { WorkspaceNavbar } from "@nexus-tools/design-system/components/workspace-navbar";
-import { serialStreamManager, type SerialPort } from "@nexus-tools/esp32-uploader";
+import { serialStreamManager, useESP32Runner, type SerialPort } from "@nexus-tools/esp32-uploader";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -62,6 +62,8 @@ export default function Home() {
     outputPanelRef.current?.resetConnection?.();
   }, []);
 
+  const device = useESP32Runner();
+
   const handleRunInESP32 = useCallback(async () => {
     if (!serialPort) {
       showNotification("Connect device first");
@@ -73,33 +75,11 @@ export default function Home() {
       return;
     }
 
-    try {
-      await serialStreamManager.initialize(serialPort);
-
-      // Run the buffer the way Thonny runs a script: hand it to the REPL in paste mode rather
-      // than writing it to flash. Nothing on the device is modified, so this neither needs nor
-      // overwrites a main.py -- which is why the old Ctrl-C + Ctrl-D soft reset appeared to do
-      // nothing on a board that has no main.py: it only re-ran what was already stored.
-      //
-      // Output is not captured here on purpose. use-esp32-repl holds a serialStreamManager
-      // listener, so the device's stdout streams to the REPL tab as it is produced -- including
-      // for scripts that never terminate, which a one-shot executeRawREPL would abandon at its
-      // timeout.
-      // Leading \r flushes any half-typed line before the interrupts land, which is what
-      // ViperIDE's runCurrentFile does (`port.write('\r\x03\x03')`) -- without it a partial
-      // line can swallow the first Ctrl-C.
-      await serialStreamManager.sendData("\r\x03\x03"); // interrupt whatever is running
-      await serialStreamManager.sendData("\x02"); // leave raw mode if a previous op left us in it
-      await serialStreamManager.sendData("\x05"); // paste mode
-      await serialStreamManager.sendData(code.replace(/\r\n/g, "\n"));
-      await serialStreamManager.sendData("\x04"); // execute
-
-      showNotification("Running on ESP32 - output is in the REPL tab");
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      showNotification(`Failed to run on ESP32: ${msg}`);
-    }
-  }, [serialPort, code, showNotification]);
+    await serialStreamManager.initialize(serialPort);
+    outputPanelRef.current?.showOutput();
+    const outcome = await device.run(code);
+    if (outcome === "error") showNotification("Your code stopped with an error - see Output", "error");
+  }, [serialPort, code, showNotification, device]);
 
   const { runCode, stopCode, isRunning, output, clearOutput } = usePythonRunner({
     onError: (error) => showNotification(error, "error"),
@@ -115,17 +95,22 @@ export default function Home() {
       showNotification("Code is already running");
       return;
     }
+    device.hide();
     runCode(code);
-  }, [code, isRunning, runCode, showNotification]);
+  }, [code, isRunning, runCode, showNotification, device]);
 
   const handleStop = useCallback(() => {
+    if (device.showing && device.isRunning) {
+      device.stop();
+      return;
+    }
     if (!isRunning) {
       showNotification("No code is running");
       return;
     }
     stopCode();
     showNotification("Code execution stopped");
-  }, [isRunning, stopCode, showNotification]);
+  }, [isRunning, stopCode, showNotification, device]);
 
   const handleCopy = useCallback(async () => {
     if (!code.trim()) {
@@ -174,6 +159,10 @@ export default function Home() {
   );
 
   const handleClear = useCallback(() => {
+    if (device.showing) {
+      device.clear();
+      return;
+    }
     if (isRunning) {
       showNotification("Stop the code execution first");
       return;
@@ -194,7 +183,7 @@ export default function Home() {
       }
     }
     showNotification("Terminal cleared");
-  }, [isRunning, clearOutput, showNotification]);
+  }, [isRunning, clearOutput, showNotification, device]);
 
   return (
     <WorkspaceLayout
@@ -246,7 +235,7 @@ export default function Home() {
           <ResizablePanel defaultSize={38} minSize={15}>
             <ESP32OutputPanel
               ref={outputPanelRef}
-              output={output}
+              output={device.showing ? device.output : output}
               onClear={handleClear}
               onStop={handleStop}
               code={code}

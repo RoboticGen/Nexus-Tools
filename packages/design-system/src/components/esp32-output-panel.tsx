@@ -34,6 +34,7 @@ interface ESP32OutputPanelProps {
 export interface ESP32OutputPanelHandle {
   connectToDevice: () => void;
   resetConnection: () => void;
+  showOutput: () => void;
 }
 
 const REPL_MAX_LINES = 200;
@@ -270,6 +271,7 @@ export const ESP32OutputPanel = forwardRef<ESP32OutputPanelHandle, ESP32OutputPa
   useImperativeHandle(ref, () => ({
     connectToDevice,
     resetConnection,
+    showOutput: () => setActiveTab("output"),
   }), [connectToDevice, resetConnection]);
 
   useEffect(() => {

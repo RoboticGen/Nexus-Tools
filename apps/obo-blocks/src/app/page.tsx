@@ -11,7 +11,7 @@ import {
 } from "@nexus-tools/design-system/components/ui/resizable";
 import { WorkspaceLayout, WorkspaceColumn } from "@nexus-tools/design-system/components/ui/workspace-layout";
 import { WorkspaceNavbar } from "@nexus-tools/design-system/components/workspace-navbar";
-import { serialStreamManager, type SerialPort } from "@nexus-tools/esp32-uploader";
+import { serialStreamManager, useESP32Runner, type SerialPort } from "@nexus-tools/esp32-uploader";
 import dynamic from "next/dynamic";
 import { useState, useCallback, useRef, useSyncExternalStore } from "react";
 import { toast } from "sonner";
@@ -88,6 +88,8 @@ export default function Home() {
     outputPanelRef.current?.resetConnection?.();
   }, []);
 
+  const device = useESP32Runner();
+
   const handleRunInESP32 = useCallback(async () => {
     if (!serialPort) {
       showNotification("Connect device first");
@@ -99,33 +101,26 @@ export default function Home() {
       return;
     }
 
-    try {
-      await serialStreamManager.initialize(serialPort);
+    await serialStreamManager.initialize(serialPort);
+    outputPanelRef.current?.showOutput();
+    const outcome = await device.run(code);
+    if (outcome === "error") showNotification("Your code stopped with an error - see Output");
+  }, [serialPort, code, showNotification, device]);
 
-      // Run the buffer the way Thonny runs a script: hand it to the REPL in paste mode rather
-      // than writing it to flash. Nothing on the device is modified, so this neither needs nor
-      // overwrites a main.py -- which is why the old Ctrl-C + Ctrl-D soft reset appeared to do
-      // nothing on a board that has no main.py: it only re-ran what was already stored.
-      //
-      // Output is not captured here on purpose. use-esp32-repl holds a serialStreamManager
-      // listener, so the device's stdout streams to the REPL tab as it is produced -- including
-      // for scripts that never terminate, which a one-shot executeRawREPL would abandon at its
-      // timeout.
-      // Leading \r flushes any half-typed line before the interrupts land, which is what
-      // ViperIDE's runCurrentFile does (`port.write('\r\x03\x03')`) -- without it a partial
-      // line can swallow the first Ctrl-C.
-      await serialStreamManager.sendData("\r\x03\x03"); // interrupt whatever is running
-      await serialStreamManager.sendData("\x02"); // leave raw mode if a previous op left us in it
-      await serialStreamManager.sendData("\x05"); // paste mode
-      await serialStreamManager.sendData(code.replace(/\r\n/g, "\n"));
-      await serialStreamManager.sendData("\x04"); // execute
+  const handleRun = useCallback(() => {
+    device.hide();
+    handleRunCode();
+  }, [device, handleRunCode]);
 
-      showNotification("Running on ESP32 - output is in the REPL tab");
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      showNotification(`Failed to run on ESP32: ${msg}`);
-    }
-  }, [serialPort, code, showNotification]);
+  const handleStop = useCallback(() => {
+    if (device.showing && device.isRunning) device.stop();
+    else handleStopCode();
+  }, [device, handleStopCode]);
+
+  const handleClear = useCallback(() => {
+    if (device.showing) device.clear();
+    else handleClearTerminal();
+  }, [device, handleClearTerminal]);
 
   const handleSaveToDevice = useCallback(
     async (filename: string, content: string) => {
@@ -184,7 +179,7 @@ export default function Home() {
               onChange={handleCodeChange}
               onEditToggle={handleEditToggleWrapper}
               onActiveTabChange={setActiveEditorFileName}
-              onRun={handleRunCode}
+              onRun={handleRun}
               onRunInESP32={handleRunInESP32}
               onCopy={handleCopy}
               onExport={handleExport}
@@ -197,9 +192,9 @@ export default function Home() {
           <ResizablePanel defaultSize={38} minSize={15}>
             <ESP32OutputPanel
               ref={outputPanelRef}
-              output={output}
-              onClear={handleClearTerminal}
-              onStop={handleStopCode}
+              output={device.showing ? device.output : output}
+              onClear={handleClear}
+              onStop={handleStop}
               code={code}
               onStatusUpdate={showNotification}
               onError={showNotification}
