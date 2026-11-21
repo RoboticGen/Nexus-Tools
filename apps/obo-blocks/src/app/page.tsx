@@ -132,14 +132,14 @@ export default function Home() {
       try {
         if (saveFileToDeviceRef.current) {
           await saveFileToDeviceRef.current(filename, content);
-          showNotification(`Saved ${filename} to device`);
+          showNotification(`Saved ${filename} to device`, "success");
           fileManagerRef.current?.refreshFiles();
         } else {
           showNotification("Device not connected");
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : "Failed to save file";
-        showNotification(errorMsg);
+        showNotification(errorMsg, "error");
       }
     },
     [showNotification]
