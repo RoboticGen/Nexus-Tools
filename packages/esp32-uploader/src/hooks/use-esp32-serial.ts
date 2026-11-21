@@ -83,23 +83,11 @@ export function useESP32Serial({ baudRate }: UseESP32SerialOptions) {
   /** Write a file to ESP32 using Raw REPL mode (via stream manager). This is safe to call even when REPL is active — the operation queue ensures exclusive access. */
   const writeFileToESP32 = useCallback(
     async (_port: SerialPortType, filename: string, content: string): Promise<void> => {
-      const sanitizedContent = content.trimEnd();
-
-      // Escape backslashes and single quotes so the filename can't break out of the Python string literal (or inject code) on the device.
-      const safeFilename = filename.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-
-      // Use JSON.stringify to safely escape the content string for Python
-      const pythonCode = [
-        `f=open('${safeFilename}','w')`,
-        `f.write(${JSON.stringify(sanitizedContent)})`,
-        `f.close()`,
-        `print('OK')`,
-      ].join("\n");
-
-      const result = await serialStreamManager.executeRawREPL(pythonCode, 8000);
-
-      if (result.error) {
-        throw new Error(`Failed to write ${filename}: ${result.error}`);
+      try {
+        await serialStreamManager.writeFile(filename, content);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to write ${filename}: ${msg}`);
       }
     },
     [],
