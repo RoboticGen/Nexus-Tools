@@ -235,7 +235,7 @@ class SerialStreamManager {
   async writeFile(path: string, content: string | Uint8Array): Promise<void> {
     const bytes = typeof content === "string" ? this.encoder.encode(content) : content;
     const target = JSON.stringify(path);
-    const tmp = JSON.stringify(`${path}.tmp`);
+    const tmp = JSON.stringify(`${path.slice(0, path.lastIndexOf("/") + 1)}.obo_upload.tmp`);
 
     await this.withRawREPL(`writeFile: ${path}`, async (exec) => {
       const run = async (code: string) => {
@@ -249,9 +249,11 @@ class SerialStreamManager {
         for (let i = 0; i < bytes.length; i += WRITE_CHUNK) {
           await run(chunkCommand(bytes.subarray(i, i + WRITE_CHUNK)));
         }
-        await run(`f.close()\ntry: os.remove(${target})\nexcept OSError: pass\nos.rename(${tmp},${target})`);
+        // Some filesystems refuse to rename over an existing file; only then remove the old one first.
+        await run(`f.close()\ntry: os.rename(${tmp},${target})\nexcept OSError:\n os.remove(${target})\n os.rename(${tmp},${target})`);
       } catch (err) {
-        await exec(`try: f.close()\nexcept: pass\ntry: os.remove(${tmp})\nexcept: pass`, 5000).catch(() => {});
+        // Keep the temp file if the target is already gone: it is then the only copy left.
+        await exec(`try: f.close()\nexcept: pass\ntry:\n os.stat(${target})\n os.remove(${tmp})\nexcept: pass`, 5000).catch(() => {});
         throw err;
       }
     });
@@ -547,7 +549,7 @@ export function chunkCommand(chunk: Uint8Array): string {
     else if (b >= 0x20 && b <= 0x7e) repr += String.fromCharCode(b);
     else repr += "\\x" + b.toString(16).padStart(2, "0");
   }
-  return hex.length < repr.length ? `w('${hex}')` : `o(b'${repr}')`;
+  return hex.length < repr.length ? `w(b'${hex}')` : `o(b'${repr}')`;
 }
 
 function hasReplPrompt(buffer: string): boolean {
