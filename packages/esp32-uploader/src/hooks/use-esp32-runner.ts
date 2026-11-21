@@ -20,6 +20,10 @@ export function useESP32Runner() {
       if (runIdRef.current !== id) return;
       setOutput((prev) => (prev + text.replace(/\r\n/g, "\n")).slice(-OUTPUT_LIMIT));
     };
+    const finish = (text: string) => {
+      if (runIdRef.current !== id) return;
+      setOutput((prev) => (prev.endsWith("\n") ? prev : prev + "\n") + text.replace(/\r\n/g, "\n").trimEnd() + "\n");
+    };
 
     setShowing(true);
     setIsRunning(true);
@@ -27,10 +31,10 @@ export function useESP32Runner() {
     try {
       const { error } = await serialStreamManager.runCode(code, append);
       const outcome: ESP32RunOutcome = !error ? "finished" : error.includes("KeyboardInterrupt") ? "stopped" : "error";
-      append(outcome === "error" ? `\n${error}\n--- Error ---\n` : `\n--- ${outcome === "stopped" ? "Stopped" : "Finished"} ---\n`);
+      finish(outcome === "error" ? `${error.trimEnd()}\n--- Error ---` : `--- ${outcome === "stopped" ? "Stopped" : "Finished"} ---`);
       return outcome;
     } catch (err) {
-      append(`\n${err instanceof Error ? err.message : String(err)}\n--- Error ---\n`);
+      finish(`${err instanceof Error ? err.message : String(err)}\n--- Error ---`);
       return "error";
     } finally {
       if (runIdRef.current === id) setIsRunning(false);

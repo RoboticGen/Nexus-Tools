@@ -37,6 +37,8 @@ class SerialStreamManager {
 
   private _mode: PortMode = "idle";
   private running = false;
+  private starting = false;
+  private stopRequested = false;
 
   get mode(): PortMode {
     return this._mode;
@@ -137,7 +139,7 @@ class SerialStreamManager {
   /** Operations run sequentially; overlapping them is what produces "stream is locked". */
   enqueue<T>(label: string, operation: () => Promise<T>): Promise<T> {
     // A running program holds the queue until it ends, so any other device action stops it first.
-    if (this.running) void this.interrupt();
+    if (this.running) void this.writeInterrupt();
     return new Promise<T>((resolve, reject) => {
       this.operationQueue.push({
         label,
@@ -299,32 +301,40 @@ class SerialStreamManager {
     return new Uint8Array((output.match(/../g) ?? []).map((h) => parseInt(h, 16)));
   }
 
-  get isRunning(): boolean {
-    return this.running;
-  }
-
   /** Runs `code` on a freshly soft-reset board until it ends or `interrupt()` stops it; stdout streams to `onOutput`. */
   async runCode(code: string, onOutput: (text: string) => void): Promise<RawREPLResult> {
-    return this.withRawREPL(
-      "runCode",
-      async (exec) => {
-        this.running = true;
-        try {
-          return await exec(code.replace(/\r\n/g, "\n"), Infinity, onOutput);
-        } finally {
-          this.running = false;
-        }
-      },
-      { softReset: true },
-    );
+    this.starting = true;
+    this.stopRequested = false;
+    try {
+      return await this.withRawREPL(
+        "runCode",
+        async (exec) => {
+          this.starting = false;
+          if (this.stopRequested) return { output: "", error: "KeyboardInterrupt" };
+          this.running = true;
+          try {
+            return await exec(code.replace(/\r\n/g, "\n"), Infinity, onOutput);
+          } finally {
+            this.running = false;
+          }
+        },
+        { softReset: true },
+      );
+    } finally {
+      this.starting = false;
+    }
   }
 
-  /** Stops a running program; written straight to the port, since the run holds the queue. */
+  /** Stops a running program, or one still waiting for the board. */
   async interrupt(): Promise<void> {
-    if (!this.running) {
-      if (this.isReady()) await this.sendData("\r" + REPL_CONTROL.CTRL_C + REPL_CONTROL.CTRL_C);
-      return;
-    }
+    // Before the program starts, a queued Ctrl-C would wait behind the run itself.
+    if (this.starting) this.stopRequested = true;
+    if (this.running) await this.writeInterrupt();
+    else if (!this.starting && this.isReady()) await this.sendData("\r" + REPL_CONTROL.CTRL_C + REPL_CONTROL.CTRL_C);
+  }
+
+  /** Written straight to the port, since a running program holds the queue. */
+  private async writeInterrupt(): Promise<void> {
     await this.writer?.write(this.encoder.encode("\r" + REPL_CONTROL.CTRL_C + REPL_CONTROL.CTRL_C));
   }
 
@@ -398,6 +408,7 @@ class SerialStreamManager {
     this.isReading = false;
     this._mode = "idle";
     this.running = false;
+    this.starting = false;
     this.operationQueue = [];
     this.isProcessing = false;
     this.listeners.clear();

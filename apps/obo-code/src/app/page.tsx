@@ -75,7 +75,12 @@ export default function Home() {
       return;
     }
 
-    await serialStreamManager.initialize(serialPort);
+    try {
+      await serialStreamManager.initialize(serialPort);
+    } catch (error) {
+      showNotification(`Failed to run on ESP32: ${error instanceof Error ? error.message : String(error)}`, "error");
+      return;
+    }
     outputPanelRef.current?.showOutput();
     const outcome = await device.run(code);
     if (outcome === "error") showNotification("Your code stopped with an error - see Output", "error");
