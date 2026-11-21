@@ -238,26 +238,17 @@ export function useESP32Uploader({ code, onStatusUpdate, onError, onConnectionEs
 
   /** Save a file directly to ESP32 */
   const saveFileToDevice = useCallback(async (filename: string, content: string) => {
+    // The caller reports the outcome, so failures throw rather than notify.
     if (!isConnected || !connectedPortRef.current) {
-      onError?.('Device not connected. Please connect first.');
-      return;
+      throw new Error('Device not connected. Please connect first.');
     }
-
     if (!content.trim()) {
-      onError?.('No content to save');
-      return;
+      throw new Error('No content to save');
     }
 
-    try {
-      onStatusUpdate?.(`Saving ${filename} to device...`);
-      await writeFileToESP32(connectedPortRef.current, filename, content);
-      onStatusUpdate?.(`Successfully saved ${filename} to device`);
-    } catch (error: any) {
-      const errorMsg = error.message || 'Failed to save file';
-      onError?.(errorMsg);
-      throw error;
-    }
-  }, [isConnected, writeFileToESP32, onStatusUpdate, onError]);
+    onStatusUpdate?.(`Saving ${filename} to device...`);
+    await writeFileToESP32(connectedPortRef.current, filename, content);
+  }, [isConnected, writeFileToESP32, onStatusUpdate]);
 
 
   useEffect(() => {
