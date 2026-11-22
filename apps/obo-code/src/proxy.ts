@@ -4,6 +4,6 @@ export default authMiddleware;
 
 export const config = {
   matcher: [
-    "/((?!_next|api/auth|brand|favicon|apple-touch-icon|android-chrome|site\\.webmanifest|og-image\\.png).*)",
+    "/((?!_next|api/auth|brand|favicon|icon|apple-icon|android-chrome|site\\.webmanifest|og-image\\.png).*)",
   ],
 };
